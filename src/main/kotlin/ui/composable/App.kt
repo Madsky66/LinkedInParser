@@ -37,8 +37,19 @@ fun App() {
             ) {Text("Envoyer URL")}
             Spacer(Modifier.height(10.dp))
 
-            if (isLoading) {Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {CircularProgressIndicator()}}
-            else {Text(result, Modifier.padding(top = 10.dp))}
+            if (isLoading) {Box(Modifier.fillMaxSize(), Alignment.Center) {CircularProgressIndicator()}}
+            else {
+                Column(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Résultat : ", Modifier.weight(1f))
+                        Text(result)
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("URL : ", Modifier.weight(1f))
+                        Text(text)
+                    }
+                }
+            }
         }
     }
 }
