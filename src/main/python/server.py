@@ -7,9 +7,11 @@ async def process_prospect(websocket):
         data = json.loads(message)
         print(f"📥 Reçu de Kotlin : {data}")
 
-        await asyncio.sleep(2)
-        data["name"] = "John Doe"
-        data["email"] = "johndoe@example.com"
+        linkedin_url = data["linkedinURL"]
+        email = get_email(linkedin_url) or "email@inconnu.com"
+
+        data["name"] = "Nom Inconnu"
+        data["email"] = email
         data["status"] = "completed"
 
         response = json.dumps(data)
