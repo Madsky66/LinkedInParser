@@ -1,13 +1,11 @@
-package manager
-
-import kotlinx.serialization.json.Json
-import java.net.URI
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
+import java.net.URI
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
 class WebSocketManager(uri: URI) : WebSocketClient(uri) {
-    var result = "En attente..."
+    var result: String = "En attente..."
 
     override fun onOpen(handshakedata: ServerHandshake?) {
         println("🔗 Connecté au serveur WebSocket")
@@ -18,7 +16,6 @@ class WebSocketManager(uri: URI) : WebSocketClient(uri) {
             println("📥 Message reçu de Python : $it")
             val data = Json.decodeFromString<ProspectData>(it)
             result = "✅ Nom : ${data.name}, Email : ${data.email}"
-            println(result)
         }
     }
 
@@ -37,4 +34,6 @@ fun sendToPythonOverWebSocket(prospect: ProspectData) {
 
     val jsonData = Json.encodeToString(prospect)
     webSocket.send(jsonData)
+
+    println("📤 Données envoyées : $jsonData")
 }
