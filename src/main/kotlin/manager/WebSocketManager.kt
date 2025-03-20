@@ -1,8 +1,11 @@
-import org.java_websocket.client.WebSocketClient
+package manager
+
 import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import org.java_websocket.client.WebSocketClient
+import kotlin.concurrent.thread
 
 class WebSocketManager(uri: URI) : WebSocketClient(uri) {
     var result: String = "En attente..."
@@ -28,7 +31,7 @@ class WebSocketManager(uri: URI) : WebSocketClient(uri) {
     }
 }
 
-fun sendToPythonOverWebSocket(prospect: ProspectData) {
+fun sendToPythonOverWebSocket(prospect: ProspectData, onResult: (String) -> Unit) {
     val webSocket = WebSocketManager(URI("ws://localhost:8765"))
     webSocket.connectBlocking()
 
@@ -36,4 +39,9 @@ fun sendToPythonOverWebSocket(prospect: ProspectData) {
     webSocket.send(jsonData)
 
     println("📤 Données envoyées : $jsonData")
+
+    thread {
+        while (!webSocket.isClosed) {Thread.sleep(500)}
+        onResult(webSocket.result)
+    }
 }
