@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import data.ProspectData
 import manager.sendToPythonOverWebSocket
 
 @Composable
@@ -25,7 +26,7 @@ fun App() {
                 onClick = {
                     if (text.isNotBlank()) {
                         isLoading = true
-                        sendToPythonOverWebSocket(ProspectData(linkedinURL = text)) { response ->
+                        sendToPythonOverWebSocket(ProspectData(linkedinURL = text)) {response ->
                             result = response
                             isLoading = false
                         }

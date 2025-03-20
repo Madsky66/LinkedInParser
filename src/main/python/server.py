@@ -8,7 +8,11 @@ async def process_prospect(websocket):
         print(f"📥 Reçu de Kotlin : {data}")
 
         linkedin_url = data["linkedinURL"]
-        email = get_email(linkedin_url) or "email@inconnu.com"
+        try:
+            # email = get_email(linkedin_url)
+            email = "email@test.com"
+        except NameError:
+            email = "email@inconnu.fr"
 
         data["name"] = "Nom Inconnu"
         data["email"] = email
