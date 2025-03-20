@@ -16,23 +16,34 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
     override fun onOpen(handshakedata: ServerHandshake?) {println("🔗 Connecté au serveur WebSocket")}
 
     override fun onMessage(message: String?) {
-        if (message != null) {
-            println("📥 Message reçu de Python : $message")
-            val data = Json.decodeFromString<ProspectData>(message)
-            result = "✅ Nom : ${data.name}, Email : ${data.email}"
+        message?.let {
+            println("📥 Message reçu de Python : $it")
+            try {
+                val data = Json.decodeFromString<ProspectData>(it)
+                result = "✅ Nom : ${data.name}, Email : ${data.email}"
+            }
+            catch (e: Exception) {
+                result = "❌ Erreur de traitement du message."
+                println("❌ Erreur de parsing : ${e.message}")
+            }
+            latch.countDown()
+        } ?: run {
+            result = "❌ Message vide reçu."
             latch.countDown()
         }
     }
 
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
         println("❌ WebSocket fermé : $reason")
-        println("🔗 Déconnexion du serveur WebSocket...")
         latch.countDown()
     }
 
     override fun onError(ex: Exception?) {
-        println("⚠ Erreur WebSocket : ${ex?.message}")
-        latch.countDown()
+        ex?.let {
+            println("⚠ Erreur WebSocket : ${it.message}")
+            result = "⚠ Erreur de connexion au serveur WebSocket."
+            latch.countDown()
+        }
     }
 
     fun waitForResult(): String {
@@ -45,6 +56,9 @@ fun sendToPythonOverWebSocket(prospect: ProspectData, onResult: (String) -> Unit
     try {
         val webSocket = WebSocketManager(URI("ws://localhost:8765"), onResult)
         println("🔗 Connexion au serveur WebSocket...")
+
+        while (!webSocket.isOpen) {Thread.sleep(100)}
+
         val jsonData = Json.encodeToString(prospect)
         println("📤 Données à envoyer : $jsonData")
 

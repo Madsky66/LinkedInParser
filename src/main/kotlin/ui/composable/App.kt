@@ -12,30 +12,35 @@ fun App() {
     var text by remember {mutableStateOf("")}
     var result by remember {mutableStateOf("En attente...")}
     var isLoading by remember {mutableStateOf(false)}
+    var errorMessage by remember {mutableStateOf<String?>(null)}
 
     MaterialTheme {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(16.dp).fillMaxSize()) {
             OutlinedTextField(
                 value = text,
                 onValueChange = {text = it},
                 label = {Text("URL LinkedIn")},
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                isError = errorMessage != null
             )
-            Spacer(Modifier.height(10.dp))
+            errorMessage?.let {Text(it, Modifier.padding(top = 8.dp), MaterialTheme.colors.error)}
+            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {
                     if (text.isNotBlank()) {
                         isLoading = true
+                        errorMessage = null
                         sendToPythonOverWebSocket(ProspectData(linkedinURL = text)) {response ->
-                            result = response
+                            if (response.startsWith("✅")) {result = response} else {errorMessage = response}
                             isLoading = false
                         }
                     }
-                    else {result = "❌ Veuillez entrer une URL."}
+                    else {errorMessage = "❌ Veuillez entrer une URL."}
                 },
-                enabled = !isLoading && text.isNotBlank()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = text.isNotBlank() && !isLoading
             ) {Text("Envoyer URL")}
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(16.dp))
 
             if (isLoading) {Box(Modifier.fillMaxSize(), Alignment.Center) {CircularProgressIndicator()}}
             else {
