@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 import json
-import requests
+import httpx
 
 async def process_prospect(websocket):
     try:
@@ -28,17 +28,20 @@ async def process_prospect(websocket):
         await websocket.send(json.dumps({"status": "error", "message": str(e)}))
 
 def get_email(linkedin_url):
-    api_url = "https://api.apollo.io/v1/people/search"
-    headers = {"Authorization": "Bearer 3QM-PzFzdCAEtJuB12cRAQ"}
-    params = {"linkedin_url": linkedin_url}
-    response = requests.get(api_url, headers=headers, params=params)
+    api_url = "https://api.apollo.io/api/v1/people/match"
+    headers = {"Authorization": "Bearer 3QM-PzFzdCAEtJuB12cRAQ", "Content-Type": "application/json"}
+    params = {"linkedin_url": linkedin_url, "reveal_personal_emails": True}
+    response = httpx.post(api_url, json=params, headers=headers)
 
     if response.status_code == 200:
         data = response.json()
-        return data['email']
+        email = data.get('email', "email@inconnu.fr")
+        print(f"Email trouvé : {email}")
+        return email
     else:
         print(f"Erreur lors de la récupération de l'email : {response.text}")
         return "email@inconnu.fr"
+
 
 
 async def main():

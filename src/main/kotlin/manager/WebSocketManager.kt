@@ -57,55 +57,28 @@ fun sendToPythonOverWebSocket(prospect: ProspectData, onResult: (String) -> Unit
         val webSocket = WebSocketManager(URI("ws://localhost:8765"), onResult)
         println("🔗 Connexion au serveur WebSocket...")
 
-        while (!webSocket.isOpen) {Thread.sleep(100)}
-
-        val jsonData = Json.encodeToString(prospect)
-        println("📤 Données à envoyer : $jsonData")
-
         webSocket.connectBlocking()
-        println("Websocket => ${webSocket.uri}")
-        println("Websocket => ${webSocket.isOpen}")
-        println("Websocket => ${webSocket.isClosing}")
-        println("🔗 Connexion établie avec succès.")
-        webSocket.send(jsonData)
-        println("📤 Données envoyées : $jsonData")
+        println("✅ Connexion WebSocket établie avec succès.")
 
-        thread {
-            val result = webSocket.waitForResult()
-            println("📤 Résultat reçu : $result")
-            onResult(result)
-            println("🔗 Déconnexion du serveur WebSocket...")
+        if (webSocket.isOpen) {
+            val jsonData = Json.encodeToString(prospect)
+            println("📤 Données envoyées : $jsonData")
+            webSocket.send(jsonData)
+
+            thread {
+                val result = webSocket.waitForResult()
+                println("📥 Résultat reçu : $result")
+                onResult(result)
+                println("🔗 Déconnexion du serveur WebSocket...")
+                webSocket.close()
+            }
+        }
+        else {
+            println("❌ Connexion WebSocket impossible")
+            onResult("⚠ Impossible de se connecter au serveur WebSocket.")
         }
     }
-    catch (e: IllegalArgumentException) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        onResult("⚠ URL WebSocket invalide.")
-    }
-    catch (e: InterruptedException) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        onResult("⚠ Connexion au serveur WebSocket interrompue.")
-    }
-    catch (e: IllegalStateException) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        onResult("⚠ Connexion au serveur WebSocket déjà établie.")
-    }
-    catch (e: NullPointerException) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        onResult("⚠ Connexion au serveur WebSocket impossible.")
-    }
-    catch (e: org.java_websocket.exceptions.WebsocketNotConnectedException) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        onResult("⚠ Connexion au serveur WebSocket impossible.")
-    }
     catch (e: Exception) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        onResult("⚠ Erreur de connexion au serveur WebSocket.")
-    }
-    catch (e: Error) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        onResult("⚠ Erreur de connexion au serveur WebSocket.")
-    }
-    catch (e: Throwable) {
         println("❌ Erreur WebSocket : ${e.message}")
         onResult("⚠ Erreur de connexion au serveur WebSocket.")
     }

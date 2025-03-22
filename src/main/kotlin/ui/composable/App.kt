@@ -1,6 +1,9 @@
+import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -12,34 +15,33 @@ fun App() {
     var text by remember {mutableStateOf("")}
     var result by remember {mutableStateOf("En attente...")}
     var isLoading by remember {mutableStateOf(false)}
-    var errorMessage by remember {mutableStateOf<String?>(null)}
 
     MaterialTheme {
-        Column(Modifier.padding(16.dp).fillMaxSize()) {
+        Column(Modifier.padding(16.dp).fillMaxSize().background(MaterialTheme.colors.background)) {
             OutlinedTextField(
                 value = text,
                 onValueChange = {text = it},
                 label = {Text("URL LinkedIn")},
-                modifier = Modifier.fillMaxWidth(),
-                isError = errorMessage != null
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                leadingIcon = {Icon(Icons.Default.Search, "LinkedIn URL")},
+                shape = MaterialTheme.shapes.large
             )
-            errorMessage?.let {Text(it, Modifier.padding(top = 8.dp), MaterialTheme.colors.error)}
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {
                     if (text.isNotBlank()) {
                         isLoading = true
-                        errorMessage = null
-                        sendToPythonOverWebSocket(ProspectData(linkedinURL = text)) {response ->
-                            if (response.startsWith("✅")) {result = response} else {errorMessage = response}
+                        sendToPythonOverWebSocket(ProspectData(linkedinURL = text)) { response ->
+                            result = response
                             isLoading = false
                         }
                     }
-                    else {errorMessage = "❌ Veuillez entrer une URL."}
+                    else {result = "❌ Veuillez entrer une URL."}
                 },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = text.isNotBlank() && !isLoading
-            ) {Text("Envoyer URL")}
+                modifier = Modifier.fillMaxWidth().padding(8.dp).height(56.dp),
+                enabled = !isLoading && text.isNotBlank(),
+                shape = MaterialTheme.shapes.medium) {if (isLoading) {CircularProgressIndicator(Modifier.size(24.dp))} else {Text("Envoyer URL")}
+            }
             Spacer(Modifier.height(16.dp))
 
             if (isLoading) {Box(Modifier.fillMaxSize(), Alignment.Center) {CircularProgressIndicator()}}
