@@ -30,7 +30,7 @@ async def process_prospect(websocket):
             await websocket.send(response)
 
     except websockets.exceptions.ConnectionClosed as e:
-        print(f"❌ Connexion WebSocket fermée : {e.reason}")
+        print(f"❌ Connexion WebSocket fermée : {e.rcvd.reason}")
     except Exception as e:
         print(f"❌ Erreur WebSocket : {e}")
         await websocket.send(json.dumps({"status": "error", "message": str(e)}))
