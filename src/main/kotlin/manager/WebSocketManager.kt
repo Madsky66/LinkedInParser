@@ -21,7 +21,7 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
             println("📥 Message reçu : $it")
             try {
                 val data = Json.decodeFromString<ProspectData>(it)
-                result = "✅ ${data.name} - ${data.email}"
+                result = "✅ Nom complet : ${data.fullName} | Mail : ${data.email}"
             }
             catch (e: Exception) {
                 result = "❌ Erreur de parsing JSON."

@@ -27,18 +27,18 @@ async def extract_linkedin_info(url):
             soup = BeautifulSoup(response.text, 'html.parser')
 
             name_element = soup.find('h1', class_=re.compile('text-heading-xlarge'))
-            name = name_element.text.strip() if name_element else "Nom Inconnu"
+            full_name = name_element.text.strip() if name_element else "Nom Inconnu"
 
             company_element = soup.find('span', {'aria-hidden': 'true'}, text=re.compile(r'.*'))
             company = company_element.text.strip() if company_element else ""
 
             return {
-                "name": name,
+                "fullName": full_name,
                 "company": company
             }
     except Exception as e:
         logger.error(f"Erreur lors de l'extraction LinkedIn: {e}")
-        return {"name": "Nom Inconnu", "company": ""}
+        return {"fullName": "Nom Inconnu", "company": ""}
 
 async def get_email_from_apollo(linkedin_url, company=""):
     try:
@@ -70,6 +70,31 @@ async def get_email_from_apollo(linkedin_url, company=""):
         logger.error(f"Erreur Apollo: {e}")
         return "email@inconnu.fr"
 
+def generate_email(fullName, company):
+    if not fullName or not company:
+        return ""
+
+    # Nettoyage du nom
+    name = fullName.lower()
+    name = ''.join(e for e in name if e.isalnum() or e.isspace())
+    first_name, *last_name = name.split()
+    last_name = last_name[0] if last_name else ""
+
+    # Nettoyage du nom de l'entreprise
+    company = company.lower()
+    company = ''.join(e for e in company if e.isalnum())
+
+    # Formats d'email courants
+    email_formats = [
+        f"{first_name}.{last_name}@{company}.com",
+        f"{first_name[0]}{last_name}@{company}.com",
+        f"{first_name}@{company}.com",
+        f"{first_name}.{last_name}@{company}.fr",
+        f"{first_name[0]}{last_name}@{company}.fr"
+    ]
+
+    return email_formats[0]
+
 async def process_prospect(websocket):
     try:
         async for message in websocket:
@@ -82,14 +107,22 @@ async def process_prospect(websocket):
                 linkedin_info = await extract_linkedin_info(linkedin_url)
                 email = await get_email_from_apollo(linkedin_url, linkedin_info["company"])
 
+                # Génération d'email si Apollo n'en trouve pas
+                if email == "email@inconnu.fr":
+                    generated_email = generate_email(linkedin_info["fullName"], linkedin_info["company"])
+                else:
+                    generated_email = ""
+
                 data.update({
-                    "name": linkedin_info["name"],
+                    "fullName": linkedin_info["fullName"],
                     "email": email,
+                    "generatedEmail": generated_email,
+                    "company": linkedin_info["company"],
                     "status": "completed"
                 })
             else:
                 data.update({
-                    "name": "Nom Inconnu",
+                    "fullName": "Nom Inconnu",
                     "email": "email@inconnu.fr",
                     "status": "error"
                 })
@@ -102,13 +135,6 @@ async def process_prospect(websocket):
         logger.info("Connexion WebSocket fermée normalement")
     except Exception as e:
         logger.error(f"Erreur WebSocket: {e}")
-        try:
-            await websocket.send(json.dumps({
-                "status": "error",
-                "message": str(e)
-            }))
-        except:
-            pass
 
 async def main():
     host = "localhost"

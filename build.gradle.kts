@@ -23,7 +23,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("org.jetbrains.compose.material:material:1.5.10")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
-    implementation("com.google.api-client:google-api-client:2.2.0") // VULNERABLE
+    implementation("com.google.apis:google-api-services-sheets:v4-rev20220927-2.0.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
     implementation("org.slf4j:slf4j-api:2.0.9")
     implementation("org.slf4j:slf4j-simple:2.0.9")
