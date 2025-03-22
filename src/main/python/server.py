@@ -2,151 +2,128 @@ import asyncio
 import websockets
 import json
 import httpx
-from typing import Optional
-from dataclasses import dataclass
 from bs4 import BeautifulSoup
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
+import re
+import logging
+import os
 
-API_APOLLO_KEY = "3QM-PzFzdCAEtJuB12cRAQ"
-SHEETS_CREDENTIALS_FILE = "path/to/credentials.json"
-SPREADSHEET_ID = "VOTRE_SPREADSHEET_ID"
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-@dataclass
-class LinkedInProfile:
-    url: str
-    name: Optional[str] = None
-    company: Optional[str] = None
-    position: Optional[str] = None
-    email: Optional[str] = None
+key_file_path = os.path.join(os.path.dirname(__file__), "extra", "apollo_key.txt")
 
-class LinkedInParser:
-    def __init__(self):
-        self.client = httpx.AsyncClient(timeout=30.0)
+with open(key_file_path, "r") as key_file:
+    API_APOLLO_KEY = key_file.read().strip()
 
-    async def parse_profile(self, url: str) -> LinkedInProfile:
-        try:
-            response = await self.client.get(url)
+
+async def extract_linkedin_info(url):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            name = self._extract_name(soup)
-            company = self._extract_company(soup)
-            position = self._extract_position(soup)
+            name_element = soup.find('h1', class_=re.compile('text-heading-xlarge'))
+            name = name_element.text.strip() if name_element else "Nom Inconnu"
 
-            return LinkedInProfile(
-                url=url,
-                name=name,
-                company=company,
-                position=position
-            )
-        except Exception as e:
-            print(f"Erreur lors du parsing LinkedIn: {e}")
-            return LinkedInProfile(url=url)
+            company_element = soup.find('span', {'aria-hidden': 'true'}, text=re.compile(r'.*'))
+            company = company_element.text.strip() if company_element else ""
 
-    def _extract_name(self, soup) -> Optional[str]:
-        # Logique d'extraction du nom
-        pass
+            return {
+                "name": name,
+                "company": company
+            }
+    except Exception as e:
+        logger.error(f"Erreur lors de l'extraction LinkedIn: {e}")
+        return {"name": "Nom Inconnu", "company": ""}
 
-    def _extract_company(self, soup) -> Optional[str]:
-        # Logique d'extraction de l'entreprise
-        pass
+async def get_email_from_apollo(linkedin_url, company=""):
+    try:
+        api_url = "https://api.apollo.io/api/v1/people/match"
+        headers = {
+            "Authorization": f"Bearer {API_APOLLO_KEY}",
+            "Content-Type": "application/json"
+        }
+        params = {
+            "linkedin_url": linkedin_url,
+            "organization_name": company,
+            "reveal_personal_emails": True
+        }
 
-    def _extract_position(self, soup) -> Optional[str]:
-        # Logique d'extraction du poste
-        pass
-
-class ApolloAPI:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.client = httpx.AsyncClient(timeout=30.0)
-
-    async def get_email(self, linkedin_url: str, company: Optional[str] = None) -> Optional[str]:
-        try:
-            response = await self.client.post(
-                "https://api.apollo.io/api/v1/people/match",
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json={
-                    "linkedin_url": linkedin_url,
-                    "organization_name": company,
-                    "reveal_personal_emails": True
-                }
-            )
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(api_url, json=params, headers=headers)
+            response.raise_for_status()
             data = response.json()
-            return data.get("email") or data.get("emails", [None])[0]
-        except Exception as e:
-            print(f"Erreur Apollo API: {e}")
-            return None
 
-class GoogleSheetsManager:
-    def __init__(self, credentials_file: str, spreadsheet_id: str):
-        credentials = service_account.Credentials.from_service_account_file(
-            credentials_file,
-            scopes=['https://www.googleapis.com/auth/spreadsheets']
-        )
-        self.service = build('sheets', 'v4', credentials=credentials)
-        self.spreadsheet_id = spreadsheet_id
+            email = data.get("email")
+            if not email and "person" in data:
+                email = data["person"].get("email")
+            if not email:
+                email = next((e for e in data.get("emails", []) if e), None)
 
-    async def append_prospect(self, prospect: LinkedInProfile):
-        try:
-            values = [[
-                prospect.name,
-                prospect.email,
-                prospect.company,
-                prospect.position,
-                prospect.url,
-                "LinkedIn"
-            ]]
+            return email if email else "email@inconnu.fr"
 
-            self.service.spreadsheets().values().append(
-                spreadsheetId=self.spreadsheet_id,
-                range='Prospects!A:F',
-                valueInputOption='RAW',
-                insertDataOption='INSERT_ROWS',
-                body={'values': values}
-            ).execute()
-        except Exception as e:
-            print(f"Erreur Google Sheets: {e}")
+    except Exception as e:
+        logger.error(f"Erreur Apollo: {e}")
+        return "email@inconnu.fr"
 
 async def process_prospect(websocket):
-    linkedin_parser = LinkedInParser()
-    apollo_api = ApolloAPI(API_APOLLO_KEY)
-    sheets_manager = GoogleSheetsManager(SHEETS_CREDENTIALS_FILE, SPREADSHEET_ID)
-
     try:
         async for message in websocket:
             data = json.loads(message)
+            logger.info(f"Message reçu: {data}")
+
             linkedin_url = data.get("linkedinURL", "")
 
-            profile = await linkedin_parser.parse_profile(linkedin_url)
-            email = await apollo_api.get_email(linkedin_url, profile.company)
+            if linkedin_url and "linkedin.com" in linkedin_url:
+                linkedin_info = await extract_linkedin_info(linkedin_url)
+                email = await get_email_from_apollo(linkedin_url, linkedin_info["company"])
 
-            if not email:
-                email = f"{profile.name.lower().replace(' ', '.')}@{profile.company.lower()}.com"
+                data.update({
+                    "name": linkedin_info["name"],
+                    "email": email,
+                    "status": "completed"
+                })
+            else:
+                data.update({
+                    "name": "Nom Inconnu",
+                    "email": "email@inconnu.fr",
+                    "status": "error"
+                })
 
-            profile.email = email
-            await sheets_manager.append_prospect(profile)
+            response = json.dumps(data)
+            logger.info(f"Envoi réponse: {response}")
+            await websocket.send(response)
 
-            response = {
-                "name": profile.name,
-                "email": profile.email,
-                "company": profile.company,
-                "position": profile.position,
-                "status": "completed"
-            }
-
-            await websocket.send(json.dumps(response))
-
+    except websockets.exceptions.ConnectionClosed:
+        logger.info("Connexion WebSocket fermée normalement")
     except Exception as e:
-        print(f"Erreur générale: {e}")
-        await websocket.send(json.dumps({
-            "status": "error",
-            "message": str(e)
-        }))
+        logger.error(f"Erreur WebSocket: {e}")
+        try:
+            await websocket.send(json.dumps({
+                "status": "error",
+                "message": str(e)
+            }))
+        except:
+            pass
 
 async def main():
-    print("🚀 Démarrage du serveur WebSocket...")
-    async with websockets.serve(process_prospect, "0.0.0.0", 9000):
+    host = "localhost"
+    port = 9000
+
+    logger.info(f"Démarrage du serveur WebSocket sur {host}:{port}")
+
+    async with websockets.serve(process_prospect, host, port, ping_interval=None):
+        logger.info("🚀 Serveur WebSocket démarré avec succès")
         await asyncio.Future()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Arrêt du serveur")
+    except Exception as e:
+        logger.error(f"Erreur fatale: {e}")
