@@ -18,21 +18,13 @@ repositories {
 }
 
 dependencies {
-    // Note, if you develop a library, you should use compose.desktop.common.
-    // compose.desktop.currentOs should be used in launcher-sourceSet
-    // (in a separate module for demo project and in testMain).
-    // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-
-    implementation("org.jetbrains.compose.ui:ui:1.5.10")
     implementation("org.jetbrains.compose.material:material:1.5.10")
-    implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.5.10")
-
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
-
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
+    implementation("com.google.api-client:google-api-client:2.2.0") // VULNERABLE
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
 }
 
 compose.desktop {
