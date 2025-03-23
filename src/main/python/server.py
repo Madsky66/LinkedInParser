@@ -4,37 +4,57 @@ import httpx
 from bs4 import BeautifulSoup
 import re
 import os
+import json
+import logging
+from typing import Dict, Optional
 
+# Configuration du logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+# Configuration des chemins
 base_dir = os.path.dirname(os.path.abspath(__file__))
 key_file_path = os.path.join(base_dir, "..", "resources", "extra", "apollo_key.txt")
 
-if not os.path.exists(key_file_path):
-    raise FileNotFoundError(f"Key file not found at {key_file_path}")
+# Configuration des constantes
+DEFAULT_EMAIL = "email@inconnu.fr"
+DEFAULT_NAME = "Nom Inconnu"
+WEBSOCKET_HOST = "localhost"
+WEBSOCKET_PORT = 9000
 
-try:
-    with open(key_file_path, "r") as key_file:
-        print("File content:", key_file.read())
-except FileNotFoundError:
-    print(f"File not found: {key_file_path}")
-except Exception as e:
-    print(f"An error occurred: {e}")
+def load_api_key() -> str:
+    """Charge la clé API depuis le fichier."""
+    try:
+        if not os.path.exists(key_file_path):
+            raise FileNotFoundError(f"Key file not found at {key_file_path}")
 
-with open(key_file_path, "r") as key_file:
-    API_APOLLO_KEY = key_file.read().strip()
+        with open(key_file_path, "r") as key_file:
+            api_key = key_file.read().strip()
+            if not api_key:
+                raise ValueError("API key file is empty")
+            logger.info("API key loaded successfully")
+            return api_key
+    except Exception as e:
+        logger.error(f"Error loading API key: {e}")
+        raise
 
-
-async def extract_linkedin_info(url):
+async def extract_linkedin_info(url: str) -> Dict[str, str]:
+    """Extrait les informations depuis LinkedIn."""
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
 
-        async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=30.0) as client:
             response = await client.get(url)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.text, 'html.parser')
 
             name_element = soup.find('h1', class_=re.compile('text-heading-xlarge'))
-            full_name = name_element.text.strip() if name_element else "Nom Inconnu"
+            full_name = name_element.text.strip() if name_element else DEFAULT_NAME
 
             company_element = soup.find('span', {'aria-hidden': 'true'}, text=re.compile(r'.*'))
             company = company_element.text.strip() if company_element else ""
@@ -44,10 +64,11 @@ async def extract_linkedin_info(url):
                 "company": company
             }
     except Exception as e:
-        print(f"Erreur lors de l'extraction LinkedIn: {e}")
-        return {"fullName": "Nom Inconnu", "company": ""}
+        logger.error(f"LinkedIn extraction error: {e}")
+        return {"fullName": DEFAULT_NAME, "company": ""}
 
-async def get_email_from_apollo(linkedin_url, company=""):
+async def get_email_from_apollo(linkedin_url: str, company: str = "") -> str:
+    """Récupère l'email depuis Apollo."""
     try:
         api_url = "https://api.apollo.io/api/v1/people/match"
         headers = {
@@ -60,7 +81,7 @@ async def get_email_from_apollo(linkedin_url, company=""):
             "reveal_personal_emails": True
         }
 
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(api_url, json=params, headers=headers)
             response.raise_for_status()
             data = response.json()
@@ -71,94 +92,98 @@ async def get_email_from_apollo(linkedin_url, company=""):
             if not email:
                 email = next((e for e in data.get("emails", []) if e), None)
 
-            return email if email else "email@inconnu.fr"
+            return email if email else DEFAULT_EMAIL
 
     except Exception as e:
-        print(f"Erreur Apollo: {e}")
-        return "email@inconnu.fr"
+        logger.error(f"Apollo API error: {e}")
+        return DEFAULT_EMAIL
 
-def generate_email(fullName, company):
-    if not fullName or not company:
+def generate_email(full_name: str, company: str) -> str:
+    """Génère un email basé sur le nom et l'entreprise."""
+    if not full_name or not company:
         return ""
 
-    # Nettoyage du nom
-    name = fullName.lower()
-    name = ''.join(e for e in name if e.isalnum() or e.isspace())
-    first_name, *last_name = name.split()
-    last_name = last_name[0] if last_name else ""
+    # Nettoyage et normalisation
+    name_parts = ''.join(c.lower() for c in full_name if c.isalnum() or c.isspace()).split()
+    company_clean = ''.join(c.lower() for c in company if c.isalnum())
 
-    # Nettoyage du nom de l'entreprise
-    company = company.lower()
-    company = ''.join(e for e in company if e.isalnum())
+    if not name_parts or not company_clean:
+        return ""
 
-    # Formats d'email courants
+    first_name = name_parts[0]
+    last_name = name_parts[-1] if len(name_parts) > 1 else ""
+
     email_formats = [
-        f"{first_name}.{last_name}@{company}.com",
-        f"{first_name[0]}{last_name}@{company}.com",
-        f"{first_name}@{company}.com",
-        f"{first_name}.{last_name}@{company}.fr",
-        f"{first_name[0]}{last_name}@{company}.fr"
+        f"{first_name}.{last_name}@{company_clean}.com",
+        f"{first_name[0]}{last_name}@{company_clean}.com",
+        f"{first_name}@{company_clean}.com",
+        f"{first_name}.{last_name}@{company_clean}.fr",
+        f"{first_name[0]}{last_name}@{company_clean}.fr"
     ]
 
     return email_formats[0]
 
 async def process_prospect(websocket):
+    """Traite les messages WebSocket entrants."""
     try:
         async for message in websocket:
-            data = json.loads(message)
-            print(f"Message reçu: {data}")
+            try:
+                data = json.loads(message)
+                logger.info(f"Received message: {data}")
 
-            linkedin_url = data.get("linkedinURL", "")
+                linkedin_url = data.get("linkedinURL", "")
 
-            if linkedin_url and "linkedin.com" in linkedin_url:
-                linkedin_info = await extract_linkedin_info(linkedin_url)
-                email = await get_email_from_apollo(linkedin_url, linkedin_info["company"])
+                if linkedin_url and "linkedin.com" in linkedin_url:
+                    linkedin_info = await extract_linkedin_info(linkedin_url)
+                    email = await get_email_from_apollo(linkedin_url, linkedin_info["company"])
 
-                # Génération d'email si Apollo n'en trouve pas
-                if email == "email@inconnu.fr":
-                    generated_email = generate_email(linkedin_info["fullName"], linkedin_info["company"])
+                    generated_email = generate_email(linkedin_info["fullName"], linkedin_info["company"]) if email == DEFAULT_EMAIL else ""
+
+                    data.update({
+                        "fullName": linkedin_info["fullName"],
+                        "email": email,
+                        "generatedEmail": generated_email,
+                        "company": linkedin_info["company"],
+                        "status": "completed"
+                    })
                 else:
-                    generated_email = ""
+                    data.update({
+                        "fullName": DEFAULT_NAME,
+                        "email": DEFAULT_EMAIL,
+                        "status": "error",
+                        "error": "Invalid LinkedIn URL"
+                    })
 
-                print(f"Envoi réponse: {json.dumps(data)}")
-                data.update({
-                    "fullName": linkedin_info["fullName"],
-                    "email": email,
-                    "generatedEmail": generated_email,
-                    "company": linkedin_info["company"],
-                    "status": "completed"
-                })
-            else:
-                data.update({
-                    "fullName": "Nom Inconnu",
-                    "email": "email@inconnu.fr",
-                    "status": "error"
-                })
+                response = json.dumps(data)
+                logger.info(f"Sending response: {response}")
+                await websocket.send(response)
 
-            response = json.dumps(data)
-            print(f"Envoi réponse: {response}")
-            print("")
-            await websocket.send(response)
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decode error: {e}")
+                await websocket.send(json.dumps({"status": "error", "error": "Invalid JSON format"}))
+            except Exception as e:
+                logger.error(f"Processing error: {e}")
+                await websocket.send(json.dumps({"status": "error", "error": str(e)}))
 
     except websockets.exceptions.ConnectionClosed:
-        print("Connexion WebSocket fermée normalement")
+        logger.info("WebSocket connection closed normally")
     except Exception as e:
-        print(f"Erreur WebSocket: {e}")
+        logger.error(f"WebSocket error: {e}")
 
 async def main():
-    host = "localhost"
-    port = 9000
+    """Point d'entrée principal du serveur."""
+    logger.info(f"Starting WebSocket server on {WEBSOCKET_HOST}:{WEBSOCKET_PORT}")
 
-    print(f"Démarrage du serveur WebSocket sur {host}:{port}")
-
-    async with websockets.serve(process_prospect, host, port, ping_interval=None):
-        print("🚀 Serveur WebSocket démarré avec succès")
+    async with websockets.serve(process_prospect, WEBSOCKET_HOST, WEBSOCKET_PORT, ping_interval=None):
+        logger.info("🚀 WebSocket server started successfully")
         await asyncio.Future()
 
 if __name__ == "__main__":
     try:
+        # Chargement de la clé API au démarrage
+        API_APOLLO_KEY = load_api_key()
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Arrêt du serveur")
+        logger.info("Server shutdown requested")
     except Exception as e:
-        print(f"Erreur fatale: {e}")
+        logger.error(f"Fatal error: {e}")

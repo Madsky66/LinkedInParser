@@ -18,7 +18,7 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
 
     override fun onMessage(message: String?) {
         message?.let {
-            println("📥 Message reçu : $it")
+            println("📥 Message brut reçu : $it")
             try {
                 val data = Json.decodeFromString<ProspectData>(it)
                 result = "✅ Nom complet : ${data.fullName} | Mail : ${data.email}"
