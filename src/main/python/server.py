@@ -28,6 +28,16 @@ DEFAULT_EMAIL = "email@inconnu.fr"
 DEFAULT_NAME = "Nom Inconnu"
 WEBSOCKET_HOST = "localhost"
 WEBSOCKET_PORT = 9000
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59'
+]
+PROXY_LIST = [
+    "51.91.237.124:8080",
+    "51.91.109.83:80",
+]
 
 def load_api_key() -> str:
     """Charge la clé API depuis le fichier."""
@@ -45,17 +55,11 @@ def load_api_key() -> str:
         logger.error(f"Error loading API key: {e}")
         raise
 
-PROXY_LIST = [
-    "51.91.237.124:8080",
-    "51.91.109.83:80",
-]
-
 async def extract_linkedin_info(url: str) -> Dict[str, str]:
-    """Extrait les informations depuis LinkedIn avec rotation de User-Agents et délais."""
+    """Extrait les informations depuis LinkedIn."""
     try:
-        ua = UserAgent()
         headers = {
-            'User-Agent': ua.random,
+            'User-Agent': random.choice(USER_AGENTS),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -85,7 +89,7 @@ async def extract_linkedin_info(url: str) -> Dict[str, str]:
 
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Ajoutez plus de sélecteurs pour le nom
+            # Sélecteurs pour le nom
             name_selectors = [
                 ('h1', {'class_': re.compile('text-heading-xlarge')}),
                 ('h1', {'class_': 'top-card-layout__title'}),
@@ -99,7 +103,7 @@ async def extract_linkedin_info(url: str) -> Dict[str, str]:
                     full_name = name_element.text.strip()
                     break
 
-            # Ajoutez plus de sélecteurs pour l'entreprise
+            # Sélecteurs pour l'entreprise
             company_selectors = [
                 ('span', {'aria-hidden': 'true'}),
                 ('div', {'class_': 'experience-item__subtitle'}),
