@@ -1,16 +1,23 @@
 import asyncio
 import websockets
-import json
 import httpx
 from bs4 import BeautifulSoup
 import re
-import logging
 import os
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+key_file_path = os.path.join(base_dir, "..", "resources", "extra", "apollo_key.txt")
 
-key_file_path = os.path.join(os.path.dirname(__file__), "extra", "apollo_key.txt")
+if not os.path.exists(key_file_path):
+    raise FileNotFoundError(f"Key file not found at {key_file_path}")
+
+try:
+    with open(key_file_path, "r") as key_file:
+        print("File content:", key_file.read())
+except FileNotFoundError:
+    print(f"File not found: {key_file_path}")
+except Exception as e:
+    print(f"An error occurred: {e}")
 
 with open(key_file_path, "r") as key_file:
     API_APOLLO_KEY = key_file.read().strip()
@@ -37,7 +44,7 @@ async def extract_linkedin_info(url):
                 "company": company
             }
     except Exception as e:
-        logger.error(f"Erreur lors de l'extraction LinkedIn: {e}")
+        print(f"Erreur lors de l'extraction LinkedIn: {e}")
         return {"fullName": "Nom Inconnu", "company": ""}
 
 async def get_email_from_apollo(linkedin_url, company=""):
@@ -67,7 +74,7 @@ async def get_email_from_apollo(linkedin_url, company=""):
             return email if email else "email@inconnu.fr"
 
     except Exception as e:
-        logger.error(f"Erreur Apollo: {e}")
+        print(f"Erreur Apollo: {e}")
         return "email@inconnu.fr"
 
 def generate_email(fullName, company):
@@ -99,7 +106,7 @@ async def process_prospect(websocket):
     try:
         async for message in websocket:
             data = json.loads(message)
-            logger.info(f"Message reçu: {data}")
+            print(f"Message reçu: {data}")
 
             linkedin_url = data.get("linkedinURL", "")
 
@@ -113,6 +120,7 @@ async def process_prospect(websocket):
                 else:
                     generated_email = ""
 
+                print(f"Envoi réponse: {json.dumps(data)}")
                 data.update({
                     "fullName": linkedin_info["fullName"],
                     "email": email,
@@ -128,28 +136,29 @@ async def process_prospect(websocket):
                 })
 
             response = json.dumps(data)
-            logger.info(f"Envoi réponse: {response}")
+            print(f"Envoi réponse: {response}")
+            print("")
             await websocket.send(response)
 
     except websockets.exceptions.ConnectionClosed:
-        logger.info("Connexion WebSocket fermée normalement")
+        print("Connexion WebSocket fermée normalement")
     except Exception as e:
-        logger.error(f"Erreur WebSocket: {e}")
+        print(f"Erreur WebSocket: {e}")
 
 async def main():
     host = "localhost"
     port = 9000
 
-    logger.info(f"Démarrage du serveur WebSocket sur {host}:{port}")
+    print(f"Démarrage du serveur WebSocket sur {host}:{port}")
 
     async with websockets.serve(process_prospect, host, port, ping_interval=None):
-        logger.info("🚀 Serveur WebSocket démarré avec succès")
+        print("🚀 Serveur WebSocket démarré avec succès")
         await asyncio.Future()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("Arrêt du serveur")
+        print("Arrêt du serveur")
     except Exception as e:
-        logger.error(f"Erreur fatale: {e}")
+        print(f"Erreur fatale: {e}")
