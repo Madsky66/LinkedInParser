@@ -25,150 +25,85 @@ logger = logging.getLogger(__name__)
 
 class LinkedInScraper:
     def __init__(self):
-        self.scraper = cloudscraper.create_scraper(
-            browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
-        )
         self.setup_selenium()
 
-    def setup_selenium(self):
-        """Configure Selenium avec undetected-chromedriver"""
+def setup_selenium(self):
+    """Configure Selenium avec undetected-chromedriver et démarre un navigateur"""
+    try:
         options = uc.ChromeOptions()
-        options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_argument('--start-maximized')
+
+        # Démarre le navigateur
         self.driver = uc.Chrome(options=options)
+        logger.info("✅ Navigateur Selenium démarré avec succès")
 
-    async def extract_linkedin_info(self, url: str) -> Dict[str, str]:
-        """Extraction avec plusieurs méthodes"""
-        methods = [
-            self.extract_with_cloudscraper,
-            self.extract_with_selenium,
-            self.extract_with_httpx
-        ]
+        # Accède à LinkedIn
+        self.driver.get("https://www.linkedin.com/login")
+        logger.info("🔗 Accès à la page de connexion LinkedIn")
 
-        for method in methods:
-            try:
-                result = await method(url)
-                if result["fullName"] != "Nom Inconnu":
-                    return result
-                await asyncio.sleep(random.uniform(2, 4))
-            except Exception as e:
-                logger.error(f"Méthode {method.__name__} échouée: {e}")
-                continue
-
-        return {"fullName": "Nom Inconnu", "company": ""}
-
-    async def extract_with_cloudscraper(self, url: str) -> Dict[str, str]:
-        """Extraction avec cloudscraper"""
-        response = self.scraper.get(
-            url,
-            headers=self.get_random_headers(),
-            proxies=self.get_random_proxy()
+        # Attendez que l'utilisateur se connecte manuellement
+        WebDriverWait(self.driver, 120).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[role='combobox']"))
         )
-        return self.parse_linkedin_content(response.text)
+        logger.info("✅ Connexion LinkedIn réussie")
+    except Exception as e:
+        logger.error(f"❌ Erreur lors du démarrage de Selenium : {e}")
+        raise
 
-    async def extract_with_selenium(self, url: str) -> Dict[str, str]:
-        """Extraction avec Selenium"""
+    async def extract_linkedin_info(self, url: str = None) -> Dict[str, str]:
+        """Extraction depuis la page active du navigateur"""
         try:
-            self.driver.get(url)
+            # Si aucune URL n'est fournie, on utilise la page active
+            if not url:
+                url = self.driver.current_url
+
+            if not url or "linkedin.com" not in url:
+                return {"fullName": "Nom Inconnu", "company": "", "error": "Page LinkedIn non détectée"}
+
+            # Attente des éléments
             WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
 
-            name_element = WebDriverWait(self.driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'h1.text-heading-xlarge'))
-            )
-            company_element = self.driver.find_element(By.CSS_SELECTOR, '.experience-section .pv-entity__secondary-title')
+            # Extraction des données
+            try:
+                name_element = WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'h1.text-heading-xlarge'))
+                )
+                name = name_element.text.strip()
+            except:
+                name = "Nom Inconnu"
+
+            try:
+                company_element = self.driver.find_element(By.CSS_SELECTOR, '.experience-section .pv-entity__secondary-title')
+                company = company_element.text.strip()
+            except:
+                company = ""
+
+            # Extraction de l'email si visible
+            try:
+                email_element = self.driver.find_element(By.CSS_SELECTOR, '.pv-contact-info__contact-type.ci-email .pv-contact-info__contact-link')
+                email = email_element.text.strip()
+            except:
+                email = ""
 
             return {
-                "fullName": name_element.text.strip(),
-                "company": company_element.text.strip() if company_element else ""
+                "fullName": name,
+                "company": company,
+                "email": email,
+                "status": "completed"
             }
+
         except Exception as e:
-            logger.error(f"Erreur Selenium: {e}")
-            raise
+            logger.error(f"Erreur lors de l'extraction: {e}")
+            return {"fullName": "Nom Inconnu", "company": "", "error": str(e)}
 
-    async def extract_with_httpx(self, url: str) -> Dict[str, str]:
-        """Extraction avec HTTPX"""
-        headers = self.get_random_headers()
-        proxy = self.get_random_proxy()
-
-        async with httpx.AsyncClient(
-                headers=headers,
-                proxies=proxy,
-                follow_redirects=True,
-                timeout=30.0
-        ) as client:
-            response = await client.get(url)
-            return self.parse_linkedin_content(response.text)
-
-    def get_random_headers(self) -> Dict[str, str]:
-        """Génère des headers aléatoires"""
-        ua = UserAgent()
-        return {
-            'User-Agent': ua.random,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': f"{random.choice(['en-US', 'fr-FR', 'en-GB'])},en;q=0.5",
-            'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1',
-            'Cache-Control': 'max-age=0'
-        }
-
-    def get_random_proxy(self) -> Dict[str, str]:
-        """Retourne un proxy aléatoire"""
-        proxies = [
-
-        ]
-        proxy = random.choice(proxies)
-        return {"http://": proxy, "https://": proxy}
-
-    def parse_linkedin_content(self, content: str) -> Dict[str, str]:
-        """Parse le contenu LinkedIn"""
-        soup = BeautifulSoup(content, 'html.parser')
-
-        name_selectors = [
-            'h1.text-heading-xlarge',
-            'h1.top-card-layout__title',
-            'h1[class*="name"]',
-            '.profile-topcard-person-entity__name'
-        ]
-
-        company_selectors = [
-            '.experience-section .pv-entity__secondary-title',
-            '.experience-group .pv-entity__company-summary-info',
-            '.pv-top-card-section__company',
-            '.profile-topcard-person-entity__current-role'
-        ]
-
-        name = None
-        for selector in name_selectors:
-            element = soup.select_one(selector)
-            if element:
-                name = element.get_text().strip()
-                break
-
-        company = None
-        for selector in company_selectors:
-            element = soup.select_one(selector)
-            if element:
-                company = element.get_text().strip()
-                break
-
-        return {
-            "fullName": name or "Nom Inconnu",
-            "company": company or ""
-        }
-
-    def __del__(self):
-        """Nettoyage des ressources"""
-        if hasattr(self, 'driver'):
-            self.driver.quit()
+    async def get_current_profile(self) -> Dict[str, str]:
+        """Récupère les informations du profil actuellement ouvert"""
+        return await self.extract_linkedin_info()
 
 # Initialisation du scraper
 linkedin_scraper = LinkedInScraper()

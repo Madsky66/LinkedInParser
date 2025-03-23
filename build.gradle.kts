@@ -3,8 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("jvm") version "1.9.0"
     kotlin("plugin.serialization") version "1.9.0"
-    id("org.jetbrains.compose")
-    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.compose") version "1.5.10"
 }
 
 group = "com.madsky"
@@ -19,7 +18,6 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("org.jetbrains.compose.material:material:1.5.10")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
@@ -62,4 +60,28 @@ compose.desktop {
             licenseFile.set(project.file("src/main/resources/extra/LICENSE.txt"))
         }
     }
+}
+
+// Tâche pour compiler le serveur Python
+tasks.register<Exec>("buildPythonServer") {
+    workingDir = project.projectDir
+
+    commandLine = if (System.getProperty("os.name").lowercase().contains("windows")) {
+        listOf("python", "build_server.py")
+    } else {
+        listOf("python3", "build_server.py")
+    }
+
+    doFirst {
+        println("🔨 Compilation du serveur Python...")
+    }
+
+    doLast {
+        println("✅ Serveur Python compilé avec succès")
+    }
+}
+
+// Configuration de la tâche run
+tasks.named("run") {
+    dependsOn("buildPythonServer")
 }

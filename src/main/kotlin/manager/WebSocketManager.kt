@@ -53,37 +53,35 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
         latch.await()
         return result
     }
-}
 
-fun sendToPythonOverWebSocket(prospect: ProspectData, onResult: (String) -> Unit) {
-    try {
-        val webSocket = WebSocketManager(URI("ws://localhost:9000"), onResult)
-        println("🔗 Tentative de connexion WebSocket...")
-        val connected = webSocket.connectBlocking(5, TimeUnit.SECONDS)
-
-        if (connected && webSocket.isOpen) {
-            println("✅ Connexion établie avec le serveur WebSocket")
-            val jsonData = Json.encodeToString(prospect)
-            println("📤 Envoi des données : $jsonData")
-            webSocket.send(jsonData)
-
-            thread {
-                try {
-                    val result = webSocket.waitForResult()
-                    println("📥 Réponse reçue : $result")
-                    onResult(result)
-                }
-                finally {webSocket.close()}
-            }
-        }
-        else {
-            println("❌ Connexion impossible - Vérifiez que le serveur Python est bien démarré")
-            onResult("⚠ Impossible de se connecter au serveur. Vérifiez que le serveur Python est démarré.")
+    fun requestCurrentProfile() {
+        if (this.isOpen) {
+            // Envoie une requête spéciale pour obtenir le profil actuel
+            val request = Json.encodeToString(ProspectData(
+                linkedinURL = "",
+                status = "request_current"
+            ))
+            this.send(request)
         }
     }
-    catch (e: Exception) {
-        println("❌ Erreur WebSocket : ${e.message}")
-        e.printStackTrace()
+}
+
+fun startProfileMonitoring(onResult: (String) -> Unit) {
+    try {
+        val webSocket = WebSocketManager(URI("ws://localhost:9000"), onResult)
+        println("🔗 Démarrage du monitoring du profil...")
+
+        if (webSocket.connectBlocking(5, TimeUnit.SECONDS)) {
+            // Démarre un thread pour le monitoring
+            thread {
+                while (webSocket.isOpen) {
+                    webSocket.requestCurrentProfile()
+                    Thread.sleep(2000) // Vérifie toutes les 2 secondes
+                }
+            }
+        }
+    } catch (e: Exception) {
+        println("❌ Erreur de connexion WebSocket: ${e.message}")
         onResult("⚠ Erreur de connexion au serveur WebSocket.")
     }
 }
