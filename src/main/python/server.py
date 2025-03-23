@@ -10,6 +10,7 @@ import random
 import time
 from typing import Dict, Optional
 from fake_useragent import UserAgent
+import uuid
 
 # Configuration du logging
 logging.basicConfig(
@@ -44,85 +45,43 @@ PROXY_LIST = [
 async def extract_linkedin_info(url: str) -> Dict[str, str]:
     """Extrait les informations depuis LinkedIn."""
     try:
+        # Rotation des User-Agents
+        user_agent = random.choice(USER_AGENTS)
+
+        # Délai aléatoire pour éviter la détection
         await asyncio.sleep(random.uniform(2, 5))
+
         headers = {
-            'User-Agent': random.choice(USER_AGENTS),
+            'User-Agent': user_agent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://www.google.com/',
             'DNT': '1',
             'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0'
         }
 
-        logger.info(f"Attempting to extract info from LinkedIn URL: {url}")
+        # Cookies pour simuler une session
+        cookies = {
+            'li_at': '',  # Idéalement, un cookie de session valide
+            'JSESSIONID': f'"ajax:{random.randint(100000, 999999)}"',
+            'bcookie': f'"v=2&{uuid.uuid4()}"'
+        }
 
         async with httpx.AsyncClient(
                 headers=headers,
+                cookies=cookies,
                 follow_redirects=True,
                 timeout=30.0,
-                verify=False  # Désactive la vérification SSL pour le test
+                verify=False  # Désactiver la vérification SSL peut aider
         ) as client:
-            logger.debug(f"Sending GET request to {url}")
             response = await client.get(url)
 
-            # Log de la réponse
-            logger.debug(f"Response status: {response.status_code}")
-            logger.debug(f"Response headers: {response.headers}")
-
             if response.status_code == 999:
-                logger.error("LinkedIn is blocking our request. Consider using a proxy.")
-                return {"fullName": DEFAULT_NAME, "company": ""}
+                logger.error("LinkedIn is blocking our request (Error 999)")
 
             response.raise_for_status()
-
-            # Log du contenu de la réponse (premiers caractères)
-            content = response.text
-            logger.debug(f"Response content preview: {content[:200]}...")
-
-            soup = BeautifulSoup(content, 'html.parser')
-
-            # Recherche du nom avec logging
-            name_selectors = [
-                ('h1', {'class_': 'text-heading-xlarge'}),
-                ('h1', {'class_': 'top-card-layout__title'}),
-                ('span', {'class_': 'top-card-layout__title'}),
-                ('h1', {'class_': 'text-heading-xlarge inline t-24 v-align-middle break-words'})
-            ]
-
-            full_name = DEFAULT_NAME
-            for selector in name_selectors:
-                try:
-                    name_element = soup.find(selector[0], selector[1])
-                    if name_element:
-                        full_name = name_element.text.strip()
-                        logger.info(f"Found name: {full_name}")
-                        break
-                except Exception as e:
-                    logger.debug(f"Error with selector {selector}: {e}")
-
-            # Recherche de l'entreprise avec logging
-            company_selectors = [
-                ('span', {'class_': 'top-card-layout__company'}),
-                ('div', {'class_': 'experience-item__subtitle'}),
-                ('span', {'class_': 'top-card-layout__headline'})
-            ]
-
-            company = ""
-            for selector in company_selectors:
-                try:
-                    company_element = soup.find(selector[0], selector[1])
-                    if company_element:
-                        company = company_element.text.strip()
-                        logger.info(f"Found company: {company}")
-                        break
-                except Exception as e:
-                    logger.debug(f"Error with selector {selector}: {e}")
-
-            return {
-                "fullName": full_name,
-                "company": company
-            }
 
     except httpx.TimeoutException:
         logger.error("Request timed out while accessing LinkedIn")
@@ -141,30 +100,46 @@ def load_api_key() -> str:
             raise FileNotFoundError(f"Key file not found at {key_file_path}")
 
         with open(key_file_path, "r") as key_file:
-            content = key_file.read().strip()
+            api_key = key_file.read().strip()
 
-            # Nettoyage de la clé
-            api_key = content.replace('API_APOLLO_KEY = ', '').strip('"').strip("'").strip()
-
-            if not api_key:
-                raise ValueError("API key is empty")
+            if not api_key or len(api_key) < 20:
+                raise ValueError("Invalid API key format")
 
             logger.info("API key loaded successfully")
-            logger.debug(f"API key length: {len(api_key)}")
-
             return api_key
     except Exception as e:
         logger.error(f"Error loading API key: {e}")
         raise
+
+async def validate_apollo_api():
+    """Valide la clé API Apollo au démarrage."""
+    try:
+        api_url = "https://api.apollo.io/v1/auth/health"
+        headers = {"Authorization": f"Bearer {API_APOLLO_KEY}"}
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(api_url, headers=headers)
+
+            if response.status_code == 200:
+                logger.info("Apollo API key validated successfully")
+                return True
+            else:
+                logger.error(f"Apollo API key validation failed: {response.status_code}")
+                return False
+
+    except Exception as e:
+        logger.error(f"Apollo API validation error: {e}")
+        return False
 
 async def get_email_from_apollo(linkedin_url: str, company: str = "") -> str:
     """Récupère l'email depuis Apollo."""
     try:
         api_url = "https://api.apollo.io/api/v1/people/match"
 
-        # Log de la clé API (masquée)
-        masked_key = f"{API_APOLLO_KEY[:4]}...{API_APOLLO_KEY[-4:]}" if len(API_APOLLO_KEY) > 8 else "***"
-        logger.debug(f"Using Apollo API key: {masked_key}")
+        # Vérification de la clé API
+        if not API_APOLLO_KEY or len(API_APOLLO_KEY) < 20:
+            logger.error("Invalid or missing Apollo API key")
+            return DEFAULT_EMAIL
 
         headers = {
             "Authorization": f"Bearer {API_APOLLO_KEY}",
@@ -173,36 +148,28 @@ async def get_email_from_apollo(linkedin_url: str, company: str = "") -> str:
         }
 
         params = {
+            "api_key": API_APOLLO_KEY,
             "linkedin_url": linkedin_url,
             "organization_name": company,
             "reveal_personal_emails": True
         }
 
-        logger.debug(f"Sending Apollo API request with params: {params}")
-
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(api_url, json=params, headers=headers)
 
-            # Log de la réponse
-            logger.debug(f"Apollo API response status: {response.status_code}")
-            logger.debug(f"Apollo API response headers: {response.headers}")
-
-            if response.status_code == 401:
-                logger.error("Invalid Apollo API key. Please check your credentials.")
+            if response.status_code != 200:
+                logger.error(f"Apollo API error: {response.status_code} - {response.text}")
                 return DEFAULT_EMAIL
 
-            response.raise_for_status()
             data = response.json()
 
-            logger.debug(f"Apollo API response data: {data}")
+            # Log plus détaillé de la réponse
+            logger.debug(f"Apollo API success response: {data}")
 
-            email = data.get("email")
-            if not email and "person" in data:
-                email = data["person"].get("email")
-            if not email:
-                email = next((e for e in data.get("emails", []) if e), None)
+            if "person" in data and data["person"]:
+                return data["person"].get("email", DEFAULT_EMAIL)
 
-            return email if email else DEFAULT_EMAIL
+            return DEFAULT_EMAIL
 
     except Exception as e:
         logger.error(f"Apollo API error: {str(e)}", exc_info=True)
@@ -290,15 +257,23 @@ async def process_prospect(websocket):
 
 async def main():
     """Point d'entrée principal du serveur."""
-    logger.info(f"Starting WebSocket server on {WEBSOCKET_HOST}:{WEBSOCKET_PORT}")
+    try:
+        # Validation de l'API Apollo
+        if not await validate_apollo_api():
+            logger.error("Failed to validate Apollo API key. Exiting...")
+            return
 
-    async with websockets.serve(process_prospect, WEBSOCKET_HOST, WEBSOCKET_PORT, ping_interval=None):
-        logger.info("🚀 WebSocket server started successfully")
-        await asyncio.Future()
+        logger.info(f"Starting WebSocket server on {WEBSOCKET_HOST}:{WEBSOCKET_PORT}")
+        async with websockets.serve(process_prospect, WEBSOCKET_HOST, WEBSOCKET_PORT, ping_interval=None):
+            logger.info("🚀 WebSocket server started successfully")
+            await asyncio.Future()
+
+    except Exception as e:
+        logger.error(f"Server startup error: {e}")
+        raise
 
 if __name__ == "__main__":
     try:
-        # Chargement de la clé API au démarrage
         API_APOLLO_KEY = load_api_key()
         asyncio.run(main())
     except KeyboardInterrupt:
