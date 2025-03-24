@@ -14,13 +14,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
-import kotlinx.serialization.json.Json
 import manager.WebSocketManager
 import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebView
-import kotlinx.coroutines.withTimeoutOrNull
+import manager.JavaFxManager
 import javax.swing.JPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
