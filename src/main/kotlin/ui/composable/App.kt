@@ -42,6 +42,7 @@ fun App(windowState: WindowState) {
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
+    var webViewReady by remember {mutableStateOf(false)}
 
     // Initialiser JavaFX WebView
     val jfxPanel = remember {JFXPanel()}
@@ -49,24 +50,50 @@ fun App(windowState: WindowState) {
 
     LaunchedEffect(Unit) {
         Platform.runLater {
-            val newWebView = WebView()
+            val newWebView = WebView().apply {
+                engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                engine.load("https://www.linkedin.com/login")
+                engine.locationProperty().addListener {_, _, newLocation ->
+                    if (newLocation != null && newLocation.contains("linkedin.com/in/")) {
+                        urlInput = newLocation
+                        currentProfile = null
+                        statusMessage = "⏳ Analyse du profil en cours..."
+                        isLoading = true
+                        WebSocketManager.sendProfileRequest(newLocation)
+                    }
+                }
+            }
+
             val scene = Scene(newWebView)
             jfxPanel.scene = scene
             webView = newWebView
-            newWebView.engine.load("https://www.linkedin.com/login")
+            webViewReady = true
         }
     }
 
     LaunchedEffect(Unit) {
         WebSocketManager.initialize {result ->
             try {
-                val profile = Json.decodeFromString<ProspectData>(result)
-                currentProfile = profile
-                statusMessage = "✅ Profil mis à jour"
+                val profile = Json {ignoreUnknownKeys = true}.decodeFromString<ProspectData>(result)
+                when (profile.status) {
+                    "completed" -> {
+                        currentProfile = profile
+                        statusMessage = "✅ Profil mis à jour"
+                    }
+                    "error" -> {
+                        statusMessage = "❌ Erreur: ${profile.error ?: "Erreur inconnue"}"
+                        currentProfile = null
+                    }
+                    else -> {
+                        statusMessage = "⏳ En cours..."
+                        currentProfile = null
+                    }
+                }
                 isLoading = false
             }
             catch (e: Exception) {
-                statusMessage = "❌ Erreur: ${e.message}"
+                statusMessage = "❌ Erreur de désérialisation: ${e.message}"
+                currentProfile = null
                 isLoading = false
             }
         }

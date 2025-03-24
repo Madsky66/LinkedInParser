@@ -16,5 +16,6 @@ data class ProspectData(
     val position: String = "",
     val source: String = "LinkedIn",
     val dateAdded: String = LocalDateTime.now().toString(),
-    val lastUpdated: String = LocalDateTime.now().toString()
+    val lastUpdated: String = LocalDateTime.now().toString(),
+    val error: String? = null
 )
