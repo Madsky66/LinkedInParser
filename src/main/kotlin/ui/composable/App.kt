@@ -11,9 +11,9 @@ import manager.GoogleSheetsManager
 import manager.WebSocketManager
 import ui.composable.ProspectCard
 import javax.swing.JPanel
-import java.awt.BorderLayout
 import javax.swing.JEditorPane
 import javax.swing.event.HyperlinkEvent
+import java.awt.BorderLayout
 
 @Composable
 fun App() {
@@ -26,9 +26,11 @@ fun App() {
             val editorPane = JEditorPane().apply {
                 contentType = "text/html"
                 isEditable = false
-                addHyperlinkListener {e -> if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
-                    try {setPage(e.url)}
-                    catch (ex: Exception) {text = "Erreur de chargement: ${ex.message}"}}
+                addHyperlinkListener {e ->
+                    if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                        try {setPage(e.url)}
+                        catch (ex: Exception) {text = "Erreur de chargement: ${ex.message}"}
+                    }
                 }
             }
 
