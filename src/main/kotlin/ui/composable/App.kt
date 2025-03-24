@@ -61,11 +61,17 @@ fun App(windowState: WindowState) {
                 webView?.apply {
                     engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
                     engine.load("https://www.linkedin.com/login")
-
-                    engine.locationProperty().addListener {_, _, newLocation ->
+                    engine.locationProperty().addListener {_, oldLocation, newLocation ->
                         if (newLocation != null) {
                             Platform.runLater {
                                 urlInput = newLocation
+                                if (oldLocation?.contains("linkedin.com/login") == true &&
+                                    (newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home"))) {
+                                    coroutineScope.launch {
+                                        delay(1000)
+                                        Platform.runLater {engine.executeScript("window.location.href='https://www.linkedin.com/in/me/'")}
+                                    }
+                                }
                                 if (newLocation.contains("linkedin.com/in/")) {
                                     currentProfile = null
                                     statusMessage = "⏳ Analyse du profil en cours..."
@@ -75,6 +81,7 @@ fun App(windowState: WindowState) {
                             }
                         }
                     }
+                    engine.loadWorker.stateProperty().addListener {_, _, newState -> if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {Platform.runLater {jfxPanel.isVisible = true}}}
                 }
                 webViewReady = true
                 println("✅ WebView initialisée avec succès")
@@ -111,7 +118,6 @@ fun App(windowState: WindowState) {
                                 currentProfile = null
                                 statusMessage = "⏳ Analyse du profil en cours..."
                                 isLoading = true
-                                WebSocketManager.sendProfileRequest(urlInput)
                                 Platform.runLater {webView?.engine?.load(urlInput)}
                                 if (webSocketConnected) {WebSocketManager.sendProfileRequest(urlInput)}
                                 else {
@@ -186,7 +192,13 @@ fun App(windowState: WindowState) {
                             add(jfxPanel, BorderLayout.CENTER)
                             isOpaque = true
                             background = java.awt.Color.WHITE
+                            isVisible = true
                         }
+                    },
+                    update = {panel ->
+                        panel.preferredSize = Dimension(windowState.size.width.value.toInt() - 400, windowState.size.height.value.toInt())
+                        panel.revalidate()
+                        panel.repaint()
                     }
                 )
             }

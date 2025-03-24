@@ -126,7 +126,7 @@ class LinkedInScraper:
                     logger.error(f"Erreur lors de la fermeture du driver: {e}")
                 self.driver = None
 
-async def websocket_handler(websocket):
+async def websocket_handler(websocket, path):
     """Gère les connexions WebSocket"""
     logger.info("🔌 Nouvelle connexion WebSocket")
     scraper = LinkedInScraper()
