@@ -1,17 +1,21 @@
+package ui.composable
+
 import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
-import com.teamdev.jxbrowser.browser.Browser
-import com.teamdev.jxbrowser.view.swing.BrowserView
 import data.ProspectData
 import kotlinx.serialization.json.Json
 import manager.GoogleSheetsManager
 import manager.WebSocketManager
-import ui.composable.ProspectCard
+import javafx.application.Platform
+import javafx.embed.swing.JFXPanel
+import javafx.scene.Scene
+import javafx.scene.web.WebView
 import javax.swing.JPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -21,11 +25,21 @@ fun App() {
     var urlInput by remember {mutableStateOf("")}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
+    var isLoading by remember {mutableStateOf(false)}
 
-    // Initialiser le navigateur JxBrowser
-    val browser = remember {Browser.newInstance()}
-    browser.settings().javaScriptEnabled = true
-    val browserView = remember {BrowserView.newInstance(browser)}
+    // Initialiser JavaFX WebView
+    val jfxPanel = remember {JFXPanel()}
+    var webView by remember {mutableStateOf<WebView?>(null)}
+
+    LaunchedEffect(Unit) {
+        Platform.runLater {
+            val newWebView = WebView()
+            val scene = Scene(newWebView)
+            jfxPanel.scene = scene
+            webView = newWebView
+            newWebView.engine.load("https://www.linkedin.com/login")
+        }
+    }
 
     LaunchedEffect(Unit) {
         WebSocketManager.initialize {result ->
@@ -33,19 +47,13 @@ fun App() {
                 val profile = Json.decodeFromString<ProspectData>(result)
                 currentProfile = profile
                 statusMessage = "✅ Profil mis à jour"
+                isLoading = false
             }
-            catch (e: Exception) {statusMessage = "❌ Erreur: ${e.message}"}
+            catch (e: Exception) {
+                statusMessage = "❌ Erreur: ${e.message}"
+                isLoading = false
+            }
         }
-        browser.navigation().loadUrl("https://www.linkedin.com/login")
-    }
-
-    LaunchedEffect(Unit) {
-        browser.navigation().onLoadFinished {isLoading = false}
-        browser.navigation().loadUrl("https://www.linkedin.com/login")
-    }
-
-    if (isLoading) {
-        CircularProgressIndicator(Modifier.align(Alignment.Center))
     }
 
     MaterialTheme {
@@ -64,13 +72,11 @@ fun App() {
                         if (urlInput.isNotBlank()) {
                             currentProfile = null
                             statusMessage = "⏳ Analyse du profil en cours..."
+                            isLoading = true
                             WebSocketManager.sendProfileRequest(urlInput)
-                            browser.navigation().loadUrl(urlInput)
-                            browser.navigation().onLoadFailed {_, errorCode, errorDescription -> statusMessage = "❌ Erreur de chargement : $errorDescription ($errorCode)"}
+                            Platform.runLater {webView?.engine?.load(urlInput)}
                         }
-                        else {
-                            statusMessage = "⚠️ Veuillez entrer une URL LinkedIn valide"
-                        }
+                        else {statusMessage = "⚠️ Veuillez entrer une URL LinkedIn valide"}
                     },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     enabled = urlInput.isNotBlank()
@@ -98,9 +104,10 @@ fun App() {
             }
             // Partie droite (2/3 de l'écran) - Zone du navigateur
             Box(Modifier.weight(2f).fillMaxHeight().background(MaterialTheme.colors.surface)) {
+                if (isLoading) {CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))}
                 SwingPanel(
                     modifier = Modifier.fillMaxSize(),
-                    factory = {JPanel(BorderLayout()).apply {preferredSize = Dimension(800, 600); add(browserView, BorderLayout.CENTER)}}
+                    factory = {JPanel(BorderLayout()).apply {preferredSize = Dimension(800, 600); add(jfxPanel, BorderLayout.CENTER)}}
                 )
             }
         }
