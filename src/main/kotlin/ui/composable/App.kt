@@ -2,99 +2,74 @@ import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import data.ProspectData
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import kotlinx.serialization.json.Json
 import manager.GoogleSheetsManager
-import manager.startProfileMonitoring
+import manager.WebSocketManager
 import ui.composable.ProspectCard
 
 @Composable
 fun App() {
+    var urlInput by remember {mutableStateOf("")}
+    var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
-    var isMonitoring by remember {mutableStateOf(false)}
-    var errorMessage by remember {mutableStateOf("")}
-    var isLoading by remember {mutableStateOf(false)}
 
     LaunchedEffect(Unit) {
-        try {
-            startProfileMonitoring {result ->
-                try {
-                    isLoading = true
-                    val profile = Json.decodeFromString<ProspectData>(result)
-                    if (profile.fullName.isNotEmpty() && profile.fullName != "Nom Inconnu") {
-                        currentProfile = profile
-                        errorMessage = ""
-                    }
-                }
-                catch (e: Exception) {errorMessage = "⚠ Erreur: ${e.message}"}
-                finally {isLoading = false}
+        WebSocketManager.initialize {result ->
+            try {
+                val profile = Json.decodeFromString<ProspectData>(result)
+                currentProfile = profile
+                statusMessage = "✅ Profil mis à jour"
             }
+            catch (e: Exception) {statusMessage = "❌ Erreur: ${e.message}"}
         }
-        catch (e: Exception) {errorMessage = "⚠ Erreur de démarrage: ${e.message}"}
     }
 
     MaterialTheme {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .background(MaterialTheme.colors.background)
-        ) {
-            if (isLoading) {LinearProgressIndicator(Modifier.fillMaxWidth())}
-
-// Bouton pour démarrer/arrêter le monitoring
-            Button(
-                onClick = {
-                    if (!isMonitoring) {
-                        isMonitoring = true
-                        startProfileMonitoring { result ->
-                            try {
-                                val profile = Json.decodeFromString<ProspectData>(result)
-                                if (profile.fullName != "Nom Inconnu") {
-                                    currentProfile = profile
-                                    errorMessage = ""
-                                }
-                            }
-                            catch (e: Exception) {errorMessage = "⚠ Erreur: ${e.message}"}
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (isMonitoring) "Arrêter le monitoring" else "Démarrer le monitoring")
-            }
-
-            // Affichage du profil actuel
-            currentProfile?.let {profile ->
-                ProspectCard(profile)
-
-                // Bouton pour sauvegarder dans Google Sheets
+        Row(Modifier.fillMaxSize()) {
+            // Partie gauche (1/3 de l'écran)
+            Column(Modifier.weight(1f).padding(16.dp).fillMaxHeight()) {
+                Text("LinkedIn Parser Pro", Modifier.padding(bottom = 16.dp), style = MaterialTheme.typography.h5,)
+                OutlinedTextField(
+                    value = urlInput,
+                    onValueChange = {urlInput = it},
+                    label = {Text("URL du profil LinkedIn")},
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Button(
                     onClick = {
-                        try {
-                            GoogleSheetsManager().saveProspect(profile)
-                            errorMessage = "✅ Profil sauvegardé"
-                        }
-                        catch (e: Exception) {errorMessage = "⚠ Erreur lors de la sauvegarde: ${e.message}"}
+                        // Envoyer l'URL au WebSocket
+                        WebSocketManager.sendProfileRequest(urlInput)
+                        statusMessage = "Analyse du profil en cours..."
                     },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
-                    Text("Sauvegarder le profil")
+                    Text("Analyser le profil")
+                }
+                // Statut actuel
+                Card(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {Text(statusMessage, Modifier.padding(16.dp))}
+                // Affichage du profil actuel
+                currentProfile?.let {profile ->
+                    ProspectCard(profile)
+                    Button(
+                        onClick = {
+                            try {
+                                GoogleSheetsManager().saveProspect(profile)
+                                statusMessage = "✅ Profil sauvegardé dans Google Sheets"
+                            }
+                            catch (e: Exception) {statusMessage = "❌ Erreur: ${e.message}"}
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    ) {
+                        Text("Exporter vers Google Sheets")
+                    }
                 }
             }
-
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    errorMessage,
-                    Modifier.padding(top = 8.dp),
-                    color = if (errorMessage.startsWith("✅")) MaterialTheme.colors.primary else MaterialTheme.colors.error,
-                )
+            // Partie droite (2/3 de l'écran) - Zone du navigateur
+            Box(Modifier.weight(2f).fillMaxHeight().background(MaterialTheme.colors.surface)) {
+                // Cette zone sera occupée par Chrome via Selenium
             }
         }
     }

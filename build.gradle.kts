@@ -16,6 +16,10 @@ repositories {
     google()
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
