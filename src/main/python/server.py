@@ -70,14 +70,42 @@ class LinkedInScraper:
 async def websocket_handler(websocket, path):
     """Gère les connexions WebSocket"""
     logger.info("🔌 Nouvelle connexion WebSocket")
+    scraper = LinkedInScraper()
+
     try:
         async for message in websocket:
-            logger.info(f"📥 Message reçu : {message}")
-            await websocket.send(f"Message reçu : {message}")
+            try:
+                data = json.loads(message)
+                if "linkedinURL" in data:
+                    # Initialiser le driver Chrome
+                    chrome_path = os.environ.get("CHROME_PATH")
+                    options = uc.ChromeOptions()
+                    options.add_argument(f"--user-data-dir={chrome_path}")
+                    scraper.driver = uc.Chrome(options=options)
+
+                    # Naviguer vers l'URL
+                    scraper.driver.get(data["linkedinURL"])
+
+                    # Parser le profil
+                    result = scraper.parse_profile_info()
+                    result["linkedinURL"] = data["linkedinURL"]
+
+                    # Envoyer le résultat
+                    await websocket.send(json.dumps(result))
+
+                    # Fermer le navigateur
+                    scraper.driver.quit()
+            except Exception as e:
+                logger.error(f"❌ Erreur de traitement: {e}")
+                await websocket.send(json.dumps({
+                    "status": "error",
+                    "error": str(e)
+                }))
     except websockets.exceptions.ConnectionClosed:
         logger.info("🔌 Connexion WebSocket fermée")
-    except Exception as e:
-        logger.error(f"❌ Erreur WebSocket : {e}")
+    finally:
+        if hasattr(scraper, 'driver'):
+            scraper.driver.quit()
 
 async def start_server():
     """Démarre le serveur WebSocket sur un port disponible"""

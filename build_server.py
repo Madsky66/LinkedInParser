@@ -4,11 +4,8 @@ import sys
 
 def build_server():
     """Compile le serveur Python en executable"""
-    # Chemin absolu vers le script server.py
     script_path = os.path.join(os.getcwd(), 'src', 'main', 'python', 'server.py')
     output_path = os.path.join(os.getcwd(), 'src', 'main', 'resources', 'extra')
-
-    # Assurez-vous que le dossier de sortie existe
     os.makedirs(output_path, exist_ok=True)
 
     PyInstaller.__main__.run([

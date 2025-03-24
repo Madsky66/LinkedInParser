@@ -3,12 +3,16 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
 import data.ProspectData
 import kotlinx.serialization.json.Json
 import manager.GoogleSheetsManager
 import manager.WebSocketManager
 import ui.composable.ProspectCard
+import java.awt.Canvas
+import javax.swing.JPanel
+import java.awt.BorderLayout
 
 @Composable
 fun App() {
@@ -40,7 +44,6 @@ fun App() {
                 )
                 Button(
                     onClick = {
-                        // Envoyer l'URL au WebSocket
                         WebSocketManager.sendProfileRequest(urlInput)
                         statusMessage = "Analyse du profil en cours..."
                     },
@@ -69,7 +72,10 @@ fun App() {
             }
             // Partie droite (2/3 de l'écran) - Zone du navigateur
             Box(Modifier.weight(2f).fillMaxHeight().background(MaterialTheme.colors.surface)) {
-                // Cette zone sera occupée par Chrome via Selenium
+                SwingPanel(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = {JPanel(BorderLayout()).apply {add(Canvas(), BorderLayout.CENTER)}}
+                )
             }
         }
     }

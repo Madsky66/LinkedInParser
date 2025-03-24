@@ -22,8 +22,12 @@ kotlin {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    implementation(compose.material)
+    implementation(compose.runtime)
+    implementation(compose.foundation)
+    implementation(compose.ui)
+
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("org.jetbrains.compose.material:material:1.5.10")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
     implementation("com.google.apis:google-api-services-sheets:v4-rev20220927-2.0.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
