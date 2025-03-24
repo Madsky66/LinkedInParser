@@ -2,6 +2,8 @@ package ui.composable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -125,8 +127,10 @@ fun App(windowState: WindowState) {
                     else {if (currentProfile != null) {ProspectCard(currentProfile!!)} else {EmptyProspectCard()}}
                 }
             }
-            // Zone du navigateur
-            Box(Modifier.weight(1f).fillMaxHeight().background(MaterialTheme.colors.background)) {
+
+            Box(Modifier.weight(2f).fillMaxHeight().background(MaterialTheme.colors.surface)) {
+                if (isLoading) {CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))}
+
                 SwingPanel(
                     modifier = Modifier.fillMaxSize(),
                     factory = {
