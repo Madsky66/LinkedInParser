@@ -158,6 +158,7 @@ async def websocket_handler(websocket, path):
 
 async def start_server():
     """Démarre le serveur WebSocket sur un port disponible"""
+    await asyncio.sleep(2)
     port = 9000
     max_attempts = 10
 

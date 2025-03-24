@@ -31,12 +31,18 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
                     val port = getWebSocketPort()
                     val uri = URI("ws://127.0.0.1:$port")
                     instance = WebSocketManager(uri, onResult)
-                    val connected = instance?.connectBlocking(5, TimeUnit.SECONDS)
-                    if (connected != true) {
-                        println("❌ Échec de connexion au WebSocket")
-                        instance = null
+                    var attempts = 0
+                    while (attempts < 5) {
+                        val connected = instance?.connectBlocking(2, TimeUnit.SECONDS)
+                        if (connected == true) {
+                            println("✅ Connecté au serveur WebSocket sur le port $port")
+                            return
+                        }
+                        attempts++
+                        Thread.sleep(1000)
                     }
-                    else {println("✅ Connecté au serveur WebSocket sur le port $port")}
+                    println("❌ Échec de connexion au WebSocket après 5 tentatives")
+                    instance = null
                 }
                 catch (e: Exception) {
                     println("❌ Erreur lors de l'initialisation du WebSocket: ${e.message}")

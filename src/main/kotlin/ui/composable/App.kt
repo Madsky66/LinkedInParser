@@ -55,11 +55,15 @@ fun App(windowState: WindowState) {
             coroutineScope.launch {
                 try {
                     val result = Json.decodeFromString<ProspectData>(resultJson)
+                    println("📥 Données reçues : $result")
                     currentProfile = result
                     isLoading = false
-                    statusMessage = if (result.status == "completed") {"✅ Profil récupéré avec succès"}
-                    else if (result.status == "error") {"❌ Erreur: ${result.error ?: "Inconnue"}"}
-                    else {"⚠️ Statut inattendu: ${result.status}"}
+                    statusMessage =
+                        when (result.status) {
+                            "completed" -> "✅ Profil récupéré avec succès"
+                            "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
+                            else -> "⚠️ Statut inattendu: ${result.status}"
+                        }
                 }
                 catch (e: Exception) {
                     isLoading = false
@@ -151,6 +155,8 @@ fun App(windowState: WindowState) {
                                 windowState.size.height.value.toInt()
                             )
                             add(jfxPanel, BorderLayout.CENTER)
+                            isOpaque = true
+                            background = java.awt.Color.WHITE
                         }
                     }
                 )
