@@ -1,10 +1,14 @@
 import os
 import json
+import time
 import logging
 import asyncio
 import websockets
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
-import time
 
 # Configuration du logging
 logging.basicConfig(
@@ -93,12 +97,9 @@ class LinkedInScraper:
             logger.error(f"❌ Erreur lors du parsing: {e}")
             return {
                 "status": "error",
-                "error": str(e)
+                "error": str(e),
+                "linkedinURL": url
             }
-        finally:
-            if self.driver:
-                self.driver.quit()
-                self.driver = None
 
 async def websocket_handler(websocket, path):
     """Gère les connexions WebSocket"""
@@ -109,36 +110,32 @@ async def websocket_handler(websocket, path):
         async for message in websocket:
             try:
                 data = json.loads(message)
-                if "linkedinURL" in data:
-                    # Initialiser le driver Chrome
-                    chrome_path = os.environ.get("CHROME_PATH")
-                    options = uc.ChromeOptions()
-                    options.add_argument(f"--user-data-dir={chrome_path}")
-                    scraper.driver = uc.Chrome(options=options)
+                if "linkedinURL" in data and data.get("status") == "request":
+                    logger.info(f"📥 Requête reçue pour l'URL: {data['linkedinURL']}")
 
-                    # Naviguer vers l'URL
-                    scraper.driver.get(data["linkedinURL"])
+                    # Initialiser le scraper si nécessaire
+                    if not scraper.driver:
+                        scraper.initialize_driver()
 
                     # Parser le profil
-                    result = scraper.parse_profile_info()
-                    result["linkedinURL"] = data["linkedinURL"]
+                    result = scraper.parse_profile_info(data["linkedinURL"])
 
                     # Envoyer le résultat
                     await websocket.send(json.dumps(result))
-
-                    # Fermer le navigateur
-                    scraper.driver.quit()
+                    logger.info(f"📤 Résultat envoyé: {result['status']}")
             except Exception as e:
                 logger.error(f"❌ Erreur de traitement: {e}")
                 await websocket.send(json.dumps({
                     "status": "error",
-                    "error": str(e)
+                    "error": str(e),
+                    "linkedinURL": data.get("linkedinURL", "")
                 }))
     except websockets.exceptions.ConnectionClosed:
         logger.info("🔌 Connexion WebSocket fermée")
     finally:
-        if hasattr(scraper, 'driver'):
+        if scraper.driver:
             scraper.driver.quit()
+            logger.info("🔌 Driver Chrome fermé")
 
 async def start_server():
     """Démarre le serveur WebSocket sur un port disponible"""

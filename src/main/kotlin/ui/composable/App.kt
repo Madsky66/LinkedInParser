@@ -42,6 +42,7 @@ fun App(windowState: WindowState) {
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
+    var isWebViewInitialized by remember {mutableStateOf(false)}
 
     // Initialiser JavaFX WebView
     val jfxPanel = remember {JFXPanel()}
@@ -54,6 +55,7 @@ fun App(windowState: WindowState) {
             jfxPanel.scene = scene
             webView = newWebView
             newWebView.engine.load("https://www.linkedin.com/login")
+            isWebViewInitialized = true
         }
     }
 
@@ -93,7 +95,7 @@ fun App(windowState: WindowState) {
                     ),
                     trailingIcon = {
                         IconButton(onClick = {
-                            if (urlInput.isNotBlank()) {
+                            if (urlInput.isNotBlank() && isWebViewInitialized) {
                                 currentProfile = null
                                 statusMessage = "⏳ Analyse du profil en cours..."
                                 isLoading = true

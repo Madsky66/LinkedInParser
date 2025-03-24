@@ -48,6 +48,7 @@ fun EmptyProspectCard() {
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
             )
+            Spacer(Modifier.height(8.dp))
             Text(
                 "Entrez une URL LinkedIn pour commencer",
                 style = MaterialTheme.typography.body2,

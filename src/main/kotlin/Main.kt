@@ -26,8 +26,7 @@ fun main() = application {
             exitApplication()
         },
         title = "LinkedIn Parser",
-        state = windowState,
-        onPreviewKeyEvent = {false}
+        state = windowState
     ) {
         App(windowState)
     }
@@ -57,7 +56,7 @@ fun startPythonServer(): Process? {
 
         val serverPath =
             if (System.getProperty("os.name").lowercase().contains("windows")) {"src/main/resources/extra/server.exe"}
-        else {"src/main/resources/extra/server"}
+            else {"src/main/resources/extra/server"}
         val serverFile = File(serverPath)
         if (!serverFile.exists()) {throw Exception("Le fichier serveur n'existe pas: $serverPath")}
         if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {throw Exception("Impossible de rendre le serveur exécutable")}
