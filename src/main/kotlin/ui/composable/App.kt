@@ -12,15 +12,32 @@ import manager.WebSocketManager
 import ui.composable.ProspectCard
 import javax.swing.JPanel
 import java.awt.BorderLayout
-import java.awt.Color
-import javax.swing.SwingUtilities
+import javax.swing.JEditorPane
+import javax.swing.event.HyperlinkEvent
 
 @Composable
 fun App() {
     var urlInput by remember {mutableStateOf("")}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
-    var browserPanel by remember {mutableStateOf<JPanel?>(null)}
+
+    val webPanel = remember {
+        JPanel(BorderLayout()).apply {
+            val editorPane = JEditorPane().apply {
+                contentType = "text/html"
+                isEditable = false
+                addHyperlinkListener {e -> if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                    try {setPage(e.url)}
+                    catch (ex: Exception) {text = "Erreur de chargement: ${ex.message}"}}
+                }
+            }
+
+            try {editorPane.setPage("https://www.linkedin.com/login")}
+            catch (e: Exception) {editorPane.text = "Erreur de chargement de LinkedIn"}
+
+            add(editorPane, BorderLayout.CENTER)
+        }
+    }
 
     LaunchedEffect(Unit) {
         WebSocketManager.initialize {result ->
@@ -31,8 +48,6 @@ fun App() {
             }
             catch (e: Exception) {statusMessage = "❌ Erreur: ${e.message}"}
         }
-        // Initialiser le panel du navigateur
-        SwingUtilities.invokeLater {browserPanel = JPanel(BorderLayout()).apply {background = Color.WHITE}}
     }
 
     MaterialTheme {
@@ -81,7 +96,7 @@ fun App() {
             }
             // Partie droite (2/3 de l'écran) - Zone du navigateur
             Box(Modifier.weight(2f).fillMaxHeight().background(MaterialTheme.colors.surface)) {
-                browserPanel?.let {panel -> SwingPanel(modifier = Modifier.fillMaxSize(), factory = {panel})}
+                SwingPanel(modifier = Modifier.fillMaxSize(), factory = {webPanel})
             }
         }
     }

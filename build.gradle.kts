@@ -4,6 +4,7 @@ plugins {
     kotlin("jvm") version "1.9.0"
     kotlin("plugin.serialization") version "1.9.0"
     id("org.jetbrains.compose") version "1.7.3"
+    id("org.openjfx.javafxplugin") version "0.0.13"
 }
 
 group = "com.madsky"
@@ -38,8 +39,19 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
 
+    // JavaFX
+    implementation("org.openjfx:javafx-controls:19")
+    implementation("org.openjfx:javafx-web:19")
+    implementation("org.openjfx:javafx-swing:19")
+
+    // JxBrowser
     implementation("com.teamdev.jxbrowser:jxbrowser-cross-platform:7.37.1")
     implementation("com.teamdev.jxbrowser:jxbrowser-swing:7.37.1")
+}
+
+javafx {
+    version = "19"
+    modules = listOf("javafx.controls", "javafx.web", "javafx.swing")
 }
 
 compose.desktop {
