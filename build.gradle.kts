@@ -3,7 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("jvm") version "1.9.0"
     kotlin("plugin.serialization") version "1.9.0"
-    id("org.jetbrains.compose") version "1.5.15"
+    id("org.jetbrains.compose") version "1.7.3"
 }
 
 group = "com.madsky"
