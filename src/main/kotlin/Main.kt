@@ -95,9 +95,7 @@ fun stopPythonServer(process: Process?) {
                 Runtime.getRuntime().exec("taskkill /F /IM server.exe")
             }
             else {it.destroy()}
-            if (!it.waitFor(5, TimeUnit.SECONDS)) {
-                it.destroyForcibly()
-            }
+            if (!it.waitFor(5, TimeUnit.SECONDS)) {it.destroyForcibly()}
         }
     }
     catch (e: Exception) {println("❌ Erreur lors de l'arrêt du serveur: ${e.message}")}

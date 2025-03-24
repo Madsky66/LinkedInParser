@@ -13,14 +13,14 @@ import ui.composable.ProspectCard
 import javax.swing.JPanel
 import java.awt.BorderLayout
 import java.awt.Color
-import java.awt.Component
+import javax.swing.SwingUtilities
 
 @Composable
 fun App() {
     var urlInput by remember {mutableStateOf("")}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
-    var chromePanel by remember {mutableStateOf<Component?>(null)}
+    var browserPanel by remember {mutableStateOf<JPanel?>(null)}
 
     LaunchedEffect(Unit) {
         WebSocketManager.initialize {result ->
@@ -31,6 +31,8 @@ fun App() {
             }
             catch (e: Exception) {statusMessage = "❌ Erreur: ${e.message}"}
         }
+        // Initialiser le panel du navigateur
+        SwingUtilities.invokeLater {browserPanel = JPanel(BorderLayout()).apply {background = Color.WHITE}}
     }
 
     MaterialTheme {
@@ -79,10 +81,7 @@ fun App() {
             }
             // Partie droite (2/3 de l'écran) - Zone du navigateur
             Box(Modifier.weight(2f).fillMaxHeight().background(MaterialTheme.colors.surface)) {
-                SwingPanel(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = {JPanel(BorderLayout()).apply {background = Color.WHITE}}
-                )
+                browserPanel?.let {panel -> SwingPanel(modifier = Modifier.fillMaxSize(), factory = {panel})}
             }
         }
     }

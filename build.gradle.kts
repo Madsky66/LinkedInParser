@@ -14,6 +14,7 @@ repositories {
     gradlePluginPortal()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
+    maven("https://europe-maven.pkg.dev/jxbrowser/releases")
 }
 
 kotlin {
@@ -36,6 +37,9 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.9")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+
+    implementation("com.teamdev.jxbrowser:jxbrowser-cross-platform:7.37.1")
+    implementation("com.teamdev.jxbrowser:jxbrowser-swing:7.37.1")
 }
 
 compose.desktop {
