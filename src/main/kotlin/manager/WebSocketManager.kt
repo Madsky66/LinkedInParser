@@ -8,11 +8,25 @@ import java.net.URI
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 import data.ProspectData
+import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSocketClient(uri) {
+    private val reconnectInterval = 5000L
+    private var shouldReconnect = true
     private val latch = CountDownLatch(1)
     var result: String = "En attente..."
+
+    init {this.connectionLostTimeout = 10}
+
+    private fun scheduleReconnect() {
+        if (shouldReconnect) {
+            Thread {
+                Thread.sleep(reconnectInterval)
+                try {reconnect()} catch (e: Exception) {scheduleReconnect()}
+            }.start()
+        }
+    }
 
     override fun onOpen(handshakedata: ServerHandshake?) {println("✅ Connecté au serveur WebSocket")}
 
@@ -36,52 +50,51 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
         }
     }
 
-    override fun onClose(code: Int, reason: String?, remote: Boolean) {
-        println("❌ WebSocket fermé : $reason")
-        latch.countDown()
-    }
-
-    override fun onError(ex: Exception?) {
-        ex?.let {
-            println("[WebSocket] Message : \"${it.message}\" | \"${it.stackTrace}\" | \"${it.cause}\"")
-            result = "⚠ Erreur de connexion au serveur WebSocket."
-            latch.countDown()
+        override fun onClose(code: Int, reason: String?, remote: Boolean) {
+            println("WebSocket fermé: $reason")
+            scheduleReconnect()
         }
-    }
 
-    fun waitForResult(): String {
-        latch.await()
-        return result
-    }
-
-    fun requestCurrentProfile() {
-        if (this.isOpen) {
-            // Envoie une requête spéciale pour obtenir le profil actuel
-            val request = Json.encodeToString(ProspectData(
-                linkedinURL = "",
-                status = "request_current"
-            ))
-            this.send(request)
-        }
-    }
-}
-
-fun startProfileMonitoring(onResult: (String) -> Unit) {
-    try {
-        val webSocket = WebSocketManager(URI("ws://localhost:9000"), onResult)
-        println("🔗 Démarrage du monitoring du profil...")
-
-        if (webSocket.connectBlocking(5, TimeUnit.SECONDS)) {
-            // Démarre un thread pour le monitoring
-            thread {
-                while (webSocket.isOpen) {
-                    webSocket.requestCurrentProfile()
-                    Thread.sleep(2000) // Vérifie toutes les 2 secondes
-                }
+        override fun onError(ex: Exception?) {
+            ex?.let {
+                println("[WebSocket] Message : \"${it.message}\" | \"${it.stackTrace}\" | \"${it.cause}\"")
+                result = "⚠ Erreur de connexion au serveur WebSocket."
+                latch.countDown()
             }
         }
-    } catch (e: Exception) {
-        println("❌ Erreur de connexion WebSocket: ${e.message}")
-        onResult("⚠ Erreur de connexion au serveur WebSocket.")
+
+        fun waitForResult(): String {
+            latch.await()
+            return result
+        }
+
+        fun requestCurrentProfile() {
+            if (this.isOpen) {
+                val request = Json.encodeToString(ProspectData(
+                    linkedinURL = "",
+                    status = "request_current"
+                ))
+                this.send(request)
+            }
+        }
     }
-}
+
+    fun startProfileMonitoring(onResult: (String) -> Unit) {
+        try {
+            val webSocket = WebSocketManager(URI("ws://localhost:9000"), onResult)
+            println("🔗 Démarrage du monitoring du profil...")
+
+            if (webSocket.connectBlocking(5, TimeUnit.SECONDS)) {
+                // Démarre un thread pour le monitoring
+                thread {
+                    while (webSocket.isOpen) {
+                        webSocket.requestCurrentProfile()
+                        Thread.sleep(2000) // Vérifie toutes les 2 secondes
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("❌ Erreur de connexion WebSocket: ${e.message}")
+            onResult("⚠ Erreur de connexion au serveur WebSocket.")
+        }
+    }

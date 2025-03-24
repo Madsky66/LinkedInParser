@@ -26,6 +26,8 @@ dependencies {
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
     implementation("org.slf4j:slf4j-api:2.0.9")
     implementation("org.slf4j:slf4j-simple:2.0.9")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
 }
 
 compose.desktop {
@@ -50,7 +52,8 @@ compose.desktop {
                 "src/main/resources/extra/apollo_key.txt",
                 "src/main/resources/extra/LICENSE.txt",
                 "src/main/resources/extra/icon.ico",
-                "src/main/resources/extra/server.exe"
+                "src/main/resources/extra/server.exe",
+                "src/main/resources/extra/chrome"
             )
 
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
@@ -60,28 +63,4 @@ compose.desktop {
             licenseFile.set(project.file("src/main/resources/extra/LICENSE.txt"))
         }
     }
-}
-
-// Tâche pour compiler le serveur Python
-tasks.register<Exec>("buildPythonServer") {
-    workingDir = project.projectDir
-
-    commandLine = if (System.getProperty("os.name").lowercase().contains("windows")) {
-        listOf("python", "build_server.py")
-    } else {
-        listOf("python3", "build_server.py")
-    }
-
-    doFirst {
-        println("🔨 Compilation du serveur Python...")
-    }
-
-    doLast {
-        println("✅ Serveur Python compilé avec succès")
-    }
-}
-
-// Configuration de la tâche run
-tasks.named("run") {
-    dependsOn("buildPythonServer")
 }
