@@ -40,9 +40,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
 
     // JavaFX
-    implementation("org.openjfx:javafx-controls:19")
-    implementation("org.openjfx:javafx-web:19")
-    implementation("org.openjfx:javafx-swing:19")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.7.3")
+    implementation("org.openjfx:javafx-controls:21.0.1")
+    implementation("org.openjfx:javafx-web:21.0.1")
+    implementation("org.openjfx:javafx-swing:21.0.1")
+
+    // Ajout de support pour le format br (Brotli)
+    implementation("org.brotli:dec:0.1.2")
 
     // JxBrowser
     implementation("com.teamdev.jxbrowser:jxbrowser-cross-platform:7.37.1")
@@ -50,7 +54,7 @@ dependencies {
 }
 
 javafx {
-    version = "19"
+    version = "21.0.1"
     modules = listOf("javafx.controls", "javafx.web", "javafx.swing")
 }
 
