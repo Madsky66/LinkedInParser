@@ -34,6 +34,8 @@ class LinkedInScraper:
             options.add_argument("--disable-gpu")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--disable-features=BlinkGenPropertyTrees")
 
             self.driver = uc.Chrome(options=options)
             return True
@@ -161,6 +163,17 @@ async def start_server():
     await asyncio.sleep(2)
     port = 9000
     max_attempts = 10
+    try:
+        import psutil
+        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+            for conn in proc.connections():
+                if conn.laddr.port == port and conn.status == 'LISTEN':
+                    logger.info(f"Killing process {proc.pid} using port {port}")
+                    psutil.Process(proc.pid).terminate()
+    except ImportError:
+        logger.warning("psutil not installed, skipping process cleanup")
+    except Exception as e:
+        logger.warning(f"Error during process cleanup: {e}")
 
     for attempt in range(max_attempts):
         try:
@@ -168,11 +181,10 @@ async def start_server():
                 websocket_handler,
                 "127.0.0.1",
                 port,
-                ping_interval=None  # Désactive les pings automatiques
+                ping_interval=None
             )
             logger.info(f"🚀 Serveur WebSocket démarré sur ws://127.0.0.1:{port}")
 
-            # Écrire le port utilisé dans un fichier
             with open("websocket_port.txt", "w") as f:
                 f.write(str(port))
 

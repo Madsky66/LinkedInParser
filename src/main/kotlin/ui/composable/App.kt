@@ -20,6 +20,7 @@ import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebView
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.swing.JPanel
 import java.awt.BorderLayout
@@ -50,29 +51,46 @@ fun App(windowState: WindowState) {
     val jfxPanel = remember {JFXPanel()}
     var webView by remember {mutableStateOf<WebView?>(null)}
 
+    // État pour suivre si le WebSocket est connecté
+    var webSocketConnected by remember {mutableStateOf(false)}
+
+    // Initialiser WebSocket avec retries
     LaunchedEffect(Unit) {
-        WebSocketManager.initialize {resultJson ->
-            coroutineScope.launch {
-                try {
-                    val result = Json.decodeFromString<ProspectData>(resultJson)
-                    println("📥 Données reçues : $result")
-                    currentProfile = result
-                    isLoading = false
-                    statusMessage =
-                        when (result.status) {
-                            "completed" -> "✅ Profil récupéré avec succès"
-                            "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
-                            else -> "⚠️ Statut inattendu: ${result.status}"
+        var attempts = 0
+        while (attempts < 5 && !webSocketConnected) {
+            try {
+                WebSocketManager.initialize {resultJson ->
+                    coroutineScope.launch {
+                        try {
+                            val result = Json.decodeFromString<ProspectData>(resultJson)
+                            println("📥 Données reçues : $result")
+                            currentProfile = result
+                            isLoading = false
+                            statusMessage =
+                                when (result.status) {
+                                    "completed" -> "✅ Profil récupéré avec succès"
+                                    "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
+                                    else -> "⚠️ Statut inattendu: ${result.status}"
+                                }
                         }
+                        catch (e: Exception) {
+                            isLoading = false
+                            statusMessage = "❌ Erreur de traitement des données: ${e.message}"
+                            println("Erreur de désérialisation: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    }
                 }
-                catch (e: Exception) {
-                    isLoading = false
-                    statusMessage = "❌ Erreur de traitement des données: ${e.message}"
-                    println("Erreur de désérialisation: ${e.message}")
-                    e.printStackTrace()
-                }
+                webSocketConnected = true
+                statusMessage = "✅ Connecté au serveur WebSocket"
+            }
+            catch (e: Exception) {
+                println("⚠️ Tentative de connexion WebSocket échouée: ${e.message}")
+                attempts++
+                delay(2000)
             }
         }
+        if (!webSocketConnected) {statusMessage = "❌ Impossible de se connecter au serveur WebSocket après 5 tentatives"}
     }
 
     LaunchedEffect(Unit) {
@@ -80,8 +98,13 @@ fun App(windowState: WindowState) {
             try {
                 val newWebView = WebView().apply {
                     engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                    engine.load("https://www.linkedin.com/login")
-                    engine.locationProperty().addListener {_, _, newLocation -> if (newLocation != null && newLocation.contains("linkedin.com/in/")) {Platform.runLater {urlInput = newLocation}}}
+                    engine.loadWorker.stateProperty().addListener {_, _, newState ->
+                        if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {
+                            println("✅ Page chargée: ${engine.location}")
+                            if (engine.location != null && engine.location.isNotEmpty()) {Platform.runLater {urlInput = engine.location}}
+                        }
+                    }
+                    engine.load("https://www.linkedin.com/")
                 }
                 val scene = Scene(newWebView)
                 jfxPanel.scene = scene
@@ -119,6 +142,38 @@ fun App(windowState: WindowState) {
                                 isLoading = true
                                 WebSocketManager.sendProfileRequest(urlInput)
                                 Platform.runLater {webView?.engine?.load(urlInput)}
+                                if (webSocketConnected) {WebSocketManager.sendProfileRequest(urlInput)}
+                                else {
+                                    coroutineScope.launch {
+                                        try {
+                                            WebSocketManager.initialize {resultJson ->
+                                                coroutineScope.launch {
+                                                    try {
+                                                        val result = Json.decodeFromString<ProspectData>(resultJson)
+                                                        currentProfile = result
+                                                        isLoading = false
+                                                        statusMessage =
+                                                            when (result.status) {
+                                                                "completed" -> "✅ Profil récupéré avec succès"
+                                                                "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
+                                                                else -> "⚠️ Statut inattendu: ${result.status}"
+                                                            }
+                                                    }
+                                                    catch (e: Exception) {
+                                                        isLoading = false
+                                                        statusMessage = "❌ Erreur de traitement des données: ${e.message}"
+                                                    }
+                                                }
+                                            }
+                                            WebSocketManager.sendProfileRequest(urlInput)
+                                            webSocketConnected = true
+                                        }
+                                        catch (e: Exception) {
+                                            isLoading = false
+                                            statusMessage = "❌ Impossible de se connecter au serveur: ${e.message}"
+                                        }
+                                    }
+                                }
                             }
                         }) {
                             Icon(Icons.Default.Search, contentDescription = "Rechercher")
@@ -140,7 +195,10 @@ fun App(windowState: WindowState) {
                 // Fiche contact
                 Box(Modifier.fillMaxWidth().weight(1f).padding(vertical = 16.dp)) {
                     if (isLoading) {CircularProgressIndicator(Modifier.align(Alignment.Center))}
-                    else {if (currentProfile != null) {ProspectCard(currentProfile!!)} else {EmptyProspectCard()}}
+                    else {
+                        if (currentProfile != null) {ProspectCard(currentProfile!!)}
+                        else {EmptyProspectCard()}
+                    }
                 }
             }
             // Zone du navigateur
