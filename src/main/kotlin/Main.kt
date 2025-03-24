@@ -1,5 +1,6 @@
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import ui.composable.App
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
