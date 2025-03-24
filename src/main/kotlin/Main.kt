@@ -26,7 +26,8 @@ fun main() = application {
             exitApplication()
         },
         title = "LinkedIn Parser",
-        state = windowState
+        state = windowState,
+        onPreviewKeyEvent = {false}
     ) {
         App(windowState)
     }
