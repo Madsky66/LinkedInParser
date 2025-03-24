@@ -4,9 +4,6 @@ import logging
 import asyncio
 import websockets
 import undetected_chromedriver as uc
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 # Configuration du logging
 logging.basicConfig(
@@ -16,9 +13,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class LinkedInScraper:
-    def parse_profile_info(self):
+    def __init__(self):
+        self.driver = None
+
+    def initialize_driver(self):
+        chrome_path = os.environ.get("CHROME_PATH")
+        options = uc.ChromeOptions()
+        options.add_argument(f"--user-data-dir={chrome_path}")
+        options.add_argument("--start-maximized")
+        options.headless = False
+        self.driver = uc.Chrome(options=options)
+
+    def parse_profile_info(self, url):
         """Extrait les informations du profil LinkedIn"""
         try:
+            if not self.driver:
+                self.initialize_driver()
+
+            self.driver.get(url)
+
             # Attendre que le nom soit chargé
             name_element = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((
@@ -66,6 +79,10 @@ class LinkedInScraper:
                 "status": "error",
                 "error": str(e)
             }
+        finally:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
 
 async def websocket_handler(websocket, path):
     """Gère les connexions WebSocket"""

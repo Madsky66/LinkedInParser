@@ -10,15 +10,17 @@ import kotlinx.serialization.json.Json
 import manager.GoogleSheetsManager
 import manager.WebSocketManager
 import ui.composable.ProspectCard
-import java.awt.Canvas
 import javax.swing.JPanel
 import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Component
 
 @Composable
 fun App() {
     var urlInput by remember {mutableStateOf("")}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
+    var chromePanel by remember {mutableStateOf<Component?>(null)}
 
     LaunchedEffect(Unit) {
         WebSocketManager.initialize {result ->
@@ -44,10 +46,15 @@ fun App() {
                 )
                 Button(
                     onClick = {
-                        WebSocketManager.sendProfileRequest(urlInput)
-                        statusMessage = "Analyse du profil en cours..."
+                        if (urlInput.isNotBlank()) {
+                            currentProfile = null
+                            statusMessage = "⏳ Analyse du profil en cours..."
+                            WebSocketManager.sendProfileRequest(urlInput)
+                        }
+                        else {statusMessage = "⚠️ Veuillez entrer une URL LinkedIn valide"}
                     },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    enabled = urlInput.isNotBlank()
                 ) {
                     Text("Analyser le profil")
                 }
@@ -74,7 +81,7 @@ fun App() {
             Box(Modifier.weight(2f).fillMaxHeight().background(MaterialTheme.colors.surface)) {
                 SwingPanel(
                     modifier = Modifier.fillMaxSize(),
-                    factory = {JPanel(BorderLayout()).apply {add(Canvas(), BorderLayout.CENTER)}}
+                    factory = {JPanel(BorderLayout()).apply {background = Color.WHITE}}
                 )
             }
         }

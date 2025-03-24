@@ -29,8 +29,6 @@ fun main() = application {
     }
 }
 
-private var serverProcess: Process? = null
-
 private fun cleanupResources() {
     try {
         // Nettoyage des fichiers temporaires de Chrome si nécessaire
@@ -45,25 +43,31 @@ private fun cleanupResources() {
     }
 }
 
+private var serverPid: Long? = null
+
 fun startPythonServer(): Process? {
     return try {
-        // Vérification et création des dossiers nécessaires
+        // Vérification des processus existants et nettoyage si nécessaire
+        cleanupExistingServer()
+
         val extraDir = File("src/main/resources/extra")
         val chromeDir = File(extraDir, "chrome")
         if (!chromeDir.exists()) {throw Exception("Le dossier Chrome portable n'existe pas: ${chromeDir.absolutePath}")}
         val serverPath =
-            if (System.getProperty("os.name").lowercase().contains("windows")) {"src/main/resources/extra/server.exe"} else {"src/main/resources/extra/server"}
+            if (System.getProperty("os.name").lowercase().contains("windows")) {"src/main/resources/extra/server.exe"}
+            else {"src/main/resources/extra/server"}
         val serverFile = File(serverPath)
         if (!serverFile.exists()) {throw Exception("Le fichier serveur n'existe pas: $serverPath")}
         if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {throw Exception("Impossible de rendre le serveur exécutable")}
 
-        // Configuration de l'environnement pour le serveur Python
         val processBuilder = ProcessBuilder(serverPath)
         processBuilder.environment()["CHROME_PATH"] = chromeDir.absolutePath
         processBuilder.redirectErrorStream(true)
         processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
 
-        processBuilder.start().also {serverProcess = it}
+        val process = processBuilder.start()
+        serverPid = process.pid()
+        process
     }
     catch (e: Exception) {
         println("❌ Erreur lors du démarrage du serveur: ${e.message}")
@@ -71,13 +75,27 @@ fun startPythonServer(): Process? {
     }
 }
 
+private fun cleanupExistingServer() {
+    if (System.getProperty("os.name").lowercase().contains("windows")) {
+        try {
+            Runtime.getRuntime().exec("taskkill /F /IM server.exe")
+            Thread.sleep(1000)
+        }
+        catch (e: Exception) {println("⚠️ Pas de processus server.exe existant à nettoyer")}
+    }
+}
+
 fun stopPythonServer(process: Process?) {
     try {
+        // Arrêt du processus principal
         process?.let {
             println("🛑 Arrêt du serveur Python...")
-            it.destroy()
+            if (System.getProperty("os.name").lowercase().contains("windows")) {
+                Runtime.getRuntime().exec("taskkill /F /PID $serverPid")
+                Runtime.getRuntime().exec("taskkill /F /IM server.exe")
+            }
+            else {it.destroy()}
             if (!it.waitFor(5, TimeUnit.SECONDS)) {
-                println("⚠️ Le serveur ne s'est pas arrêté, arrêt forcé...")
                 it.destroyForcibly()
             }
         }
