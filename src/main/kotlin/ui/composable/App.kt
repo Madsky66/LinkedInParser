@@ -33,46 +33,36 @@ fun App() {
     val jfxPanel = remember { JFXPanel() }
     var webView by remember { mutableStateOf<WebView?>(null) }
 
-    // Utiliser un scope pour gérer les coroutines
-    val coroutineScope = rememberCoroutineScope()
-
     // Initialisation du WebView
     LaunchedEffect(Unit) {
         Platform.setImplicitExit(false) // Empêcher JavaFX de se fermer
 
-        coroutineScope.launch(Dispatchers.IO) {
+        Platform.runLater {
             try {
-                Platform.runLater {
-                    try {
-                        val newWebView = WebView()
+                val newWebView = WebView()
 
-                        // Configuration du WebView
-                        newWebView.apply {
-                            prefWidth = 800.0
-                            prefHeight = 600.0
-                        }
-
-                        // Configuration du moteur WebView
-                        newWebView.engine.apply {
-                            setJavaScriptEnabled(true)
-                            userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                        }
-
-                        val scene = Scene(newWebView)
-                        jfxPanel.scene = scene
-                        webView = newWebView
-
-                        // Charger LinkedIn
-                        newWebView.engine.load("https://www.linkedin.com/login")
-                        webViewInitialized = true
-                        statusMessage = "✅ Navigateur initialisé"
-                    } catch (e: Exception) {
-                        statusMessage = "❌ Erreur d'initialisation du WebView: ${e.message}"
-                        e.printStackTrace()
-                    }
+                // Configuration du WebView
+                newWebView.apply {
+                    prefWidth = 800.0
+                    prefHeight = 600.0
                 }
+
+                // Configuration du moteur WebView
+                newWebView.engine.apply {
+                    setJavaScriptEnabled(true)
+                    userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                }
+
+                val scene = Scene(newWebView)
+                jfxPanel.scene = scene
+                webView = newWebView
+
+                // Charger LinkedIn
+                newWebView.engine.load("https://www.linkedin.com/login")
+                webViewInitialized = true
+                statusMessage = "✅ Navigateur initialisé"
             } catch (e: Exception) {
-                statusMessage = "❌ Erreur lors du lancement de JavaFX: ${e.message}"
+                statusMessage = "❌ Erreur d'initialisation du WebView: ${e.message}"
                 e.printStackTrace()
             }
         }
@@ -125,13 +115,11 @@ fun App() {
 
                             WebSocketManager.sendProfileRequest(urlInput)
 
-                            coroutineScope.launch {
-                                Platform.runLater {
-                                    try {
-                                        webView?.engine?.load(urlInput)
-                                    } catch (e: Exception) {
-                                        statusMessage = "❌ Erreur de navigation: ${e.message}"
-                                    }
+                            Platform.runLater {
+                                try {
+                                    webView?.engine?.load(urlInput)
+                                } catch (e: Exception) {
+                                    statusMessage = "❌ Erreur de navigation: ${e.message}"
                                 }
                             }
                         } else {
