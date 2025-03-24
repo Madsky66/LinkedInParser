@@ -8,15 +8,10 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 fun main() = application {
-    // Démarrer le serveur Python de manière asynchrone
     val serverProcess = startPythonServer()
-
-    // Attendre que le serveur soit prêt (500ms)
-    Thread.sleep(500)
 
     Thread.setDefaultUncaughtExceptionHandler { _, e ->
         println("❌ Exception non gérée : ${e.message}")
-        e.printStackTrace()
         stopPythonServer(serverProcess)
         cleanupResources()
         exitProcess(1)
@@ -37,18 +32,12 @@ fun main() = application {
 
 private fun cleanupResources() {
     try {
-        // Nettoyage des fichiers temporaires de Chrome
+        // Nettoyage des fichiers temporaires de Chrome si nécessaire
         val tempDir = Paths.get("src/main/resources/extra/chrome/temp")
         if (Files.exists(tempDir)) {
             Files.walk(tempDir)
                 .sorted(Comparator.reverseOrder())
-                .forEach {
-                    try {
-                        Files.delete(it)
-                    } catch (e: Exception) {
-                        println("⚠️ Impossible de supprimer ${it}: ${e.message}")
-                    }
-                }
+                .forEach { Files.delete(it) }
         }
     } catch (e: Exception) {
         println("⚠️ Erreur lors du nettoyage des ressources: ${e.message}")
@@ -64,25 +53,13 @@ fun startPythonServer(): Process? {
 
         val extraDir = File("src/main/resources/extra")
         val chromeDir = File(extraDir, "chrome")
-        if (!chromeDir.exists()) {
-            throw Exception("Le dossier Chrome portable n'existe pas: ${chromeDir.absolutePath}")
-        }
-
+        if (!chromeDir.exists()) {throw Exception("Le dossier Chrome portable n'existe pas: ${chromeDir.absolutePath}")}
         val serverPath =
-            if (System.getProperty("os.name").lowercase().contains("windows")) {
-                "src/main/resources/extra/server.exe"
-            } else {
-                "src/main/resources/extra/server"
-            }
-
+            if (System.getProperty("os.name").lowercase().contains("windows")) {"src/main/resources/extra/server.exe"}
+            else {"src/main/resources/extra/server"}
         val serverFile = File(serverPath)
-        if (!serverFile.exists()) {
-            throw Exception("Le fichier serveur n'existe pas: $serverPath")
-        }
-
-        if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {
-            throw Exception("Impossible de rendre le serveur exécutable")
-        }
+        if (!serverFile.exists()) {throw Exception("Le fichier serveur n'existe pas: $serverPath")}
+        if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {throw Exception("Impossible de rendre le serveur exécutable")}
 
         val processBuilder = ProcessBuilder(serverPath)
         processBuilder.environment()["CHROME_PATH"] = chromeDir.absolutePath
@@ -91,11 +68,10 @@ fun startPythonServer(): Process? {
 
         val process = processBuilder.start()
         serverPid = process.pid()
-        println("✅ Serveur Python démarré avec PID: $serverPid")
         process
-    } catch (e: Exception) {
+    }
+    catch (e: Exception) {
         println("❌ Erreur lors du démarrage du serveur: ${e.message}")
-        e.printStackTrace()
         null
     }
 }
@@ -105,9 +81,8 @@ private fun cleanupExistingServer() {
         try {
             Runtime.getRuntime().exec("taskkill /F /IM server.exe")
             Thread.sleep(1000)
-        } catch (e: Exception) {
-            println("⚠️ Pas de processus server.exe existant à nettoyer")
         }
+        catch (e: Exception) {println("⚠️ Pas de processus server.exe existant à nettoyer")}
     }
 }
 
@@ -119,14 +94,10 @@ fun stopPythonServer(process: Process?) {
             if (System.getProperty("os.name").lowercase().contains("windows")) {
                 Runtime.getRuntime().exec("taskkill /F /PID $serverPid")
                 Runtime.getRuntime().exec("taskkill /F /IM server.exe")
-            } else {
-                it.destroy()
             }
-            if (!it.waitFor(5, TimeUnit.SECONDS)) {
-                it.destroyForcibly()
-            }
+            else {it.destroy()}
+            if (!it.waitFor(5, TimeUnit.SECONDS)) {it.destroyForcibly()}
         }
-    } catch (e: Exception) {
-        println("❌ Erreur lors de l'arrêt du serveur: ${e.message}")
     }
+    catch (e: Exception) {println("❌ Erreur lors de l'arrêt du serveur: ${e.message}")}
 }

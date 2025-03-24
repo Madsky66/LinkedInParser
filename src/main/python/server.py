@@ -4,14 +4,10 @@ import logging
 import asyncio
 import websockets
 import undetected_chromedriver as uc
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # Configuration du logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -19,93 +15,31 @@ logger = logging.getLogger(__name__)
 class LinkedInScraper:
     def __init__(self):
         self.driver = None
-        self.setup_selenium()
 
-    def setup_selenium(self):
-        """Configure Selenium avec undetected-chromedriver et démarre un navigateur"""
-        try:
-            chrome_path = os.environ.get('CHROME_PATH', os.path.join(
-                os.getcwd(),
-                "src",
-                "main",
-                "resources",
-                "extra",
-                "chrome"
-            ))
-
-            # Création du dossier temporaire pour Chrome
-            temp_dir = os.path.join(chrome_path, "temp")
-            os.makedirs(temp_dir, exist_ok=True)
-
-            options = uc.ChromeOptions()
-            options.binary_location = os.path.join(chrome_path, "chrome.exe")
-            options.add_argument(f'--user-data-dir={temp_dir}')
-            options.add_argument('--no-sandbox')
-            options.add_argument('--disable-dev-shm-usage')
-            options.add_argument('--disable-blink-features=AutomationControlled')
-            options.add_argument('--start-maximized')
-            options.add_argument('--disable-gpu')
-            options.add_argument('--no-first-run')
-            options.add_argument('--no-default-browser-check')
-            options.add_argument('--disable-extensions')
-            options.add_argument('--disable-popup-blocking')
-            options.add_argument('--disable-notifications')
-
-            # Désactiver les images pour accélérer le chargement
-            prefs = {
-                "profile.managed_default_content_settings.images": 2,
-                "profile.default_content_setting_values.notifications": 2
-            }
-            options.add_experimental_option("prefs", prefs)
-
-            self.driver = uc.Chrome(options=options)
-            logger.info("✅ Navigateur Selenium démarré avec succès")
-
-            # Accélérer le chargement de la page de connexion
-            self.driver.set_page_load_timeout(30)
-            self.driver.get("https://www.linkedin.com/login")
-            logger.info("🔗 Accès à la page de connexion LinkedIn")
-
-            # Attendre que la page soit chargée avec un timeout plus court
-            try:
-                WebDriverWait(self.driver, 30).until(
-                    EC.presence_of_element_located((By.ID, "username"))
-                )
-                logger.info("✅ Page de connexion LinkedIn chargée")
-            except TimeoutException:
-                logger.warning("⚠️ Timeout lors du chargement de la page de connexion")
-
-        except Exception as e:
-            logger.error(f"❌ Erreur lors du démarrage de Selenium : {e}")
-            if self.driver:
-                self.driver.quit()
-                self.driver = None
-            raise
+    def initialize_driver(self):
+        chrome_path = os.environ.get("CHROME_PATH")
+        options = uc.ChromeOptions()
+        options.add_argument(f"--user-data-dir={chrome_path}")
+        options.add_argument("--start-maximized")
+        options.headless = False
+        self.driver = uc.Chrome(options=options)
 
     def parse_profile_info(self, url):
         """Extrait les informations du profil LinkedIn"""
         try:
             if not self.driver:
-                self.setup_selenium()
+                self.initialize_driver()
 
-            logger.info(f"🔍 Analyse du profil: {url}")
             self.driver.get(url)
 
-            # Attendre que le profil soit chargé (max 15 secondes)
-            try:
-                name_element = WebDriverWait(self.driver, 15).until(
-                    EC.presence_of_element_located((
-                        By.CSS_SELECTOR,
-                        "h1.inline.t-24"
-                    ))
-                )
-                full_name = name_element.text.strip()
-            except TimeoutException:
-                logger.warning("⚠️ Timeout lors du chargement du profil")
-                return {
-                    "status": "error",
-                    "error": "Timeout lors du chargement du profil"
-                }
+            # Attendre que le nom soit chargé
+            name_element = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((
+                    By.CSS_SELECTOR,
+                    "h1.inline.t-24"
+                ))
+            )
+            full_name = name_element.text.strip()
 
             # Extraire prénom/nom
             names = full_name.split(' ', 1)
@@ -113,48 +47,24 @@ class LinkedInScraper:
             last_name = names[1] if len(names) > 1 else ""
 
             # Extraire l'entreprise actuelle
-            company = ""
             try:
-                company_element = self.driver.find_element(
+                company = self.driver.find_element(
                     By.CSS_SELECTOR,
                     "[aria-label*='Current company']"
-                )
-                company = company_element.text.strip()
-            except NoSuchElementException:
-                try:
-                    # Alternative selector
-                    company_elements = self.driver.find_elements(
-                        By.CSS_SELECTOR,
-                        ".pv-text-details__right-panel .inline-show-more-text"
-                    )
-                    if company_elements:
-                        company = company_elements[0].text.strip()
-                except:
-                    logger.warning("⚠️ Entreprise non trouvée")
+                ).text.strip()
+            except:
+                company = ""
 
             # Extraire le poste actuel
-            position = ""
             try:
-                position_element = self.driver.find_element(
+                position = self.driver.find_element(
                     By.CSS_SELECTOR,
                     ".pv-text-details__right-panel .text-body-medium"
-                )
-                position = position_element.text.strip()
-            except NoSuchElementException:
-                try:
-                    # Alternative selector
-                    position_elements = self.driver.find_elements(
-                        By.CSS_SELECTOR,
-                        ".pv-text-details__left-panel .text-body-medium"
-                    )
-                    if position_elements:
-                        position = position_elements[0].text.strip()
-                except:
-                    logger.warning("⚠️ Poste non trouvé")
+                ).text.strip()
+            except:
+                position = ""
 
-            logger.info(f"✅ Profil analysé: {full_name}")
             return {
-                "linkedinURL": url,
                 "fullName": full_name,
                 "firstName": first_name,
                 "lastName": last_name,
@@ -166,10 +76,13 @@ class LinkedInScraper:
         except Exception as e:
             logger.error(f"❌ Erreur lors du parsing: {e}")
             return {
-                "linkedinURL": url,
                 "status": "error",
                 "error": str(e)
             }
+        finally:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
 
 async def websocket_handler(websocket, path):
     """Gère les connexions WebSocket"""
@@ -180,36 +93,35 @@ async def websocket_handler(websocket, path):
         async for message in websocket:
             try:
                 data = json.loads(message)
-                logger.info(f"📩 Message reçu: {data}")
+                if "linkedinURL" in data:
+                    # Initialiser le driver Chrome
+                    chrome_path = os.environ.get("CHROME_PATH")
+                    options = uc.ChromeOptions()
+                    options.add_argument(f"--user-data-dir={chrome_path}")
+                    scraper.driver = uc.Chrome(options=options)
 
-                if "linkedinURL" in data and data.get("status") == "request":
-                    url = data["linkedinURL"]
-                    logger.info(f"🔍 Requête d'analyse pour: {url}")
+                    # Naviguer vers l'URL
+                    scraper.driver.get(data["linkedinURL"])
 
                     # Parser le profil
-                    result = scraper.parse_profile_info(url)
+                    result = scraper.parse_profile_info()
+                    result["linkedinURL"] = data["linkedinURL"]
 
                     # Envoyer le résultat
                     await websocket.send(json.dumps(result))
-                    logger.info(f"📤 Résultat envoyé pour: {url}")
 
-            except json.JSONDecodeError:
-                logger.error(f"❌ Format JSON invalide: {message}")
-                await websocket.send(json.dumps({
-                    "status": "error",
-                    "error": "Format de message invalide"
-                }))
+                    # Fermer le navigateur
+                    scraper.driver.quit()
             except Exception as e:
                 logger.error(f"❌ Erreur de traitement: {e}")
                 await websocket.send(json.dumps({
                     "status": "error",
                     "error": str(e)
                 }))
-    except websockets.exceptions.ConnectionClosed as e:
-        logger.info(f"🔌 Connexion WebSocket fermée: {e}")
+    except websockets.exceptions.ConnectionClosed:
+        logger.info("🔌 Connexion WebSocket fermée")
     finally:
-        if hasattr(scraper, 'driver') and scraper.driver:
-            logger.info("🧹 Nettoyage du driver Selenium")
+        if hasattr(scraper, 'driver'):
             scraper.driver.quit()
 
 async def start_server():
@@ -218,13 +130,7 @@ async def start_server():
     max_attempts = 10
     for attempt in range(max_attempts):
         try:
-            server = await websockets.serve(
-                websocket_handler,
-                "127.0.0.1",
-                port,
-                ping_interval=30,  # Ping toutes les 30 secondes pour maintenir la connexion
-                ping_timeout=10    # Timeout de 10 secondes pour les pings
-            )
+            server = await websockets.serve(websocket_handler, "127.0.0.1", port)
             logger.info(f"🚀 Serveur WebSocket démarré sur ws://127.0.0.1:{port}")
 
             # Écrire le port utilisé dans un fichier pour que l'application Kotlin puisse le lire
@@ -238,17 +144,8 @@ async def start_server():
     raise RuntimeError(f"Impossible de démarrer le serveur après {max_attempts} tentatives")
 
 async def main():
-    try:
-        server = await start_server()
-        await server.wait_closed()
-    except Exception as e:
-        logger.error(f"❌ Erreur critique du serveur: {e}")
-        raise
+    server = await start_server()
+    await server.wait_closed()
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("🛑 Arrêt du serveur par l'utilisateur")
-    except Exception as e:
-        logger.error(f"❌ Erreur fatale: {e}")
+    asyncio.run(main())
