@@ -26,19 +26,22 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
         }
 
         fun initialize(onResult: (String) -> Unit) {
-            instance?.close()
-            instance = null
             try {
+                instance?.close()
+                instance = null
                 val port = getWebSocketPort()
                 val uri = URI("ws://127.0.0.1:$port")
                 instance = WebSocketManager(uri, onResult)
                 var attempts = 0
                 while (attempts < 5) {
-                    val connected = instance?.connectBlocking(2, TimeUnit.SECONDS)
-                    if (connected == true) {
-                        println("✅ Connecté au serveur WebSocket sur le port $port")
-                        return
+                    try {
+                        val connected = instance?.connectBlocking(2, TimeUnit.SECONDS)
+                        if (connected == true) {
+                            println("✅ Connecté au serveur WebSocket sur le port $port")
+                            return
+                        }
                     }
+                    catch (e: Exception) {println("⚠️ Tentative de connexion échouée: ${e.message}")}
                     attempts++
                     Thread.sleep(1000)
                 }
@@ -61,24 +64,20 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
                         it.send(request)
                         println("📤 Requête envoyée pour l'URL: $url")
                     }
-                    catch (e: Exception) {println("❌ Erreur lors de l'envoi de la requête: ${e.message}")}
+                    catch (e: Exception) {
+                        println("❌ Erreur lors de l'envoi de la requête: ${e.message}")
+                        initialize(it.onResult)
+                    }
                 }
                 else {
                     println("⚠️ WebSocket non connecté, tentative de reconnexion...")
-                    try {
-                        initialize(it.onResult)
-                        instance?.let {reconnected ->
-                            if (reconnected.isOpen) {
-                                val request = Json.encodeToString(ProspectData(linkedinURL = url, status = "request"))
-                                reconnected.send(request)
-                            }
-                        }
-                    }
-                    catch (e: Exception) {println("❌ Échec de la reconnexion au WebSocket: ${e.message}")}
+                    initialize(it.onResult)
                 }
-            } ?: println("❌ WebSocketManager non initialisé")
+            } ?: run {
+                println("⚠️ WebSocketManager non initialisé, tentative d'initialisation...")
+                initialize {result -> println("📥 Résultat reçu: $result")}
+            }
         }
-        fun isConnected(): Boolean {return instance?.isOpen == true}
     }
 
     override fun onOpen(handshakedata: ServerHandshake?) {println("✅ Connecté au serveur WebSocket")}

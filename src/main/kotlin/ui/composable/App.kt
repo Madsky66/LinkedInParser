@@ -47,71 +47,42 @@ fun App(windowState: WindowState) {
     var webViewReady by remember {mutableStateOf(false)}
     val coroutineScope = rememberCoroutineScope()
 
-    // Initialiser JavaFX WebView
     val jfxPanel = remember {JFXPanel()}
     var webView by remember {mutableStateOf<WebView?>(null)}
-
-    // État pour suivre si le WebSocket est connecté
     var webSocketConnected by remember {mutableStateOf(false)}
-
-    // Initialiser WebSocket avec retries
-    LaunchedEffect(Unit) {
-        var attempts = 0
-        while (attempts < 5 && !webSocketConnected) {
-            try {
-                WebSocketManager.initialize {resultJson ->
-                    coroutineScope.launch {
-                        try {
-                            val result = Json.decodeFromString<ProspectData>(resultJson)
-                            println("📥 Données reçues : $result")
-                            currentProfile = result
-                            isLoading = false
-                            statusMessage =
-                                when (result.status) {
-                                    "completed" -> "✅ Profil récupéré avec succès"
-                                    "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
-                                    else -> "⚠️ Statut inattendu: ${result.status}"
-                                }
-                        }
-                        catch (e: Exception) {
-                            isLoading = false
-                            statusMessage = "❌ Erreur de traitement des données: ${e.message}"
-                            println("Erreur de désérialisation: ${e.message}")
-                            e.printStackTrace()
-                        }
-                    }
-                }
-                webSocketConnected = true
-                statusMessage = "✅ Connecté au serveur WebSocket"
-            }
-            catch (e: Exception) {
-                println("⚠️ Tentative de connexion WebSocket échouée: ${e.message}")
-                attempts++
-                delay(2000)
-            }
-        }
-        if (!webSocketConnected) {statusMessage = "❌ Impossible de se connecter au serveur WebSocket après 5 tentatives"}
-    }
 
     LaunchedEffect(Unit) {
         Platform.runLater {
             try {
-                val newWebView = WebView().apply {
-                    engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                    engine.loadWorker.stateProperty().addListener {_, _, newState ->
-                        if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {
-                            println("✅ Page chargée: ${engine.location}")
-                            if (engine.location != null && engine.location.isNotEmpty()) {Platform.runLater {urlInput = engine.location}}
-                        }
-                    }
-                    engine.load("https://www.linkedin.com/")
-                }
+                val newWebView = WebView()
                 val scene = Scene(newWebView)
                 jfxPanel.scene = scene
                 webView = newWebView
+                webView?.apply {
+                    engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    engine.load("https://www.linkedin.com/login")
+
+                    engine.locationProperty().addListener {_, _, newLocation ->
+                        if (newLocation != null) {
+                            Platform.runLater {
+                                urlInput = newLocation
+                                if (newLocation.contains("linkedin.com/in/")) {
+                                    currentProfile = null
+                                    statusMessage = "⏳ Analyse du profil en cours..."
+                                    isLoading = true
+                                    WebSocketManager.sendProfileRequest(newLocation)
+                                }
+                            }
+                        }
+                    }
+                }
                 webViewReady = true
+                println("✅ WebView initialisée avec succès")
             }
-            catch (e: Exception) {println("❌ Erreur lors de l'initialisation de la WebView : ${e.message}")}
+            catch (e: Exception) {
+                println("❌ Erreur lors de l'initialisation de la WebView : ${e.message}")
+                webViewReady = false
+            }
         }
     }
 

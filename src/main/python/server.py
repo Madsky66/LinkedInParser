@@ -126,7 +126,7 @@ class LinkedInScraper:
                     logger.error(f"Erreur lors de la fermeture du driver: {e}")
                 self.driver = None
 
-async def websocket_handler(websocket, path):
+async def websocket_handler(websocket):
     """Gère les connexions WebSocket"""
     logger.info("🔌 Nouvelle connexion WebSocket")
     scraper = LinkedInScraper()
@@ -159,26 +159,14 @@ async def websocket_handler(websocket, path):
             scraper.driver.quit()
 
 async def start_server():
-    """Démarre le serveur WebSocket sur un port disponible"""
-    await asyncio.sleep(2)
+    """Démarre le serveur WebSocket"""
     port = 9000
     max_attempts = 10
-    try:
-        import psutil
-        for proc in psutil.process_iter(['pid', 'name', 'connections']):
-            for conn in proc.connections():
-                if conn.laddr.port == port and conn.status == 'LISTEN':
-                    logger.info(f"Killing process {proc.pid} using port {port}")
-                    psutil.Process(proc.pid).terminate()
-    except ImportError:
-        logger.warning("psutil not installed, skipping process cleanup")
-    except Exception as e:
-        logger.warning(f"Error during process cleanup: {e}")
 
     for attempt in range(max_attempts):
         try:
             server = await websockets.serve(
-                websocket_handler,
+                websocket_handler,  # Retiré le paramètre path
                 "127.0.0.1",
                 port,
                 ping_interval=None
