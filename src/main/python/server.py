@@ -4,6 +4,7 @@ import logging
 import asyncio
 import websockets
 import undetected_chromedriver as uc
+import time
 
 # Configuration du logging
 logging.basicConfig(
@@ -31,38 +32,51 @@ class LinkedInScraper:
                 self.initialize_driver()
 
             self.driver.get(url)
+            time.sleep(5)
 
-            # Attendre que le nom soit chargé
-            name_element = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((
-                    By.CSS_SELECTOR,
-                    "h1.inline.t-24"
-                ))
+            # Attendre que les éléments soient chargés
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "h1.text-heading-xlarge"))
             )
-            full_name = name_element.text.strip()
 
-            # Extraire prénom/nom
+            # Extraire les informations
+            full_name = self.driver.find_element(By.CSS_SELECTOR, "h1.text-heading-xlarge").text.strip()
             names = full_name.split(' ', 1)
             first_name = names[0]
             last_name = names[1] if len(names) > 1 else ""
 
-            # Extraire l'entreprise actuelle
+            # Position actuelle
+            try:
+                position = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    "div.text-body-medium.break-words"
+                ).text.strip()
+            except:
+                position = ""
+
+            # Entreprise
             try:
                 company = self.driver.find_element(
                     By.CSS_SELECTOR,
-                    "[aria-label*='Current company']"
+                    "span.text-body-small.inline"
                 ).text.strip()
             except:
                 company = ""
 
-            # Extraire le poste actuel
+            # Email (si disponible)
             try:
-                position = self.driver.find_element(
+                contact_info_button = self.driver.find_element(
                     By.CSS_SELECTOR,
-                    ".pv-text-details__right-panel .text-body-medium"
+                    "a[href*='overlay/contact-info']"
+                )
+                contact_info_button.click()
+                time.sleep(2)
+                email = self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    "a[href^='mailto:']"
                 ).text.strip()
             except:
-                position = ""
+                email = ""
 
             return {
                 "fullName": full_name,
@@ -70,6 +84,8 @@ class LinkedInScraper:
                 "lastName": last_name,
                 "company": company,
                 "position": position,
+                "email": email,
+                "linkedinURL": url,
                 "status": "completed"
             }
 

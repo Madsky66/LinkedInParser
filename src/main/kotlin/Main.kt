@@ -1,5 +1,6 @@
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import ui.composable.App
 import java.io.File
 import java.nio.file.Files
@@ -8,6 +9,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 fun main() = application {
+    val windowState = rememberWindowState()
     val serverProcess = startPythonServer()
 
     Thread.setDefaultUncaughtExceptionHandler { _, e ->
@@ -19,44 +21,43 @@ fun main() = application {
 
     Window(
         onCloseRequest = {
-            // Arrêt propre des processus
             stopPythonServer(serverProcess)
             cleanupResources()
             exitApplication()
         },
-        title = "LinkedIn Parser"
+        title = "LinkedIn Parser",
+        state = windowState,
+        onPreviewKeyEvent = {false}
     ) {
-        App()
+        App(windowState)
     }
 }
 
 private fun cleanupResources() {
     try {
-        // Nettoyage des fichiers temporaires de Chrome si nécessaire
         val tempDir = Paths.get("src/main/resources/extra/chrome/temp")
         if (Files.exists(tempDir)) {
             Files.walk(tempDir)
                 .sorted(Comparator.reverseOrder())
                 .forEach { Files.delete(it) }
         }
-    } catch (e: Exception) {
-        println("⚠️ Erreur lors du nettoyage des ressources: ${e.message}")
     }
+    catch (e: Exception) {println("⚠️ Erreur lors du nettoyage des ressources: ${e.message}")}
 }
 
 private var serverPid: Long? = null
 
 fun startPythonServer(): Process? {
     return try {
-        // Vérification des processus existants et nettoyage si nécessaire
         cleanupExistingServer()
 
         val extraDir = File("src/main/resources/extra")
         val chromeDir = File(extraDir, "chrome")
         if (!chromeDir.exists()) {throw Exception("Le dossier Chrome portable n'existe pas: ${chromeDir.absolutePath}")}
+
         val serverPath =
             if (System.getProperty("os.name").lowercase().contains("windows")) {"src/main/resources/extra/server.exe"}
-            else {"src/main/resources/extra/server"}
+        else {"src/main/resources/extra/server"}
         val serverFile = File(serverPath)
         if (!serverFile.exists()) {throw Exception("Le fichier serveur n'existe pas: $serverPath")}
         if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {throw Exception("Impossible de rendre le serveur exécutable")}
@@ -88,7 +89,6 @@ private fun cleanupExistingServer() {
 
 fun stopPythonServer(process: Process?) {
     try {
-        // Arrêt du processus principal
         process?.let {
             println("🛑 Arrêt du serveur Python...")
             if (System.getProperty("os.name").lowercase().contains("windows")) {
