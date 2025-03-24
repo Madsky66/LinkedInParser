@@ -14,12 +14,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
+import kotlinx.serialization.json.Json
 import manager.WebSocketManager
 import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebView
-import manager.JavaFxManager
+import kotlinx.coroutines.launch
 import javax.swing.JPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -43,40 +44,48 @@ fun App(windowState: WindowState) {
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
     var webViewReady by remember {mutableStateOf(false)}
+    val coroutineScope = rememberCoroutineScope()
 
     // Initialiser JavaFX WebView
     val jfxPanel = remember {JFXPanel()}
     var webView by remember {mutableStateOf<WebView?>(null)}
 
-    // Utiliser l'état d'initialisation de JavaFxManager
-    val javaFxInitialized = remember {JavaFxManager.isInitialized()}
-
     LaunchedEffect(Unit) {
-        if (javaFxInitialized) {
-            Platform.runLater {
+        WebSocketManager.initialize {resultJson ->
+            coroutineScope.launch {
                 try {
-                    val newWebView = WebView().apply {
-                        engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                        engine.load("https://www.linkedin.com/login")
-                        engine.locationProperty().addListener { _, _, newLocation ->
-                            if (newLocation != null && newLocation.contains("linkedin.com/in/")) {
-                                urlInput = newLocation
-                                currentProfile = null
-                                statusMessage = "⏳ Analyse du profil en cours..."
-                                isLoading = true
-                                WebSocketManager.sendProfileRequest(newLocation)
-                            }
-                        }
-                    }
-                    val scene = Scene(newWebView)
-                    jfxPanel.scene = scene
-                    webView = newWebView
-                    webViewReady = true
+                    val result = Json.decodeFromString<ProspectData>(resultJson)
+                    currentProfile = result
+                    isLoading = false
+                    statusMessage = if (result.status == "completed") {"✅ Profil récupéré avec succès"}
+                    else if (result.status == "error") {"❌ Erreur: ${result.error ?: "Inconnue"}"}
+                    else {"⚠️ Statut inattendu: ${result.status}"}
                 }
-                catch (e: Exception) {println("❌ Erreur lors de l'initialisation de la WebView : ${e.message}")}
+                catch (e: Exception) {
+                    isLoading = false
+                    statusMessage = "❌ Erreur de traitement des données: ${e.message}"
+                    println("Erreur de désérialisation: ${e.message}")
+                    e.printStackTrace()
+                }
             }
         }
-        else {statusMessage = "❌ JavaFX n'est pas initialisé correctement"}
+    }
+
+    LaunchedEffect(Unit) {
+        Platform.runLater {
+            try {
+                val newWebView = WebView().apply {
+                    engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    engine.load("https://www.linkedin.com/login")
+                    engine.locationProperty().addListener {_, _, newLocation -> if (newLocation != null && newLocation.contains("linkedin.com/in/")) {Platform.runLater {urlInput = newLocation}}}
+                }
+                val scene = Scene(newWebView)
+                jfxPanel.scene = scene
+                webView = newWebView
+                webViewReady = true
+            }
+            catch (e: Exception) {println("❌ Erreur lors de l'initialisation de la WebView : ${e.message}")}
+        }
     }
 
     MaterialTheme(colors = DarkThemeColors) {
@@ -132,13 +141,13 @@ fun App(windowState: WindowState) {
             }
             // Zone du navigateur
             Box(Modifier.weight(1f).fillMaxHeight().background(MaterialTheme.colors.background)) {
-                if (isLoading) {CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))}
+                if (!webViewReady) {CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))}
                 SwingPanel(
                     modifier = Modifier.fillMaxSize(),
                     factory = {
                         JPanel(BorderLayout()).apply {
                             preferredSize = Dimension(
-                                windowState.size.width.value.toInt(),
+                                windowState.size.width.value.toInt() - 400,
                                 windowState.size.height.value.toInt()
                             )
                             add(jfxPanel, BorderLayout.CENTER)

@@ -26,21 +26,46 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit) : WebSo
         }
 
         fun initialize(onResult: (String) -> Unit) {
-            if (instance == null) {
-                val port = getWebSocketPort()
-                val uri = URI("ws://127.0.0.1:$port")
-                instance = WebSocketManager(uri, onResult)
-                instance?.connectBlocking(5, TimeUnit.SECONDS)
+            if (instance == null || instance?.isOpen == false) {
+                try {
+                    val port = getWebSocketPort()
+                    val uri = URI("ws://127.0.0.1:$port")
+                    instance = WebSocketManager(uri, onResult)
+                    val connected = instance?.connectBlocking(5, TimeUnit.SECONDS)
+                    if (connected != true) {
+                        println("❌ Échec de connexion au WebSocket")
+                        instance = null
+                    }
+                    else {println("✅ Connecté au serveur WebSocket sur le port $port")}
+                }
+                catch (e: Exception) {
+                    println("❌ Erreur lors de l'initialisation du WebSocket: ${e.message}")
+                    instance = null
+                }
             }
         }
 
         fun sendProfileRequest(url: String) {
             instance?.let {
                 if (it.isOpen) {
-                    val request = Json.encodeToString(ProspectData(linkedinURL = url, status = "request"))
-                    it.send(request)
+                    try {
+                        val request = Json.encodeToString(ProspectData(linkedinURL = url, status = "request"))
+                        it.send(request)
+                        println("📤 Requête envoyée pour l'URL: $url")
+                    }
+                    catch (e: Exception) {println("❌ Erreur lors de l'envoi de la requête: ${e.message}")}
                 }
-            }
+                else {
+                    println("⚠️ WebSocket non connecté, tentative de reconnexion...")
+                    initialize(it.onResult)
+                    instance?.let { reconnected ->
+                        if (reconnected.isOpen) {
+                            val request = Json.encodeToString(ProspectData(linkedinURL = url, status = "request"))
+                            reconnected.send(request)
+                        }
+                    }
+                }
+            } ?: println("❌ WebSocketManager non initialisé")
         }
     }
 
