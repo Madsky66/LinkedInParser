@@ -20,6 +20,7 @@ import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebView
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.swing.JPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -48,55 +49,35 @@ fun App(windowState: WindowState) {
     val jfxPanel = remember {JFXPanel()}
     var webView by remember {mutableStateOf<WebView?>(null)}
 
-    LaunchedEffect(Unit) {
-        Platform.runLater {
-            val newWebView = WebView().apply {
-                engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                engine.load("https://www.linkedin.com/login")
-                engine.locationProperty().addListener {_, _, newLocation ->
-                    if (newLocation != null && newLocation.contains("linkedin.com/in/")) {
-                        urlInput = newLocation
-                        currentProfile = null
-                        statusMessage = "⏳ Analyse du profil en cours..."
-                        isLoading = true
-                        WebSocketManager.sendProfileRequest(newLocation)
-                    }
-                }
-            }
-
-            val scene = Scene(newWebView)
-            jfxPanel.scene = scene
-            webView = newWebView
-            webViewReady = true
-        }
-    }
+    // Utiliser l'état d'initialisation de JavaFxManager
+    val javaFxInitialized = remember {JavaFxManager.isInitialized()}
 
     LaunchedEffect(Unit) {
-        WebSocketManager.initialize {result ->
-            try {
-                val profile = Json {ignoreUnknownKeys = true}.decodeFromString<ProspectData>(result)
-                when (profile.status) {
-                    "completed" -> {
-                        currentProfile = profile
-                        statusMessage = "✅ Profil mis à jour"
+        if (javaFxInitialized) {
+            Platform.runLater {
+                try {
+                    val newWebView = WebView().apply {
+                        engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                        engine.load("https://www.linkedin.com/login")
+                        engine.locationProperty().addListener { _, _, newLocation ->
+                            if (newLocation != null && newLocation.contains("linkedin.com/in/")) {
+                                urlInput = newLocation
+                                currentProfile = null
+                                statusMessage = "⏳ Analyse du profil en cours..."
+                                isLoading = true
+                                WebSocketManager.sendProfileRequest(newLocation)
+                            }
+                        }
                     }
-                    "error" -> {
-                        statusMessage = "❌ Erreur: ${profile.error ?: "Erreur inconnue"}"
-                        currentProfile = null
-                    }
-                    else -> {
-                        statusMessage = "⏳ En cours..."
-                        currentProfile = null
-                    }
+                    val scene = Scene(newWebView)
+                    jfxPanel.scene = scene
+                    webView = newWebView
+                    webViewReady = true
                 }
-                isLoading = false
-            }
-            catch (e: Exception) {
-                statusMessage = "❌ Erreur de désérialisation: ${e.message}"
-                currentProfile = null
-                isLoading = false
+                catch (e: Exception) {println("❌ Erreur lors de l'initialisation de la WebView : ${e.message}")}
             }
         }
+        else {statusMessage = "❌ JavaFX n'est pas initialisé correctement"}
     }
 
     MaterialTheme(colors = DarkThemeColors) {

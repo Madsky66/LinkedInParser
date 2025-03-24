@@ -2,6 +2,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import ui.composable.App
+import ui.composable.JavaFxManager
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -9,6 +10,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 fun main() = application {
+    JavaFxManager.initialize()
+
     val windowState = rememberWindowState()
     val serverProcess = startPythonServer()
 
@@ -16,6 +19,7 @@ fun main() = application {
         println("❌ Exception non gérée : ${e.message}")
         stopPythonServer(serverProcess)
         cleanupResources()
+        JavaFxManager.shutdown()
         exitProcess(1)
     }
 
@@ -23,6 +27,7 @@ fun main() = application {
         onCloseRequest = {
             stopPythonServer(serverProcess)
             cleanupResources()
+            JavaFxManager.shutdown()
             exitApplication()
         },
         title = "LinkedIn Parser",

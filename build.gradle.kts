@@ -44,12 +44,9 @@ dependencies {
     implementation("org.openjfx:javafx-web:19")
     implementation("org.openjfx:javafx-swing:19")
 
-    // Ajout de support pour le format br (Brotli)
+    // br
     implementation("org.brotli:dec:0.1.2")
-
-    // JxBrowser
-    implementation("com.teamdev.jxbrowser:jxbrowser-cross-platform:7.37.1")
-    implementation("com.teamdev.jxbrowser:jxbrowser-swing:7.37.1")
+    implementation("com.aayushatharva.brotli4j:brotli4j:1.8.0")
 }
 
 javafx {
