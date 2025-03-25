@@ -12,6 +12,7 @@ import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.ConnectException
+import kotlin.math.pow
 
 class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private val scope: CoroutineScope) :
     WebSocketClient(uri) {
@@ -19,7 +20,9 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
         private var instance: WebSocketManager? = null
         private val logger = LoggerFactory.getLogger(WebSocketManager::class.java)
         private const val DEFAULT_PORT = 9000
-        private const val MAX_RETRIES = 5
+        private const val MAX_RETRIES = 10
+        private const val INITIAL_RETRY_DELAY_MS = 1000
+        private const val MAX_RETRY_DELAY_MS = 30000
 
         fun getWebSocketPort(): Int {
             val portFile = File("websocket_port.txt")
@@ -43,22 +46,27 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
             val port = getWebSocketPort()
             val uri = URI("ws://127.0.0.1:$port")
             instance = WebSocketManager(uri, onResult, scope)
-            for (attempt in 1..MAX_RETRIES) {
-                try {
-                    val connected = instance?.connectBlocking(2, TimeUnit.SECONDS) == true
-                    if (connected) {
-                        logger.info("Connecté au serveur WebSocket sur le port $port")
-                        return
+            scope.launch {
+                for (attempt in 1..MAX_RETRIES) {
+                    val retryDelay = (INITIAL_RETRY_DELAY_MS * 2.0.pow(attempt - 1)).toLong().coerceAtMost(MAX_RETRY_DELAY_MS.toLong())
+                    try {
+                        logger.info("Tentative de connexion WebSocket (attempt $attempt)...")
+                        val connected = instance?.connectBlocking(2, TimeUnit.SECONDS) == true
+                        if (connected) {
+                            logger.info("✅ Connecté au serveur WebSocket sur le port $port après $attempt tentatives")
+                            return@launch
+                        }
+                        else {logger.warn("Tentative de connexion échouée (attempt $attempt)")}
                     }
-                    else {logger.warn("Tentative de connexion échouée (attempt $attempt)")}
+                    catch (e: ConnectException) {logger.warn("Erreur de connexion (attempt $attempt): ${e.message}")}
+                    catch (e: Exception) {logger.error("Erreur lors de la connexion (attempt $attempt): ${e.message}", e)}
+                    logger.warn("Nouvelle tentative de connexion dans ${retryDelay / 1000.0} secondes...")
+                    delay(retryDelay)
                 }
-                catch (e: ConnectException) {logger.warn("Erreur de connexion (attempt $attempt): ${e.message}")}
-                catch (e: Exception) {logger.error("Erreur lors de la connexion (attempt $attempt): ${e.message}", e)}
-                Thread.sleep(1000)
+                logger.error("❌ Échec de connexion au WebSocket après $MAX_RETRIES tentatives")
+                instance = null
+                throw IllegalStateException("Impossible de se connecter au serveur WebSocket après plusieurs tentatives")
             }
-            logger.error("Échec de connexion au WebSocket après $MAX_RETRIES tentatives")
-            instance = null
-            throw IllegalStateException("Impossible de se connecter au serveur WebSocket")
         }
 
         private fun closeWebSocket() {
@@ -73,7 +81,7 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
                     try {
                         val request = Json.encodeToString(ProspectData(linkedinURL = url, status = "request"))
                         it.send(request)
-                        logger.info("Requête envoyée pour l'URL: $url")
+                        logger.info("📤 Requête envoyée pour l'URL: $url")
                     }
                     catch (e: Exception) {
                         logger.error("Erreur lors de l'envoi de la requête: ${e.message}, tentative de reconnexion...")
@@ -91,13 +99,13 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
         }
     }
 
-    override fun onOpen(handshakedata: ServerHandshake?) {logger.info("Connecté au serveur WebSocket")}
+    override fun onOpen(handshakedata: ServerHandshake?) {logger.info("🔌 WebSocket ouvert et connecté au serveur")}
     override fun onMessage(message: String?) {
         message?.let {
-            logger.info("Message reçu : $it")
+            logger.info("📥 Message WebSocket reçu : $it")
             onResult(it)
         }
     }
-    override fun onError(ex: Exception?) {logger.error("Erreur WebSocket : ${ex?.message}", ex)}
-    override fun onClose(code: Int, reason: String?, remote: Boolean) {logger.info("WebSocket fermé : $reason")}
+    override fun onError(ex: Exception?) {logger.error("❌ Erreur WebSocket : ${ex?.message}", ex)}
+    override fun onClose(code: Int, reason: String?, remote: Boolean) {logger.info("❌ WebSocket fermé : Code=$code, Raison=$reason, Remote=$remote")}
 }
