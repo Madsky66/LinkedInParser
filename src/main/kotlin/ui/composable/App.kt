@@ -70,8 +70,7 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                     engine.locationProperty().addListener {_, oldLocation, newLocation ->
                         if (newLocation != null) {
                             Platform.runLater {
-                                if (oldLocation?.contains("linkedin.com/login") == true &&
-                                    (newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home"))) {
+                                if ((newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home"))) {
                                     isLoggedInToLinkedIn = true
                                     statusMessage = "✅ Connecté à LinkedIn"
                                     webView?.engine?.load(newLocation)
@@ -167,7 +166,9 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                             },
                             enabled = urlInput.isNotBlank() && isLoggedInToLinkedIn
                         ) {
-                            Icon(Icons.Default.Search, "Rechercher", tint = if (urlInput.isNotBlank() && isLoggedInToLinkedIn) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(0.4f))
+                            Icon(Icons.Default.Search, "Rechercher", tint = if (urlInput.isNotBlank() && isLoggedInToLinkedIn) {
+                                MaterialTheme.colors.primary
+                            } else MaterialTheme.colors.onSurface.copy(0.4f))
                         }
                     }
                 )
