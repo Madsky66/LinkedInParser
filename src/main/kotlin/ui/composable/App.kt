@@ -32,34 +32,21 @@ import org.jsoup.nodes.Document
 import org.slf4j.LoggerFactory
 
 @Composable
-fun ContactCard() {
-    Card(Modifier.fillMaxHeight()) {
-        Text("Détails du contact")
-    }
-}
-
-@Composable
 fun App(windowState: WindowState, applicationScope: CoroutineScope) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
-    ModalDrawer(drawerState = drawerState, drawerContent = {DrawerMenu()}) {
-        TopAppBar(
-            title = {Text("Mon Application")},
-            navigationIcon = {
-                IconButton(onClick = {
-                    coroutineScope.launch {
-                        if (drawerState.isOpen) {drawerState.close()}
-                        else {drawerState.open()}
-                    }
-                }) {
-                    Icon(Icons.Filled.Menu, contentDescription = "Menu")
-                }
+    ModalDrawer({DrawerMenu()}, Modifier.fillMaxSize().background(Color.DarkGray), drawerState) {
+        IconButton(onClick = {
+            coroutineScope.launch {
+                if (drawerState.isOpen) {drawerState.close()}
+                else {drawerState.open()}
             }
-        )
-        Row(Modifier.fillMaxSize()) {
-            Column(Modifier.weight(2f)) {MainContent(windowState, applicationScope)}
-            Column(Modifier.weight(1f).fillMaxHeight()) {ContactCard()}
+        }) {
+            Icon(Icons.Filled.Menu, contentDescription = "Menu")
+        }
+        Column(Modifier.fillMaxSize()) {
+            MainContent(windowState, applicationScope)
         }
     }
 }
@@ -114,12 +101,12 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
     }
 
     MaterialTheme(colors = darkColors()) {
-        Column(Modifier.fillMaxSize().background(Color.LightGray)) {
+        Column(Modifier.fillMaxSize().background(Color.Gray).padding(10.dp)) {
             // Zone du navigateur
-            Box(Modifier.weight(2f).fillMaxSize().background(Color.LightGray)) {
+            Box(Modifier.weight(2f).fillMaxSize(), Alignment.Center) {
                 if (!webViewReady) CircularProgressIndicator(Modifier.align(Alignment.Center))
                 SwingPanel(
-                    modifier = Modifier.fillMaxSize().background(Color.LightGray),
+                    modifier = Modifier.fillMaxSize(),
                     factory = {
                         JPanel(BorderLayout()).apply {
                             background = java.awt.Color.LIGHT_GRAY
@@ -132,10 +119,18 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
                     update = {it.revalidate(); it.repaint()}
                 )
             }
-
-            // ZONE DU BAS (TEST)
-            Row(Modifier.weight(1f).fillMaxHeight().padding(5.dp).background(Color.DarkGray).padding(10.dp)) {
-                Column(Modifier.weight(2f).fillMaxHeight()) {
+            Spacer(Modifier.height(10.dp))
+            // ZONE DU BAS
+            Row(Modifier.weight(1f).background(Color.DarkGray).padding(10.dp)) {
+                Column(Modifier.weight(2f).fillMaxHeight(), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
+                    // Statut
+                    Text(
+                        statusMessage, Modifier.padding(8.dp), color = when {
+                            statusMessage.startsWith("✅") -> Color.Green
+                            statusMessage.startsWith("❌") -> Color.Red
+                            else -> Color.White
+                        }
+                    )
                     OutlinedTextField(
                         value = urlInput,
                         onValueChange = {urlInput = it},
@@ -184,19 +179,11 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
                             }
                         }
                     )
-                    // Statut
-                    Text(
-                        statusMessage, Modifier.padding(8.dp), color = when {
-                            statusMessage.startsWith("✅") -> Color.Green
-                            statusMessage.startsWith("❌") -> Color.Red
-                            else -> Color.White
-                        }
-                    )
                 }
                 Spacer(Modifier.width(10.dp))
                 // Fiche contact
-                Box(Modifier.weight(1f).fillMaxSize()) {
-                    if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.Center))
+                Column(Modifier.weight(1f).fillMaxSize()) {
+                    if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
                     else currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()
                 }
             }
