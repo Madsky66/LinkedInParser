@@ -30,29 +30,43 @@ dependencies {
     implementation(compose.foundation)
     implementation(compose.ui)
 
+    // Kotlin X
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("org.java-websocket:Java-WebSocket:1.5.3")
-    implementation("com.google.apis:google-api-services-sheets:v4-rev20220927-2.0.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
-    implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
-    implementation("org.slf4j:slf4j-api:2.0.9")
-    implementation("org.slf4j:slf4j-simple:2.0.9")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
+    implementation("org.java-websocket:Java-WebSocket:1.5.3")
 
-    // JavaFX version 21
-    implementation("org.openjfx:javafx-controls:21")
-    implementation("org.openjfx:javafx-web:21")
-    implementation("org.openjfx:javafx-swing:21")
-    implementation("org.openjfx:javafx-fxml:21")
+    // Google
+    implementation("com.google.apis:google-api-services-sheets:v4-rev20220927-2.0.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+
+    // Slf4j
+    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("org.slf4j:slf4j-simple:2.0.9")
+
+    // JavaFX version 17
+    implementation("org.openjfx:javafx-controls:17")
+    implementation("org.openjfx:javafx-fxml:17")
+    implementation("org.openjfx:javafx-swing:17")
+    implementation("org.openjfx:javafx-web:17")
+    runtimeOnly("org.openjfx:javafx-graphics:17:win")
+    runtimeOnly("org.openjfx:javafx-base:17:win")
+    runtimeOnly("org.openjfx:javafx-controls:17:win")
+    runtimeOnly("org.openjfx:javafx-fxml:17:win")
+    runtimeOnly("org.openjfx:javafx-swing:17:win")
+    runtimeOnly("org.openjfx:javafx-web:17:win")
 
     // Jsoup
     implementation("org.jsoup:jsoup:1.17.2")
+
+    // OkHttp3
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 javafx {
-    version = "21"
+    version = "17"
     modules = listOf("javafx.controls", "javafx.web", "javafx.swing", "javafx.fxml")
 }
 
@@ -78,7 +92,6 @@ compose.desktop {
                 "src/main/resources/extra/apollo_key.txt",
                 "src/main/resources/extra/LICENSE.txt",
                 "src/main/resources/extra/icon.ico",
-                "src/main/resources/extra/server/server.exe",
                 "src/main/resources/extra/chrome"
             )
 
