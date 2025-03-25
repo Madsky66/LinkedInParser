@@ -16,11 +16,12 @@ object ServerManager {
             val extraDir = File("src/main/resources/extra")
             val chromeDir = File(extraDir, "chrome")
             if (!chromeDir.exists()) {throw IllegalStateException("Le dossier Chrome portable n'existe pas: ${chromeDir.absolutePath}")}
-            val serverPath =
-                if (System.getProperty("os.name").lowercase().contains("windows")) {"src/main/resources/extra/server.exe"}
-                else {"src/main/resources/extra/server"}
+            val serverPath = "src/main/resources/extra/server/server.exe"
             val serverFile = File(serverPath)
-            if (!serverFile.exists()) {throw IllegalStateException("Le fichier serveur n'existe pas: $serverPath")}
+            if (!serverFile.exists()) {
+                logger.warn("Le fichier serveur n'existe pas: $serverPath. Le lancement du serveur est ignoré.")
+                return null
+            }
             if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {throw SecurityException("Impossible de rendre le serveur exécutable")}
             val processBuilder = ProcessBuilder(serverPath).apply {
                 environment()["CHROME_PATH"] = chromeDir.absolutePath

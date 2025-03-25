@@ -79,7 +79,7 @@ compose.desktop {
                 "src/main/resources/extra/apollo_key.txt",
                 "src/main/resources/extra/LICENSE.txt",
                 "src/main/resources/extra/icon.ico",
-                "src/main/resources/extra/server.exe",
+                "src/main/resources/extra/server/server.exe",
                 "src/main/resources/extra/chrome"
             )
 
