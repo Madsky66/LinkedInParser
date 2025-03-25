@@ -10,7 +10,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from urllib.parse import urlparse
-from contextlib import suppress
 
 # Configuration du logging
 logging.basicConfig(
@@ -183,7 +182,7 @@ async def websocket_handler(websocket, path):
     finally:
         if hasattr(scraper, 'driver') and scraper.driver:
             scraper.driver.quit()
-            print("Connection closed")
+            logger.info("Connection closed")
 
 async def start_server():
     """Démarre le serveur WebSocket"""
@@ -193,7 +192,7 @@ async def start_server():
     for attempt in range(max_attempts):
         try:
             server = await websockets.serve(
-                lambda ws, p: websocket_handler(ws, p),
+                websocket_handler,
                 "127.0.0.1",
                 port,
                 ping_interval=None

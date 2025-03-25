@@ -69,8 +69,9 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                     engine.load("https://www.linkedin.com/login")
                     engine.locationProperty().addListener {_, _, newLocation ->
                         if (newLocation != null) {
+                            logger.info("🔍 Redirection détectée : $newLocation")
                             Platform.runLater {
-                                if ((newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home"))) {
+                                if (newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home")) {
                                     isLoggedInToLinkedIn = true
                                     statusMessage = "✅ Connecté à LinkedIn"
                                     webView?.engine?.load(newLocation)
@@ -167,8 +168,8 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                             enabled = urlInput.isNotBlank() && isLoggedInToLinkedIn
                         ) {
                             Icon(
-                                Icons.Default.Search,
-                                "Rechercher",
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Rechercher",
                                 tint =
                                 if (urlInput.isNotBlank() && isLoggedInToLinkedIn) MaterialTheme.colors.primary
                                 else MaterialTheme.colors.onSurface.copy(0.4f)
@@ -225,7 +226,7 @@ fun isValidLinkedInURL(url: String): Boolean {
     return try {
         val parsedURL = URL(url)
         val host = parsedURL.host
-        (host.contains("linkedin.com") || host.contains("www.linkedin.com")) && url.startsWith("https://www.linkedin.com/in/") || url.startsWith("https://linkedin.com/in/")
+        (host.contains("linkedin.com") || host.contains("www.linkedin.com")) && (url.startsWith("https://www.linkedin.com/in/") || url.startsWith("https://linkedin.com/in/"))
     }
     catch (e: MalformedURLException) {false}
 }

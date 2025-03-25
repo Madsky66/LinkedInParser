@@ -3,8 +3,9 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("jvm") version "1.9.0"
     kotlin("plugin.serialization") version "1.9.0"
-    id("org.jetbrains.compose") version "1.7.3"
+    id("org.jetbrains.compose") version "1.5.11"
     id("org.openjfx.javafxplugin") version "0.0.13"
+    id("org.javamodularity.moduleplugin") version "1.8.15"
 }
 
 group = "com.madsky"
@@ -38,20 +39,22 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.9")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
 
-    // JavaFX
-    implementation("org.openjfx:javafx-controls:19")
-    implementation("org.openjfx:javafx-web:19")
-    implementation("org.openjfx:javafx-swing:19")
+    // JavaFX version 21
+    implementation("org.openjfx:javafx-controls:21")
+    implementation("org.openjfx:javafx-web:21")
+    implementation("org.openjfx:javafx-swing:21")
+    implementation("org.openjfx:javafx-fxml:21")
 
-    // br
+    // Bibliothèques Brotli
     implementation("org.brotli:dec:0.1.2")
     implementation("com.aayushatharva.brotli4j:brotli4j:1.8.0")
 }
 
 javafx {
-    version = "19"
-    modules = listOf("javafx.controls", "javafx.web", "javafx.swing")
+    version = "21"
+    modules = listOf("javafx.controls", "javafx.web", "javafx.swing", "javafx.fxml")
 }
 
 compose.desktop {
@@ -87,4 +90,11 @@ compose.desktop {
             licenseFile.set(project.file("src/main/resources/extra/LICENSE.txt"))
         }
     }
+}
+
+tasks.withType<JavaExec>().configureEach {
+    jvmArgs = listOf(
+        "--add-modules", "javafx.controls,javafx.web,javafx.swing",
+        "--add-opens", "javafx.web/com.sun.javafx.webkit=ALL-UNNAMED"
+    )
 }
