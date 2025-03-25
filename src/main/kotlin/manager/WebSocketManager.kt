@@ -42,7 +42,7 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
 
         @Synchronized
         fun initialize(onResult: (String) -> Unit, scope: CoroutineScope) {
-            if (instance != null) {closeWebSocket()}
+            closeWebSocket()
             val port = getWebSocketPort()
             val uri = URI("ws://127.0.0.1:$port")
             instance = WebSocketManager(uri, onResult, scope)
