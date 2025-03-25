@@ -123,30 +123,41 @@ class LinkedInScraper:
 
 async def websocket_handler(websocket, path):
     """Gère les connexions WebSocket"""
-    logger.info("🔌 Nouvelle connexion WebSocket")
+    logger.info(f"🔌 Nouvelle connexion WebSocket sur le chemin: {path}")
     scraper = LinkedInScraper()
 
     try:
-        async for message in websocket:
-            try:
-                data = json.loads(message)
-                if "linkedinURL" in data and data["status"] == "request":
-                    logger.info(f"📥 Traitement de l'URL: {data['linkedinURL']}")
-                    result = scraper.parse_profile_info(data["linkedinURL"])
-                    await websocket.send(json.dumps(result))
-                    logger.info("✅ Résultat envoyé au client")
-            except json.JSONDecodeError as e:
-                logger.error(f"Erreur de décodage JSON: {e}")
-                await websocket.send(json.dumps({
-                    "status": "error",
-                    "error": "Format de message invalide"
-                }))
-            except Exception as e:
-                logger.error(f"Erreur de traitement: {e}")
-                await websocket.send(json.dumps({
-                    "status": "error",
-                    "error": str(e)
-                }))
+        if path == "/" or path == "":
+            async for message in websocket:
+                try:
+                    data = json.loads(message)
+                    if "linkedinURL" in data and data["status"] == "request":
+                        logger.info(f"📥 Traitement de l'URL: {data['linkedinURL']}")
+                        result = scraper.parse_profile_info(data["linkedinURL"])
+                        await websocket.send(json.dumps(result))
+                        logger.info("✅ Résultat envoyé au client")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Erreur de décodage JSON: {e}")
+                    await websocket.send(json.dumps({
+                        "status": "error",
+                        "error": "Format de message invalide"
+                    }))
+                except Exception as e:
+                    logger.error(f"Erreur de traitement: {e}")
+                    await websocket.send(json.dumps({
+                        "status": "error",
+                        "error": str(e)
+                    }))
+        elif path == "/status":
+            await websocket.send(json.dumps({
+                "status": "ok",
+                "message": "Serveur opérationnel"
+            }))
+        else:
+            await websocket.send(json.dumps({
+                "status": "error",
+                "error": f"Chemin non reconnu: {path}"
+            }))
     except websockets.exceptions.ConnectionClosed:
         logger.info("🔌 Connexion WebSocket fermée")
     finally:
@@ -161,7 +172,7 @@ async def start_server():
     for attempt in range(max_attempts):
         try:
             server = await websockets.serve(
-                websocket_handler,  # Retiré le paramètre path
+                websocket_handler,
                 "127.0.0.1",
                 port,
                 ping_interval=None

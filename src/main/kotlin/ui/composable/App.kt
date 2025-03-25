@@ -41,6 +41,7 @@ private val DarkThemeColors = darkColors(
 @Composable
 fun App(windowState: WindowState) {
     var urlInput by remember {mutableStateOf("")}
+    var isLoggedInToLinkedIn by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
@@ -67,16 +68,12 @@ fun App(windowState: WindowState) {
                                 urlInput = newLocation
                                 if (oldLocation?.contains("linkedin.com/login") == true &&
                                     (newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home"))) {
+                                    isLoggedInToLinkedIn = true
+                                    statusMessage = "✅ Connecté à LinkedIn"
                                     coroutineScope.launch {
                                         delay(1000)
                                         Platform.runLater {engine.executeScript("window.location.href='https://www.linkedin.com/in/me/'")}
                                     }
-                                }
-                                if (newLocation.contains("linkedin.com/in/")) {
-                                    currentProfile = null
-                                    statusMessage = "⏳ Analyse du profil en cours..."
-                                    isLoading = true
-                                    WebSocketManager.sendProfileRequest(newLocation)
                                 }
                             }
                         }
@@ -97,63 +94,65 @@ fun App(windowState: WindowState) {
         Row(Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
             // Panneau latéral gauche
             Column(Modifier.width(400.dp).fillMaxHeight().background(MaterialTheme.colors.surface).padding(16.dp)) {
-                Text(
-                    "LinkedIn Parser Pro",
-                    style = MaterialTheme.typography.h5.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colors.primary),
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
                 // Zone de recherche
                 OutlinedTextField(
                     value = urlInput,
                     onValueChange = {urlInput = it},
                     label = {Text("URL du profil LinkedIn")},
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = isLoggedInToLinkedIn,
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colors.primary,
-                        unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.12f)
+                        unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.12f),
+                        disabledTextColor = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                        disabledBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.12f),
+                        disabledLabelColor = MaterialTheme.colors.onSurface.copy(alpha = 0.4f)
                     ),
                     trailingIcon = {
-                        IconButton(onClick = {
-                            if (urlInput.isNotBlank()) {
-                                currentProfile = null
-                                statusMessage = "⏳ Analyse du profil en cours..."
-                                isLoading = true
-                                Platform.runLater {webView?.engine?.load(urlInput)}
-                                if (webSocketConnected) {WebSocketManager.sendProfileRequest(urlInput)}
-                                else {
-                                    coroutineScope.launch {
-                                        try {
-                                            WebSocketManager.initialize {resultJson ->
-                                                coroutineScope.launch {
-                                                    try {
-                                                        val result = Json.decodeFromString<ProspectData>(resultJson)
-                                                        currentProfile = result
-                                                        isLoading = false
-                                                        statusMessage =
-                                                            when (result.status) {
-                                                                "completed" -> "✅ Profil récupéré avec succès"
-                                                                "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
-                                                                else -> "⚠️ Statut inattendu: ${result.status}"
-                                                            }
-                                                    }
-                                                    catch (e: Exception) {
-                                                        isLoading = false
-                                                        statusMessage = "❌ Erreur de traitement des données: ${e.message}"
+                        IconButton(
+                            onClick = {
+                                if (urlInput.isNotBlank() && isLoggedInToLinkedIn) {
+                                    currentProfile = null
+                                    statusMessage = "⏳ Analyse du profil en cours..."
+                                    isLoading = true
+                                    Platform.runLater {webView?.engine?.load(urlInput)}
+                                    if (webSocketConnected) {WebSocketManager.sendProfileRequest(urlInput)}
+                                    else {
+                                        coroutineScope.launch {
+                                            try {
+                                                WebSocketManager.initialize {resultJson ->
+                                                    coroutineScope.launch {
+                                                        try {
+                                                            val result = Json.decodeFromString<ProspectData>(resultJson)
+                                                            currentProfile = result
+                                                            isLoading = false
+                                                            statusMessage =
+                                                                when (result.status) {
+                                                                    "completed" -> "✅ Profil récupéré avec succès"
+                                                                    "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
+                                                                    else -> "⚠️ Statut inattendu: ${result.status}"
+                                                                }
+                                                        }
+                                                        catch (e: Exception) {
+                                                            isLoading = false
+                                                            statusMessage = "❌ Erreur de traitement des données: ${e.message}"
+                                                        }
                                                     }
                                                 }
+                                                WebSocketManager.sendProfileRequest(urlInput)
+                                                webSocketConnected = true
                                             }
-                                            WebSocketManager.sendProfileRequest(urlInput)
-                                            webSocketConnected = true
-                                        }
-                                        catch (e: Exception) {
-                                            isLoading = false
-                                            statusMessage = "❌ Impossible de se connecter au serveur: ${e.message}"
+                                            catch (e: Exception) {
+                                                isLoading = false
+                                                statusMessage = "❌ Impossible de se connecter au serveur: ${e.message}"
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        }) {
-                            Icon(Icons.Default.Search, contentDescription = "Rechercher")
+                            },
+                            enabled = urlInput.isNotBlank() && isLoggedInToLinkedIn
+                        ) {
+                            Icon(Icons.Default.Search, "Rechercher", tint = if (urlInput.isNotBlank() && isLoggedInToLinkedIn) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(0.4f))
                         }
                     }
                 )
