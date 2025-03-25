@@ -13,22 +13,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
-import kotlinx.serialization.json.Json
-import manager.WebSocketManager
 import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebView
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.swing.JPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
 import manager.GoogleSheetsManager
 import org.slf4j.LoggerFactory
-import kotlinx.serialization.SerializationException
 import java.net.MalformedURLException
 import java.net.URL
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 
 private val DarkThemeColors = darkColors(
     primary = Color(0xFF2196F3),
@@ -50,7 +51,6 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
     var webViewReady by remember {mutableStateOf(false)}
-    var webSocketConnected by remember {mutableStateOf(false)}
     val googleSheetsManager = remember {GoogleSheetsManager()}
     val logger = LoggerFactory.getLogger("App")
 
@@ -121,47 +121,16 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                                     statusMessage = "⏳ Analyse du profil en cours..."
                                     isLoading = true
                                     Platform.runLater {webView?.engine?.load(urlInput)}
-                                    if (webSocketConnected) {WebSocketManager.sendProfileRequest(urlInput)}
-                                    else {
-                                        applicationScope.launch {
-                                            try {
-                                                WebSocketManager.initialize({resultJson ->
-                                                    applicationScope.launch {
-                                                        try {
-                                                            val result = Json.decodeFromString<ProspectData>(resultJson)
-                                                            Platform.runLater {
-                                                                currentProfile = result
-                                                                isLoading = false
-                                                                statusMessage =
-                                                                    when (result.status) {
-                                                                        "completed" -> "✅ Profil récupéré avec succès"
-                                                                        "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
-                                                                        else -> "⚠️ Statut inattendu: ${result.status}"
-                                                                    }
-                                                                if (result.status == "completed") {googleSheetsManager.saveProspect(result, applicationScope)}
-                                                            }
-                                                        }
-                                                        catch (e: SerializationException) {
-                                                            isLoading = false
-                                                            statusMessage = "❌ Erreur de désérialisation des données: ${e.message}"
-                                                            logger.error("Erreur lors de la désérialisation des données", e)
-                                                        }
-                                                        catch (e: Exception) {
-                                                            isLoading = false
-                                                            statusMessage = "❌ Erreur de traitement des données: ${e.message}"
-                                                            logger.error("Erreur lors du traitement des données", e)
-                                                        }
-                                                    }
-                                                }, applicationScope)
-                                                WebSocketManager.sendProfileRequest(urlInput)
-                                                webSocketConnected = true
+                                    applicationScope.launch {
+                                        currentProfile = scrapeLinkedInProfile(urlInput)
+                                        isLoading = false
+                                        statusMessage =
+                                            when (currentProfile?.status) {
+                                                "completed" -> "✅ Profil récupéré avec succès"
+                                                "error" -> "❌ Erreur: ${currentProfile?.error ?: "Inconnue"}"
+                                                else -> "⚠️ Statut inattendu: ${currentProfile?.status}"
                                             }
-                                            catch (e: Exception) {
-                                                isLoading = false
-                                                statusMessage = "❌ Impossible de se connecter au serveur: ${e.message}"
-                                                logger.error("Impossible de se connecter au serveur WebSocket", e)
-                                            }
-                                        }
+                                        if (currentProfile?.status == "completed") {currentProfile?.let {googleSheetsManager.saveProspect(it, applicationScope)}}
                                     }
                                 }
                             },
@@ -229,4 +198,34 @@ fun isValidLinkedInURL(url: String): Boolean {
         (host.contains("linkedin.com") || host.contains("www.linkedin.com")) && (url.startsWith("https://www.linkedin.com/in/") || url.startsWith("https://linkedin.com/in/"))
     }
     catch (e: MalformedURLException) {false}
+}
+
+suspend fun scrapeLinkedInProfile(url: String): ProspectData? {
+    return withContext(Dispatchers.IO) {
+        try {
+            val document: Document = Jsoup.connect(url).get()
+            val fullNameElement = document.selectFirst("h1.text-heading-xlarge")
+            val fullName = fullNameElement?.text()?.trim() ?: ""
+            val names = fullName.split(' ', limit = 2)
+            val firstName = names.getOrNull(0) ?: ""
+            val lastName = names.getOrNull(1) ?: ""
+            val positionElement = document.selectFirst("div.text-body-medium.break-words")
+            val position = positionElement?.text()?.trim() ?: ""
+            val companyElement = document.selectFirst("span.text-body-small.inline")
+            val company = companyElement?.text()?.trim() ?: ""
+            val email = ""
+
+            ProspectData(
+                linkedinURL = url,
+                status = "completed",
+                fullName = fullName,
+                firstName = firstName,
+                lastName = lastName,
+                email = email,
+                company = company,
+                position = position
+            )
+        }
+        catch (e: Exception) {ProspectData(linkedinURL = url, status = "error", error = e.message ?: "Unknown error")}
+    }
 }
