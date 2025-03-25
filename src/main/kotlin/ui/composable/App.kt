@@ -98,10 +98,10 @@ fun App(windowState: WindowState) {
                     enabled = isLoggedInToLinkedIn,
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colors.primary,
-                        unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.12f),
-                        disabledTextColor = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
-                        disabledBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.12f),
-                        disabledLabelColor = MaterialTheme.colors.onSurface.copy(alpha = 0.4f)
+                        unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
+                        disabledTextColor = MaterialTheme.colors.onSurface.copy(0.6f),
+                        disabledBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
+                        disabledLabelColor = MaterialTheme.colors.onSurface.copy(0.4f)
                     ),
                     trailingIcon = {
                         IconButton(
