@@ -193,7 +193,7 @@ async def start_server():
     for attempt in range(max_attempts):
         try:
             server = await websockets.serve(
-                websocket_handler,
+                lambda ws, p: websocket_handler(ws, p),
                 "127.0.0.1",
                 port,
                 ping_interval=None
