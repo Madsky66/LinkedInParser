@@ -67,7 +67,7 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                 webView?.apply {
                     engine.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
                     engine.load("https://www.linkedin.com/login")
-                    engine.locationProperty().addListener {_, oldLocation, newLocation ->
+                    engine.locationProperty().addListener {_, _, newLocation ->
                         if (newLocation != null) {
                             Platform.runLater {
                                 if ((newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home"))) {

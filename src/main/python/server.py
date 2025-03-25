@@ -148,6 +148,7 @@ async def websocket_handler(websocket, path):
     try:
         if path == "/" or path == "":
             async for message in websocket:
+                logger.info(f"Received message: {message}")
                 try:
                     data = json.loads(message)
                     if "linkedinURL" in data and data["status"] == "request":
@@ -182,6 +183,7 @@ async def websocket_handler(websocket, path):
     finally:
         if hasattr(scraper, 'driver') and scraper.driver:
             scraper.driver.quit()
+            print("Connection closed")
 
 async def start_server():
     """Démarre le serveur WebSocket"""
