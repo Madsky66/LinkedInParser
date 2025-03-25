@@ -42,7 +42,9 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
 
         @Synchronized
         fun initialize(onResult: (String) -> Unit, scope: CoroutineScope) {
+            logger.info("🔄 Initialisation WebSocketManager...")
             closeWebSocket()
+            instance = null
             val port = getWebSocketPort()
             val uri = URI("ws://127.0.0.1:$port")
             instance = WebSocketManager(uri, onResult, scope)
@@ -70,6 +72,7 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
         }
 
         private fun closeWebSocket() {
+            logger.info("❌ Fermeture de la connexion WebSocket...")
             try {instance?.close()}
             catch (e: Exception) {logger.error("Erreur lors de la fermeture du WebSocket: ${e.message}", e)}
             finally {instance = null}
