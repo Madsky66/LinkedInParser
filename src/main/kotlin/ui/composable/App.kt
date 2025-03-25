@@ -120,14 +120,16 @@ fun App(windowState: WindowState) {
                                                     coroutineScope.launch {
                                                         try {
                                                             val result = Json.decodeFromString<ProspectData>(resultJson)
-                                                            currentProfile = result
-                                                            isLoading = false
-                                                            statusMessage =
-                                                                when (result.status) {
-                                                                    "completed" -> "✅ Profil récupéré avec succès"
-                                                                    "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
-                                                                    else -> "⚠️ Statut inattendu: ${result.status}"
-                                                                }
+                                                            Platform.runLater {
+                                                                currentProfile = result
+                                                                isLoading = false
+                                                                statusMessage =
+                                                                    when (result.status) {
+                                                                        "completed" -> "✅ Profil récupéré avec succès"
+                                                                        "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
+                                                                        else -> "⚠️ Statut inattendu: ${result.status}"
+                                                                    }
+                                                            }
                                                         }
                                                         catch (e: Exception) {
                                                             isLoading = false
