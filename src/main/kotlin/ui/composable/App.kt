@@ -1,15 +1,22 @@
 package ui.composable
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
@@ -30,7 +37,67 @@ import org.jsoup.nodes.Document
 import org.slf4j.LoggerFactory
 
 @Composable
+fun DrawerMenu() {
+    Column(Modifier.padding(16.dp)) {
+        Text("Menu Principal", style = MaterialTheme.typography.h6)
+        Divider()
+        Text("Gestion", style = MaterialTheme.typography.subtitle1)
+        DrawerMenuItem(icon = Icons.Filled.Home, label = "Accueil")
+        DrawerMenuItem(icon = Icons.Filled.Settings, label = "Paramètres")
+        Divider()
+        Text("Support", style = MaterialTheme.typography.subtitle1)
+        DrawerMenuItem(icon = Icons.Filled.Info, label = "Aide")
+        DrawerMenuItem(icon = Icons.Filled.ExitToApp, label = "Déconnexion")
+    }
+}
+
+@Composable
+fun DrawerMenuItem(icon: ImageVector, label: String) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 8.dp)
+        .clickable { /* Action à définir */ }) {
+        Icon(imageVector = icon, contentDescription = null)
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(label)
+    }
+}
+
+@Composable
+fun ContactCard() {
+    Card(Modifier.fillMaxHeight()) {
+        Text("Détails du contact")
+    }
+}
+
+@Composable
 fun App(windowState: WindowState, applicationScope: CoroutineScope) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+
+    ModalDrawer(drawerState = drawerState, drawerContent = { DrawerMenu() }) {
+        TopAppBar(
+            title = {Text("Mon Application")},
+            navigationIcon = {
+                IconButton(onClick = {
+                    coroutineScope.launch {
+                        if (drawerState.isOpen) {drawerState.close()}
+                        else {drawerState.open()}
+                    }
+                }) {
+                    Icon(Icons.Filled.Menu, contentDescription = "Menu")
+                }
+            }
+        )
+        Row(Modifier.fillMaxSize()) {
+            Column(Modifier.weight(2f)) {MainContent(windowState, applicationScope)}
+            Column(Modifier.weight(1f).fillMaxHeight()) {ContactCard()}
+        }
+    }
+}
+
+@Composable
+fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
     var urlInput by remember {mutableStateOf("")}
     var isLoggedInToLinkedIn by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
@@ -53,7 +120,9 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                 jfxPanel.scene = Scene(localWebView)
                 webView = localWebView
                 webView?.apply {
-                    engine.load("https://www.linkedin.com/login")
+//                    engine.load("https://www.linkedin.com/login")
+                    engine.javaScriptEnabledProperty()
+                    engine.load("https://www.google.com")
                     engine.locationProperty().addListener {_, _, newLocation ->
                         if (newLocation != null) {
                             Platform.runLater {
@@ -77,77 +146,15 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
     }
 
     MaterialTheme(colors = darkColors()) {
-        Row(Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
-            // Panneau latéral gauche
-            Column(Modifier.width(400.dp).fillMaxHeight().background(MaterialTheme.colors.surface).padding(16.dp)) {
-                // Zone de recherche
-                OutlinedTextField(
-                    value = urlInput,
-                    onValueChange = {urlInput = it},
-                    label = {Text("URL du profil LinkedIn")},
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = isLoggedInToLinkedIn,
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = MaterialTheme.colors.primary,
-                        unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
-                        disabledTextColor = MaterialTheme.colors.onSurface.copy(0.6f),
-                        disabledBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
-                        disabledLabelColor = MaterialTheme.colors.onSurface.copy(0.4f)
-                    ),
-                    trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                if (isValidLinkedInURL(urlInput)) {
-                                    currentProfile = null
-                                    statusMessage = "⏳ Analyse en cours..."
-                                    isLoading = true
-                                    if (webViewReady) {Platform.runLater {webView?.engine?.load(urlInput)}}
-                                    else {statusMessage = "🚨 WebView en cours d'initialisation, veuillez patienter..."}
-                                    applicationScope.launch {
-                                        currentProfile = scrapeLinkedInProfile(urlInput)
-                                        isLoading = false
-                                        statusMessage =
-                                            when (currentProfile?.status) {
-                                                "completed" -> "✅ Profil récupéré avec succès"
-                                                "error" -> "❌ Erreur: ${currentProfile?.error ?: "Inconnue"}"
-                                                else -> "⚠️ Statut inattendu: ${currentProfile?.status}"
-                                            }
-                                        if (currentProfile?.status == "completed") {currentProfile?.let {googleSheetsManager.saveProspect(it, applicationScope)}}
-                                    }
-                                }
-                                else {statusMessage = "❌ URL invalide"}
-                            },
-                            enabled = isLoggedInToLinkedIn
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Rechercher",
-                                tint =
-                                if (urlInput.isNotBlank() && isLoggedInToLinkedIn) MaterialTheme.colors.primary
-                                else MaterialTheme.colors.onSurface.copy(0.4f)
-                            )
-                        }
-                    }
-                )
-                // Statut
-                Text(statusMessage, Modifier.padding(8.dp), color = when {
-                    statusMessage.startsWith("✅") -> Color.Green
-                    statusMessage.startsWith("❌") -> Color.Red
-                    else -> Color.White
-                })
-                // Fiche contact
-                Box(Modifier.fillMaxWidth().weight(1f).padding(16.dp)) {
-                    if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.Center))
-                    else currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()
-                }
-            }
+        Column(Modifier.fillMaxSize().background(Color.LightGray)) {
             // Zone du navigateur
-            Box(Modifier.weight(1f).fillMaxHeight().background(MaterialTheme.colors.background)) {
+            Box(Modifier.weight(2f).fillMaxSize().background(Color.LightGray)) {
                 if (!webViewReady) CircularProgressIndicator(Modifier.align(Alignment.Center))
                 SwingPanel(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().background(Color.LightGray),
                     factory = {
                         JPanel(BorderLayout()).apply {
+                            background = java.awt.Color.LIGHT_GRAY
                             preferredSize = Dimension(windowState.size.width.value.toInt() - 400, windowState.size.height.value.toInt())
                             add(jfxPanel, BorderLayout.CENTER)
                             isOpaque = true
@@ -156,6 +163,74 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                     },
                     update = {it.revalidate(); it.repaint()}
                 )
+            }
+
+            // ZONE DU BAS (TEST)
+            Row(Modifier.weight(1f).fillMaxHeight().padding(5.dp).background(Color.DarkGray).padding(10.dp)) {
+                Column(Modifier.weight(2f).fillMaxHeight()) {
+                    OutlinedTextField(
+                        value = urlInput,
+                        onValueChange = {urlInput = it},
+                        label = {Text("URL du profil LinkedIn")},
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = isLoggedInToLinkedIn,
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = MaterialTheme.colors.primary,
+                            unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
+                            disabledTextColor = MaterialTheme.colors.onSurface.copy(0.6f),
+                            disabledBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
+                            disabledLabelColor = MaterialTheme.colors.onSurface.copy(0.4f)
+                        ),
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    if (isValidLinkedInURL(urlInput)) {
+                                        currentProfile = null
+                                        statusMessage = "⏳ Analyse en cours..."
+                                        isLoading = true
+                                        if (webViewReady) {Platform.runLater {webView?.engine?.load(urlInput)}}
+                                        else {statusMessage = "🚨 WebView en cours d'initialisation, veuillez patienter..."}
+                                        applicationScope.launch {
+                                            currentProfile = scrapeLinkedInProfile(urlInput)
+                                            isLoading = false
+                                            statusMessage =
+                                                when (currentProfile?.status) {
+                                                    "completed" -> "✅ Profil récupéré avec succès"
+                                                    "error" -> "❌ Erreur: ${currentProfile?.error ?: "Inconnue"}"
+                                                    else -> "⚠️ Statut inattendu: ${currentProfile?.status}"
+                                                }
+                                            if (currentProfile?.status == "completed") {currentProfile?.let {googleSheetsManager.saveProspect(it, applicationScope)}}
+                                        }
+                                    }
+                                    else {statusMessage = "❌ URL invalide"}
+                                },
+                                enabled = isLoggedInToLinkedIn
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Rechercher",
+                                    tint =
+                                    if (urlInput.isNotBlank() && isLoggedInToLinkedIn) MaterialTheme.colors.primary
+                                    else MaterialTheme.colors.onSurface.copy(0.4f)
+                                )
+                            }
+                        }
+                    )
+                    // Statut
+                    Text(
+                        statusMessage, Modifier.padding(8.dp), color = when {
+                            statusMessage.startsWith("✅") -> Color.Green
+                            statusMessage.startsWith("❌") -> Color.Red
+                            else -> Color.White
+                        }
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                // Fiche contact
+                Box(Modifier.weight(1f).fillMaxSize()) {
+                    if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    else currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()
+                }
             }
         }
     }
