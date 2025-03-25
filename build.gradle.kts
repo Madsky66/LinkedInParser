@@ -47,10 +47,6 @@ dependencies {
     implementation("org.openjfx:javafx-swing:21")
     implementation("org.openjfx:javafx-fxml:21")
 
-    // Bibliothèques Brotli
-    implementation("org.brotli:dec:0.1.2")
-    implementation("com.aayushatharva.brotli4j:brotli4j:1.8.0")
-
     // Jsoup
     implementation("org.jsoup:jsoup:1.17.2")
 }

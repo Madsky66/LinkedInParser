@@ -74,7 +74,6 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                                 if (newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home")) {
                                     isLoggedInToLinkedIn = true
                                     statusMessage = "✅ Connecté à LinkedIn"
-                                    webView?.engine?.load(newLocation)
                                 }
                             }
                         }
