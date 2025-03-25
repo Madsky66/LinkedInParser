@@ -8,12 +8,13 @@ import time
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from urllib.parse import urlparse
+from contextlib import suppress
 
 # Configuration du logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -23,21 +24,25 @@ class LinkedInScraper:
         self.driver = None
         self.wait_time = 10
         self.max_retries = 3
+        self.chrome_path = self._get_chrome_path()
+
+    def _get_chrome_path(self):
+        chrome_path = os.environ.get("CHROME_PATH")
+        if not chrome_path:
+            raise ValueError("CHROME_PATH n'est pas défini dans les variables d'environnement")
+        return chrome_path
 
     def initialize_driver(self):
         try:
-            chrome_path = os.environ.get("CHROME_PATH")
-            if not chrome_path:
-                raise ValueError("CHROME_PATH n'est pas défini dans les variables d'environnement")
-
             options = uc.ChromeOptions()
-            options.add_argument(f"--user-data-dir={chrome_path}/temp")
+            options.add_argument(f"--user-data-dir={self.chrome_path}/temp")
             options.add_argument("--start-maximized")
             options.add_argument("--disable-gpu")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--disable-blink-features=AutomationControlled")
             options.add_argument("--disable-features=BlinkGenPropertyTrees")
+            options.add_argument("--lang=fr-FR")
 
             self.driver = uc.Chrome(options=options)
             return True

@@ -2,6 +2,7 @@ package data
 
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Serializable
 data class ProspectData(
@@ -15,8 +16,8 @@ data class ProspectData(
     val company: String = "",
     val position: String = "",
     val source: String = "LinkedIn",
-    val dateAdded: String = LocalDateTime.now().toString(),
-    val lastUpdated: String = LocalDateTime.now().toString(),
+    val dateAdded: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+    val lastUpdated: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     val error: String? = null
 ) {
     fun isValidLinkedInURL(): Boolean {return linkedinURL.startsWith("https://www.linkedin.com/in/") || linkedinURL.startsWith("https://linkedin.com/in/")}

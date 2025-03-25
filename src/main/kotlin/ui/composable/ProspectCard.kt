@@ -19,14 +19,18 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun ProspectCard(prospect: ProspectData) {
     Card(Modifier.fillMaxWidth().padding(vertical = 4.dp), elevation = 4.dp) {
         Column(Modifier.padding(16.dp).fillMaxWidth()) {
-            Text(prospect.fullName.ifEmpty {"Nom inconnu"}, style = MaterialTheme.typography.h6)
+            Text(prospect.fullName.ifEmpty {"Nom inconnu"}, style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
             Text(prospect.email.ifEmpty {"Email non trouvé"}, style = MaterialTheme.typography.body1)
+            Spacer(Modifier.height(4.dp))
             Text(prospect.company.ifEmpty {"Entreprise inconnue"}, style = MaterialTheme.typography.body2)
+            Spacer(Modifier.height(8.dp))
             if (prospect.status == "error") {Text("Erreur: ${prospect.error ?: "Inconnue"}", style = MaterialTheme.typography.body2, color = Color.Red)}
             else {LinearProgressIndicator(progress = if (prospect.status == "completed") 1f else 0.5f, Modifier.fillMaxWidth().padding(vertical = 8.dp))}
         }

@@ -26,6 +26,9 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import manager.GoogleSheetsManager
 import org.slf4j.LoggerFactory
+import kotlinx.serialization.SerializationException
+import java.net.MalformedURLException
+import java.net.URL
 
 private val DarkThemeColors = darkColors(
     primary = Color(0xFF2196F3),
@@ -82,7 +85,7 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                 logger.info("WebView initialisée avec succès")
             }
             catch (e: Exception) {
-                logger.error("Erreur lors de l'initialisation de la WebView : ${e.message}")
+                logger.error("Erreur lors de l'initialisation de la WebView : ${e.message}", e)
                 webViewReady = false
             }
         }
@@ -137,6 +140,11 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                                                                     }
                                                                 if (result.status == "completed") {googleSheetsManager.saveProspect(result, applicationScope)}
                                                             }
+                                                        }
+                                                        catch (e: SerializationException) {
+                                                            isLoading = false
+                                                            statusMessage = "❌ Erreur de désérialisation des données: ${e.message}"
+                                                            logger.error("Erreur lors de la désérialisation des données", e)
                                                         }
                                                         catch (e: Exception) {
                                                             isLoading = false
@@ -210,5 +218,10 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
 }
 
 fun isValidLinkedInURL(url: String): Boolean {
-    return url.startsWith("https://www.linkedin.com/in/") || url.startsWith("https://linkedin.com/in/")
+    return try {
+        val parsedURL = URL(url)
+        val host = parsedURL.host
+        (host.contains("linkedin.com") || host.contains("www.linkedin.com")) && url.startsWith("https://www.linkedin.com/in/") || url.startsWith("https://linkedin.com/in/")
+    }
+    catch (e: MalformedURLException) {false}
 }

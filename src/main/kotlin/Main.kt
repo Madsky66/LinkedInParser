@@ -9,6 +9,10 @@ import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 import kotlinx.coroutines.*
+import org.slf4j.LoggerFactory
+import java.io.IOException
+
+private val logger = LoggerFactory.getLogger("Main")
 
 fun main() = application {
     JavaFxManager.initialize()
@@ -16,7 +20,7 @@ fun main() = application {
     val windowState = rememberWindowState()
     var serverProcess: Process? = null
     val exceptionHandler = CoroutineExceptionHandler {_, e ->
-        println("❌ Exception non gérée : ${e.message}")
+        logger.error("❌ Exception non gérée : ${e.message}", e)
         stopPythonServer(serverProcess)
         cleanupResources()
         JavaFxManager.shutdown()
@@ -27,7 +31,7 @@ fun main() = application {
     serverProcess = startPythonServer()
 
     Thread.setDefaultUncaughtExceptionHandler {_, e ->
-        println("❌ Exception non gérée : ${e.message}")
+        logger.error("❌ Exception non gérée : ${e.message}", e)
         stopPythonServer(serverProcess)
         cleanupResources()
         JavaFxManager.shutdown()
@@ -56,12 +60,17 @@ private fun cleanupResources() {
         val tempDir = Paths.get("src/main/resources/extra/chrome/temp")
         if (Files.exists(tempDir)) {
             Files.walk(tempDir).sorted(Comparator.reverseOrder()).forEach {
-                try {Files.delete(it)}
-                catch (e: Exception) {println("⚠️ Erreur lors de la suppression du fichier ${it}: ${e.message}")}
+                try {
+                    Files.delete(it)
+                    logger.debug("Deleted file: {}", it)
+                }
+                catch (e: IOException) {logger.warn("⚠️ Erreur lors de la suppression du fichier ${it}: ${e.message}", e)}
             }
+            logger.info("Temporary resources cleaned up successfully.")
         }
+        else {logger.info("Temporary directory does not exist: $tempDir")}
     }
-    catch (e: Exception) {println("⚠️ Erreur lors du nettoyage des ressources: ${e.message}")}
+    catch (e: Exception) {logger.error("⚠️ Erreur lors du nettoyage des ressources: ${e.message}", e)}
 }
 
 private var serverPid: Long? = null
@@ -72,14 +81,14 @@ fun startPythonServer(): Process? {
 
         val extraDir = File("src/main/resources/extra")
         val chromeDir = File(extraDir, "chrome")
-        if (!chromeDir.exists()) {throw Exception("Le dossier Chrome portable n'existe pas: ${chromeDir.absolutePath}")}
+        if (!chromeDir.exists()) {throw IllegalStateException("Le dossier Chrome portable n'existe pas: ${chromeDir.absolutePath}")}
 
         val serverPath =
             if (System.getProperty("os.name").lowercase().contains("windows")) {"src/main/resources/extra/server.exe"}
             else {"src/main/resources/extra/server"}
         val serverFile = File(serverPath)
-        if (!serverFile.exists()) {throw Exception("Le fichier serveur n'existe pas: $serverPath")}
-        if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {throw Exception("Impossible de rendre le serveur exécutable")}
+        if (!serverFile.exists()) {throw IllegalStateException("Le fichier serveur n'existe pas: $serverPath")}
+        if (!serverFile.canExecute() && !serverFile.setExecutable(true)) {throw SecurityException("Impossible de rendre le serveur exécutable")}
 
         val processBuilder = ProcessBuilder(serverPath)
         processBuilder.environment()["CHROME_PATH"] = chromeDir.absolutePath
@@ -88,11 +97,11 @@ fun startPythonServer(): Process? {
 
         val process = processBuilder.start()
         serverPid = process.pid()
-        println("✅ Serveur Python démarré avec PID: ${serverPid}")
+        logger.info("✅ Serveur Python démarré avec PID: ${serverPid}")
         process
     }
     catch (e: Exception) {
-        println("❌ Erreur lors du démarrage du serveur: ${e.message}")
+        logger.error("❌ Erreur lors du démarrage du serveur: ${e.message}", e)
         null
     }
 }
@@ -102,31 +111,35 @@ private fun cleanupExistingServer() {
         try {
             val process = Runtime.getRuntime().exec("taskkill /F /IM server.exe")
             process.waitFor(10, TimeUnit.SECONDS)
-            if (process.exitValue() == 0) {println("✅ Processus server.exe existant nettoyé avec succès")}
-            else {println("⚠️ Pas de processus server.exe existant à nettoyer ou erreur lors de la suppression")}
+            if (process.exitValue() == 0) {logger.info("✅ Processus server.exe existant nettoyé avec succès")}
+            else {logger.warn("⚠️ Pas de processus server.exe existant à nettoyer ou erreur lors de la suppression")}
         }
-        catch (e: Exception) {println("⚠️ Pas de processus server.exe existant à nettoyer")}
+        catch (e: IOException) {logger.warn("⚠️ Pas de processus server.exe existant à nettoyer", e)}
+        catch (e: InterruptedException) {
+            logger.warn("Process interrupted while waiting for taskkill to complete", e)
+            Thread.currentThread().interrupt()
+        }
     }
 }
 
 fun stopPythonServer(process: Process?) {
     try {
         process?.let {
-            println("🛑 Arrêt du serveur Python...")
+            logger.info("🛑 Arrêt du serveur Python...")
             if (System.getProperty("os.name").lowercase().contains("windows")) {
                 try {
                     Runtime.getRuntime().exec("taskkill /F /PID $serverPid")
                     Runtime.getRuntime().exec("taskkill /F /IM server.exe")
                 }
-                catch (e: Exception) {println("⚠️ Erreur lors de la tentative d'arrêt du processus server.exe: ${e.message}")}
+                catch (e: IOException) {logger.warn("⚠️ Erreur lors de la tentative d'arrêt du processus server.exe: ${e.message}", e)}
             }
             else {it.destroy()}
             if (!it.waitFor(5, TimeUnit.SECONDS)) {
                 it.destroyForcibly()
-                println("⚠️ Le serveur Python n'a pas répondu à temps, forçant l'arrêt")
+                logger.warn("⚠️ Le serveur Python n'a pas répondu à temps, forçant l'arrêt")
             }
-            else {println("✅ Serveur Python arrêté avec succès")}
+            else {logger.info("✅ Serveur Python arrêté avec succès")}
         }
     }
-    catch (e: Exception) {println("❌ Erreur lors de l'arrêt du serveur: ${e.message}")}
+    catch (e: Exception) {logger.error("❌ Erreur lors de l'arrêt du serveur: ${e.message}", e)}
 }

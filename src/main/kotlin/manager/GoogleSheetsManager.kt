@@ -14,6 +14,8 @@ import data.ProspectData
 import java.io.File
 import java.io.FileInputStream
 import kotlinx.coroutines.*
+import org.slf4j.LoggerFactory
+import java.io.IOException
 
 class GoogleSheetsManager {
     private val APPLICATION_NAME = "LinkedIn Parser Pro"
@@ -21,16 +23,25 @@ class GoogleSheetsManager {
     private val TOKENS_DIRECTORY_PATH = "tokens"
     private val SPREADSHEET_ID = "VOTRE_SPREADSHEET_ID"
     private val SCOPES = listOf(SheetsScopes.SPREADSHEETS)
+    private val logger = LoggerFactory.getLogger(GoogleSheetsManager::class.java)
 
     private fun getCredentials(): Credential {
         val credentialsFile = File("src/main/resources/extra/credentials.json")
         if (!credentialsFile.exists()) {throw IllegalStateException("Credentials file not found: ${credentialsFile.absolutePath}")}
-        val clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, FileInputStream(credentialsFile).reader())
-        val flow = GoogleAuthorizationCodeFlow.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, clientSecrets, SCOPES)
-            .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
-            .setAccessType("offline")
-            .build()
-        return AuthorizationCodeInstalledApp(flow, LocalServerReceiver()).authorize("user")
+        try {
+            FileInputStream(credentialsFile).use {fileStream ->
+                val clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, fileStream.reader())
+                val flow = GoogleAuthorizationCodeFlow.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, clientSecrets, SCOPES)
+                    .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
+                    .setAccessType("offline")
+                    .build()
+                return AuthorizationCodeInstalledApp(flow, LocalServerReceiver()).authorize("user")
+            }
+        }
+        catch (e: IOException) {
+            logger.error("Error loading credentials file", e)
+            throw e
+        }
     }
 
     fun saveProspect(prospect: ProspectData, scope: CoroutineScope) {
@@ -50,9 +61,9 @@ class GoogleSheetsManager {
                 )
                 val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(values)
                 val response = service.spreadsheets().values().append(SPREADSHEET_ID, "A1", body).setValueInputOption("RAW").execute()
-                println("✅ Prospect saved to Google Sheets: ${response.updates.updatedCells} cells updated")
+                logger.info("✅ Prospect saved to Google Sheets: ${response.updates.updatedCells} cells updated")
             }
-            catch (e: Exception) {println("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}")}
+            catch (e: Exception) {logger.error("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}", e)}
         }
     }
 }
