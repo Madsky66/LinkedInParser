@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from urllib.parse import urlparse
 
 # Configuration du logging
 logging.basicConfig(
@@ -21,6 +22,7 @@ class LinkedInScraper:
     def __init__(self):
         self.driver = None
         self.wait_time = 10
+        self.max_retries = 3
 
     def initialize_driver(self):
         try:
@@ -53,73 +55,85 @@ class LinkedInScraper:
             logger.warning(f"Timeout en attendant l'élément: {selector}")
             return None
 
+    def is_valid_url(self, url):
+        """Vérifie si l'URL est valide."""
+        try:
+            result = urlparse(url)
+            return all([result.scheme, result.netloc])
+        except:
+            return False
+
     def parse_profile_info(self, url):
         """Extrait les informations du profil LinkedIn"""
-        try:
-            if not self.initialize_driver():
-                return {"status": "error", "error": "Échec de l'initialisation du driver"}
+        if not self.is_valid_url(url):
+            return {"status": "error", "error": "URL invalide"}
 
-            self.driver.get(url)
-            time.sleep(5)
+        for attempt in range(self.max_retries):
+            try:
+                if not self.initialize_driver():
+                    return {"status": "error", "error": "Échec de l'initialisation du driver"}
 
-            if "login" in self.driver.current_url:
+                self.driver.get(url)
+                time.sleep(5)
+
+                if "login" in self.driver.current_url:
+                    return {
+                        "status": "error",
+                        "error": "Session expirée, reconnexion nécessaire"
+                    }
+
+                full_name_element = self.wait_for_element("h1.text-heading-xlarge")
+                if not full_name_element:
+                    return {"status": "error", "error": "Impossible de trouver le nom"}
+
+                full_name = full_name_element.text.strip()
+                names = full_name.split(' ', 1)
+                first_name = names[0]
+                last_name = names[1] if len(names) > 1 else ""
+
+                position = ""
+                position_element = self.wait_for_element("div.text-body-medium.break-words")
+                if position_element:
+                    position = position_element.text.strip()
+
+                company = ""
+                company_element = self.wait_for_element("span.text-body-small.inline")
+                if company_element:
+                    company = company_element.text.strip()
+
+                email = ""
+                try:
+                    contact_info_button = self.wait_for_element("a[href*='overlay/contact-info']")
+                    if contact_info_button:
+                        contact_info_button.click()
+                        time.sleep(2)
+                        email_element = self.wait_for_element("a[href^='mailto:']", timeout=5)
+                        if email_element:
+                            email = email_element.text.strip()
+                except Exception as e:
+                    logger.warning(f"Impossible de récupérer l'email: {e}")
+
                 return {
-                    "status": "error",
-                    "error": "Session expirée, reconnexion nécessaire"
+                    "fullName": full_name,
+                    "firstName": first_name,
+                    "lastName": last_name,
+                    "company": company,
+                    "position": position,
+                    "email": email,
+                    "linkedinURL": url,
+                    "status": "completed"
                 }
 
-            full_name_element = self.wait_for_element("h1.text-heading-xlarge")
-            if not full_name_element:
-                return {"status": "error", "error": "Impossible de trouver le nom"}
-
-            full_name = full_name_element.text.strip()
-            names = full_name.split(' ', 1)
-            first_name = names[0]
-            last_name = names[1] if len(names) > 1 else ""
-
-            position = ""
-            position_element = self.wait_for_element("div.text-body-medium.break-words")
-            if position_element:
-                position = position_element.text.strip()
-
-            company = ""
-            company_element = self.wait_for_element("span.text-body-small.inline")
-            if company_element:
-                company = company_element.text.strip()
-
-            email = ""
-            try:
-                contact_info_button = self.wait_for_element("a[href*='overlay/contact-info']")
-                if contact_info_button:
-                    contact_info_button.click()
-                    time.sleep(2)
-                    email_element = self.wait_for_element("a[href^='mailto:']", timeout=5)
-                    if email_element:
-                        email = email_element.text.strip()
             except Exception as e:
-                logger.warning(f"Impossible de récupérer l'email: {e}")
-
-            return {
-                "fullName": full_name,
-                "firstName": first_name,
-                "lastName": last_name,
-                "company": company,
-                "position": position,
-                "email": email,
-                "linkedinURL": url,
-                "status": "completed"
-            }
-
-        except Exception as e:
-            logger.error(f"Erreur lors du parsing: {e}")
-            return {"status": "error", "error": str(e)}
-        finally:
-            if self.driver:
-                try:
-                    self.driver.quit()
-                except Exception as e:
-                    logger.error(f"Erreur lors de la fermeture du driver: {e}")
-                self.driver = None
+                logger.error(f"Erreur lors du parsing: {e}")
+                return {"status": "error", "error": str(e)}
+            finally:
+                if self.driver:
+                    try:
+                        self.driver.quit()
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la fermeture du driver: {e}")
+                    self.driver = None
 
 async def websocket_handler(websocket, path):
     """Gère les connexions WebSocket"""

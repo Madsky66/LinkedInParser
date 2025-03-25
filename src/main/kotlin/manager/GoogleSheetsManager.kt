@@ -13,6 +13,7 @@ import com.google.api.services.sheets.v4.SheetsScopes
 import data.ProspectData
 import java.io.File
 import java.io.FileInputStream
+import kotlinx.coroutines.*
 
 class GoogleSheetsManager {
     private val APPLICATION_NAME = "LinkedIn Parser Pro"
@@ -23,44 +24,35 @@ class GoogleSheetsManager {
 
     private fun getCredentials(): Credential {
         val credentialsFile = File("src/main/resources/extra/credentials.json")
-        val clientSecrets = GoogleClientSecrets.load(
-            JSON_FACTORY,
-            FileInputStream(credentialsFile).reader()
-        )
-
-        val flow = GoogleAuthorizationCodeFlow.Builder(
-            GoogleNetHttpTransport.newTrustedTransport(),
-            JSON_FACTORY,
-            clientSecrets,
-            SCOPES
-        )
+        if (!credentialsFile.exists()) {throw IllegalStateException("Credentials file not found: ${credentialsFile.absolutePath}")}
+        val clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, FileInputStream(credentialsFile).reader())
+        val flow = GoogleAuthorizationCodeFlow.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, clientSecrets, SCOPES)
             .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
             .setAccessType("offline")
             .build()
-
         return AuthorizationCodeInstalledApp(flow, LocalServerReceiver()).authorize("user")
     }
 
-    fun saveProspect(prospect: ProspectData) {
-        try {
-            val service = Sheets.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, getCredentials()).setApplicationName(APPLICATION_NAME).build()
-            val values = listOf(listOf(
-                prospect.fullName,
-                prospect.email,
-                prospect.generatedEmail,
-                prospect.company,
-                prospect.position,
-                prospect.linkedinURL,
-                prospect.dateAdded
-            ))
-            val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(values)
-
-            service.spreadsheets().values().append(SPREADSHEET_ID, "A1", body).setValueInputOption("RAW").execute()
-
-        }
-        catch (e: Exception) {
-            println("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}")
-            throw e
+    fun saveProspect(prospect: ProspectData, scope: CoroutineScope) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val service = Sheets.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, getCredentials()).setApplicationName(APPLICATION_NAME).build()
+                val values = listOf(
+                    listOf(
+                        prospect.fullName,
+                        prospect.email,
+                        prospect.generatedEmail,
+                        prospect.company,
+                        prospect.position,
+                        prospect.linkedinURL,
+                        prospect.dateAdded
+                    )
+                )
+                val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(values)
+                val response = service.spreadsheets().values().append(SPREADSHEET_ID, "A1", body).setValueInputOption("RAW").execute()
+                println("✅ Prospect saved to Google Sheets: ${response.updates.updatedCells} cells updated")
+            }
+            catch (e: Exception) {println("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}")}
         }
     }
 }

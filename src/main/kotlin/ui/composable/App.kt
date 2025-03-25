@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
@@ -20,11 +19,13 @@ import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebView
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import javax.swing.JPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
+import manager.GoogleSheetsManager
+import org.slf4j.LoggerFactory
 
 private val DarkThemeColors = darkColors(
     primary = Color(0xFF2196F3),
@@ -39,18 +40,19 @@ private val DarkThemeColors = darkColors(
 )
 
 @Composable
-fun App(windowState: WindowState) {
+fun App(windowState: WindowState, applicationScope: CoroutineScope) {
     var urlInput by remember {mutableStateOf("")}
     var isLoggedInToLinkedIn by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
     var webViewReady by remember {mutableStateOf(false)}
-    val coroutineScope = rememberCoroutineScope()
+    var webSocketConnected by remember {mutableStateOf(false)}
+    val googleSheetsManager = remember {GoogleSheetsManager()}
+    val logger = LoggerFactory.getLogger("App")
 
     val jfxPanel = remember {JFXPanel()}
     var webView by remember {mutableStateOf<WebView?>(null)}
-    var webSocketConnected by remember {mutableStateOf(false)}
 
     LaunchedEffect(Unit) {
         Platform.runLater {
@@ -77,10 +79,10 @@ fun App(windowState: WindowState) {
                     engine.loadWorker.stateProperty().addListener {_, _, newState -> if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {Platform.runLater {jfxPanel.isVisible = true}}}
                 }
                 webViewReady = true
-                println("✅ WebView initialisée avec succès")
+                logger.info("WebView initialisée avec succès")
             }
             catch (e: Exception) {
-                println("❌ Erreur lors de l'initialisation de la WebView : ${e.message}")
+                logger.error("Erreur lors de l'initialisation de la WebView : ${e.message}")
                 webViewReady = false
             }
         }
@@ -108,16 +110,20 @@ fun App(windowState: WindowState) {
                         IconButton(
                             onClick = {
                                 if (urlInput.isNotBlank() && isLoggedInToLinkedIn) {
+                                    if (!isValidLinkedInURL(urlInput)) {
+                                        statusMessage = "❌ URL LinkedIn invalide"
+                                        return@IconButton
+                                    }
                                     currentProfile = null
                                     statusMessage = "⏳ Analyse du profil en cours..."
                                     isLoading = true
                                     Platform.runLater {webView?.engine?.load(urlInput)}
                                     if (webSocketConnected) {WebSocketManager.sendProfileRequest(urlInput)}
                                     else {
-                                        coroutineScope.launch {
+                                        applicationScope.launch {
                                             try {
-                                                WebSocketManager.initialize {resultJson ->
-                                                    coroutineScope.launch {
+                                                WebSocketManager.initialize({resultJson ->
+                                                    applicationScope.launch {
                                                         try {
                                                             val result = Json.decodeFromString<ProspectData>(resultJson)
                                                             Platform.runLater {
@@ -129,20 +135,23 @@ fun App(windowState: WindowState) {
                                                                         "error" -> "❌ Erreur: ${result.error ?: "Inconnue"}"
                                                                         else -> "⚠️ Statut inattendu: ${result.status}"
                                                                     }
+                                                                if (result.status == "completed") {googleSheetsManager.saveProspect(result, applicationScope)}
                                                             }
                                                         }
                                                         catch (e: Exception) {
                                                             isLoading = false
                                                             statusMessage = "❌ Erreur de traitement des données: ${e.message}"
+                                                            logger.error("Erreur lors du traitement des données", e)
                                                         }
                                                     }
-                                                }
+                                                }, applicationScope)
                                                 WebSocketManager.sendProfileRequest(urlInput)
                                                 webSocketConnected = true
                                             }
                                             catch (e: Exception) {
                                                 isLoading = false
                                                 statusMessage = "❌ Impossible de se connecter au serveur: ${e.message}"
+                                                logger.error("Impossible de se connecter au serveur WebSocket", e)
                                             }
                                         }
                                     }
@@ -198,4 +207,8 @@ fun App(windowState: WindowState) {
             }
         }
     }
+}
+
+fun isValidLinkedInURL(url: String): Boolean {
+    return url.startsWith("https://www.linkedin.com/in/") || url.startsWith("https://linkedin.com/in/")
 }

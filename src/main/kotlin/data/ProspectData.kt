@@ -18,4 +18,6 @@ data class ProspectData(
     val dateAdded: String = LocalDateTime.now().toString(),
     val lastUpdated: String = LocalDateTime.now().toString(),
     val error: String? = null
-)
+) {
+    fun isValidLinkedInURL(): Boolean {return linkedinURL.startsWith("https://www.linkedin.com/in/") || linkedinURL.startsWith("https://linkedin.com/in/")}
+}

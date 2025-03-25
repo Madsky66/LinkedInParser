@@ -1,9 +1,11 @@
 package manager
 
 import javafx.application.Platform
+import org.slf4j.LoggerFactory
 
 object JavaFxManager {
     private var initialized = false
+    private val logger = LoggerFactory.getLogger(JavaFxManager::class.java)
 
     fun initialize() {
         if (!initialized) {
@@ -11,17 +13,20 @@ object JavaFxManager {
                 try {
                     Platform.startup {}
                     initialized = true
-                    println("✅ JavaFX initialisé avec succès")
+                    logger.info("JavaFX initialisé avec succès")
                 }
                 catch (e: Exception) {
                     if (e.message?.contains("Toolkit already initialized") == true) {
                         initialized = true
-                        println("ℹ️ JavaFX était déjà initialisé")
+                        logger.info("JavaFX était déjà initialisé")
                     }
-                    else {throw e}
+                    else {
+                        logger.error("Erreur lors de l'initialisation de JavaFX", e)
+                        throw e
+                    }
                 }
             }
-            catch (e: Exception) {println("❌ Erreur d'initialisation de JavaFX: ${e.message}")}
+            catch (e: Exception) {logger.error("Erreur d'initialisation de JavaFX: ${e.message}")}
         }
     }
 
@@ -30,8 +35,9 @@ object JavaFxManager {
             try {
                 Platform.exit()
                 initialized = false
+                logger.info("JavaFX arrêté avec succès")
             }
-            catch (e: Exception) {println("❌ Erreur lors de l'arrêt de JavaFX: ${e.message}")}
+            catch (e: Exception) {logger.error("Erreur lors de l'arrêt de JavaFX: ${e.message}")}
         }
     }
 
