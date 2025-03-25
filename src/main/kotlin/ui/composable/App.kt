@@ -1,22 +1,17 @@
 package ui.composable
 
+import DrawerMenu
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
@@ -37,33 +32,6 @@ import org.jsoup.nodes.Document
 import org.slf4j.LoggerFactory
 
 @Composable
-fun DrawerMenu() {
-    Column(Modifier.padding(16.dp)) {
-        Text("Menu Principal", style = MaterialTheme.typography.h6)
-        Divider()
-        Text("Gestion", style = MaterialTheme.typography.subtitle1)
-        DrawerMenuItem(icon = Icons.Filled.Home, label = "Accueil")
-        DrawerMenuItem(icon = Icons.Filled.Settings, label = "Paramètres")
-        Divider()
-        Text("Support", style = MaterialTheme.typography.subtitle1)
-        DrawerMenuItem(icon = Icons.Filled.Info, label = "Aide")
-        DrawerMenuItem(icon = Icons.Filled.ExitToApp, label = "Déconnexion")
-    }
-}
-
-@Composable
-fun DrawerMenuItem(icon: ImageVector, label: String) {
-    Row(modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 8.dp)
-        .clickable { /* Action à définir */ }) {
-        Icon(imageVector = icon, contentDescription = null)
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(label)
-    }
-}
-
-@Composable
 fun ContactCard() {
     Card(Modifier.fillMaxHeight()) {
         Text("Détails du contact")
@@ -75,7 +43,7 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
-    ModalDrawer(drawerState = drawerState, drawerContent = { DrawerMenu() }) {
+    ModalDrawer(drawerState = drawerState, drawerContent = {DrawerMenu()}) {
         TopAppBar(
             title = {Text("Mon Application")},
             navigationIcon = {
