@@ -60,16 +60,14 @@ class LinkedInScraper:
                 return {"status": "error", "error": "Échec de l'initialisation du driver"}
 
             self.driver.get(url)
-            time.sleep(5)  # Attente pour le chargement initial
+            time.sleep(5)
 
-            # Vérifier si on est sur la page de login
             if "login" in self.driver.current_url:
                 return {
                     "status": "error",
                     "error": "Session expirée, reconnexion nécessaire"
                 }
 
-            # Attendre et extraire le nom complet
             full_name_element = self.wait_for_element("h1.text-heading-xlarge")
             if not full_name_element:
                 return {"status": "error", "error": "Impossible de trouver le nom"}
@@ -79,19 +77,16 @@ class LinkedInScraper:
             first_name = names[0]
             last_name = names[1] if len(names) > 1 else ""
 
-            # Position actuelle
             position = ""
             position_element = self.wait_for_element("div.text-body-medium.break-words")
             if position_element:
                 position = position_element.text.strip()
 
-            # Entreprise
             company = ""
             company_element = self.wait_for_element("span.text-body-small.inline")
             if company_element:
                 company = company_element.text.strip()
 
-            # Email
             email = ""
             try:
                 contact_info_button = self.wait_for_element("a[href*='overlay/contact-info']")

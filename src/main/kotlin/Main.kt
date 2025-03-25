@@ -41,11 +41,7 @@ fun main() = application {
 private fun cleanupResources() {
     try {
         val tempDir = Paths.get("src/main/resources/extra/chrome/temp")
-        if (Files.exists(tempDir)) {
-            Files.walk(tempDir)
-                .sorted(Comparator.reverseOrder())
-                .forEach { Files.delete(it) }
-        }
+        if (Files.exists(tempDir)) {Files.walk(tempDir).sorted(Comparator.reverseOrder()).forEach {Files.delete(it)}}
     }
     catch (e: Exception) {println("⚠️ Erreur lors du nettoyage des ressources: ${e.message}")}
 }
