@@ -11,10 +11,12 @@ import kotlin.system.exitProcess
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.security.Security
 
 private val logger = LoggerFactory.getLogger("Main")
 
 fun main() = application {
+    Security.setProperty("networkaddress.cache.ttl", "60")
     JavaFxManager.initialize()
 
     val windowState = rememberWindowState()

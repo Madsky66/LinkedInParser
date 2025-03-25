@@ -21,7 +21,7 @@ class GoogleSheetsManager {
     private val APPLICATION_NAME = "LinkedIn Parser Pro"
     private val JSON_FACTORY = GsonFactory.getDefaultInstance()
     private val TOKENS_DIRECTORY_PATH = "tokens"
-    private val SPREADSHEET_ID = "VOTRE_SPREADSHEET_ID"
+    private val SPREADSHEET_ID = System.getenv("GOOGLE_SHEET_ID") ?: "YOUR_DEFAULT_SPREADSHEET_ID"
     private val SCOPES = listOf(SheetsScopes.SPREADSHEETS)
     private val logger = LoggerFactory.getLogger(GoogleSheetsManager::class.java)
 

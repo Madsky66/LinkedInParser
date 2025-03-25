@@ -41,26 +41,11 @@ fun ProspectCard(prospect: ProspectData) {
 fun EmptyProspectCard() {
     Card(Modifier.fillMaxWidth().padding(vertical = 4.dp), elevation = 4.dp, backgroundColor = MaterialTheme.colors.surface) {
         Column(Modifier.padding(24.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(
-                Icons.Default.Person,
-                contentDescription = "Contact",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colors.onSurface.copy(0.6f)
-            )
+            Icon(Icons.Default.Person, contentDescription = "Contact", Modifier.size(48.dp), tint = MaterialTheme.colors.onSurface.copy(0.6f))
             Spacer(Modifier.height(16.dp))
-            Text(
-                "Aucun profil sélectionné",
-                style = MaterialTheme.typography.h6,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colors.onSurface.copy(0.6f)
-            )
+            Text("Aucun profil sélectionné", style = MaterialTheme.typography.h6, textAlign = TextAlign.Center, color = MaterialTheme.colors.onSurface.copy(0.6f))
             Spacer(Modifier.height(8.dp))
-            Text(
-                "Entrez une URL LinkedIn pour commencer",
-                style = MaterialTheme.typography.body2,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colors.onSurface.copy(0.4f)
-            )
+            Text("Entrez une URL LinkedIn pour commencer", style = MaterialTheme.typography.body2, textAlign = TextAlign.Center, color = MaterialTheme.colors.onSurface.copy(0.4f))
         }
     }
 }

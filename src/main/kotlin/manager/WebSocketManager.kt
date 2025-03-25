@@ -43,10 +43,9 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
             val port = getWebSocketPort()
             val uri = URI("ws://127.0.0.1:$port")
             instance = WebSocketManager(uri, onResult, scope)
-
             for (attempt in 1..MAX_RETRIES) {
                 try {
-                    val connected = instance?.connectBlocking(2, TimeUnit.SECONDS) ?: false
+                    val connected = instance?.connectBlocking(2, TimeUnit.SECONDS) == true
                     if (connected) {
                         logger.info("Connecté au serveur WebSocket sur le port $port")
                         return
@@ -57,7 +56,6 @@ class WebSocketManager(uri: URI, private val onResult: (String) -> Unit, private
                 catch (e: Exception) {logger.error("Erreur lors de la connexion (attempt $attempt): ${e.message}", e)}
                 Thread.sleep(1000)
             }
-
             logger.error("Échec de connexion au WebSocket après $MAX_RETRIES tentatives")
             instance = null
             throw IllegalStateException("Impossible de se connecter au serveur WebSocket")

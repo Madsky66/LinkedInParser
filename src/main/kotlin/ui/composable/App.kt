@@ -166,17 +166,20 @@ fun App(windowState: WindowState, applicationScope: CoroutineScope) {
                             },
                             enabled = urlInput.isNotBlank() && isLoggedInToLinkedIn
                         ) {
-                            Icon(Icons.Default.Search, "Rechercher", tint = if (urlInput.isNotBlank() && isLoggedInToLinkedIn) {
-                                MaterialTheme.colors.primary
-                            } else MaterialTheme.colors.onSurface.copy(0.4f))
+                            Icon(
+                                Icons.Default.Search,
+                                "Rechercher",
+                                tint =
+                                if (urlInput.isNotBlank() && isLoggedInToLinkedIn) MaterialTheme.colors.primary
+                                else MaterialTheme.colors.onSurface.copy(0.4f)
+                            )
                         }
                     }
                 )
                 // Statut
                 if (statusMessage.isNotEmpty()) {
                     Text(
-                        statusMessage,
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        statusMessage, Modifier.padding(vertical = 8.dp),
                         color = when {
                             statusMessage.startsWith("✅") -> Color.Green
                             statusMessage.startsWith("❌") -> Color.Red
