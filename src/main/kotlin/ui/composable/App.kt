@@ -65,15 +65,10 @@ fun App(windowState: WindowState) {
                     engine.locationProperty().addListener {_, oldLocation, newLocation ->
                         if (newLocation != null) {
                             Platform.runLater {
-                                urlInput = newLocation
                                 if (oldLocation?.contains("linkedin.com/login") == true &&
                                     (newLocation.contains("linkedin.com/feed") || newLocation.contains("linkedin.com/home"))) {
                                     isLoggedInToLinkedIn = true
                                     statusMessage = "✅ Connecté à LinkedIn"
-                                    coroutineScope.launch {
-                                        delay(1000)
-                                        Platform.runLater {engine.executeScript("window.location.href='https://www.linkedin.com/in/me/'")}
-                                    }
                                 }
                             }
                         }
@@ -179,15 +174,12 @@ fun App(windowState: WindowState) {
             }
             // Zone du navigateur
             Box(Modifier.weight(1f).fillMaxHeight().background(MaterialTheme.colors.background)) {
-                if (!webViewReady) {CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))}
+                if (!webViewReady) {CircularProgressIndicator(Modifier.align(Alignment.Center))}
                 SwingPanel(
                     modifier = Modifier.fillMaxSize(),
                     factory = {
                         JPanel(BorderLayout()).apply {
-                            preferredSize = Dimension(
-                                windowState.size.width.value.toInt() - 400,
-                                windowState.size.height.value.toInt()
-                            )
+                            preferredSize = Dimension(windowState.size.width.value.toInt() - 400, windowState.size.height.value.toInt())
                             add(jfxPanel, BorderLayout.CENTER)
                             isOpaque = true
                             background = java.awt.Color.WHITE
