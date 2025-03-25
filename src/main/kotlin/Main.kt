@@ -1,13 +1,13 @@
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import ui.composable.App
 import manager.JavaFxManager
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpSize
+import ui.composable.App
 
 private val logger = LoggerFactory.getLogger("Main")
 
