@@ -18,7 +18,7 @@ fun main() = application {
     val windowState = rememberWindowState(size = DpSize(1280.dp, 720.dp))
     val appJob = SupervisorJob()
     val applicationScope = CoroutineScope(Dispatchers.Default + appJob + CoroutineExceptionHandler {_, e ->
-        logger.error("❌ Erreur globale dans l'application : ${e.message}", e)
+        logger.error("❌ Erreur générale de l'application : ${e.message}", e)
         exitProcess(1)
     })
 
