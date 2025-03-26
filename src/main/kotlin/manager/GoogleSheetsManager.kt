@@ -6,6 +6,7 @@ import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.sheets.v4.Sheets
@@ -16,14 +17,29 @@ import java.io.FileInputStream
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.security.GeneralSecurityException
 
-class GoogleSheetsManager {
-    private val APPLICATION_NAME = "LinkedIn Parser Pro"
+object GoogleSheetsManager {
+    private const val APPLICATION_NAME = "LinkedIn Parser"
     private val JSON_FACTORY = GsonFactory.getDefaultInstance()
-    private val TOKENS_DIRECTORY_PATH = "tokens"
+    private const val TOKENS_DIRECTORY_PATH = "tokens"
     private val SPREADSHEET_ID = System.getenv("GOOGLE_SHEET_ID") ?: "YOUR_DEFAULT_SPREADSHEET_ID"
     private val SCOPES = listOf(SheetsScopes.SPREADSHEETS)
+    private var sheetsService: Sheets? = null
     private val logger = LoggerFactory.getLogger(GoogleSheetsManager::class.java)
+
+    fun getSheetsService(): Sheets? {
+        if (sheetsService == null) {
+            try {
+                val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
+                val credential = getCredentials()
+                sheetsService = Sheets.Builder(httpTransport, JSON_FACTORY, credential).setApplicationName(APPLICATION_NAME).build()
+            }
+            catch (e: GeneralSecurityException) {e.printStackTrace()}
+            catch (e: IOException) {e.printStackTrace()}
+        }
+        return sheetsService
+    }
 
     private fun getCredentials(): Credential {
         val credentialsFile = File("src/main/resources/extra/credentials.json")

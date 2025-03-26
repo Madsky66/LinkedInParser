@@ -12,9 +12,11 @@ object JavaFxManager {
             synchronized(this) {
                 if (!initialized) {
                     try {
-                        Platform.startup {}
-                        initialized = true
-                        logger.info("JavaFX initialisé avec succès")
+                        Platform.runLater {
+                            Platform.startup {}
+                            initialized = true
+                            logger.info("JavaFX initialisé avec succès")
+                        }
                     }
                     catch (e: Exception) {
                         if (e.message?.contains("Toolkit already initialized") == true) {

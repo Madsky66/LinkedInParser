@@ -63,6 +63,9 @@ dependencies {
 
     // OkHttp3
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Skikio
+    implementation("org.jetbrains.skiko:skiko-awt-runtime-windows-x64:0.7.7")
 }
 
 javafx {
