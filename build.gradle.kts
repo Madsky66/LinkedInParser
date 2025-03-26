@@ -47,8 +47,10 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.9")
 
     // JavaFX version 17
+    implementation("org.openjfx:javafx-graphics:17")
     implementation("org.openjfx:javafx-controls:17")
     implementation("org.openjfx:javafx-fxml:17")
+    implementation("org.openjfx:javafx-base:17")
     implementation("org.openjfx:javafx-swing:17")
     implementation("org.openjfx:javafx-web:17")
     runtimeOnly("org.openjfx:javafx-graphics:17:win")
@@ -70,7 +72,7 @@ dependencies {
 
 javafx {
     version = "17"
-    modules = listOf("javafx.controls", "javafx.web", "javafx.swing", "javafx.fxml")
+    modules = listOf("javafx.graphics", "javafx.controls", "javafx.web", "javafx.swing", "javafx.fxml")
 }
 
 compose.desktop {
@@ -109,7 +111,7 @@ compose.desktop {
 
 tasks.withType<JavaExec>().configureEach {
     jvmArgs = listOf(
-        "--add-modules", "javafx.controls,javafx.web,javafx.swing",
+        "--add-modules", "javafx.graphics,javafx.controls,javafx.web,javafx.swing",
         "--add-opens", "javafx.web/com.sun.javafx.webkit=ALL-UNNAMED"
     )
 }
