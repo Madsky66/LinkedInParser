@@ -6,7 +6,6 @@ import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
-import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.sheets.v4.Sheets
@@ -14,8 +13,10 @@ import com.google.api.services.sheets.v4.SheetsScopes
 import data.ProspectData
 import java.io.File
 import java.io.FileInputStream
-import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.IOException
 import java.security.GeneralSecurityException
 
@@ -63,7 +64,7 @@ object GoogleSheetsManager {
     fun saveProspect(prospect: ProspectData, scope: CoroutineScope) {
         scope.launch(Dispatchers.IO) {
             try {
-                val service = Sheets.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, getCredentials()).setApplicationName(APPLICATION_NAME).build()
+                val service = getSheetsService() ?: throw IllegalStateException("Sheets service is not initialized")
                 val values = listOf(
                     listOf(
                         prospect.fullName,
@@ -72,12 +73,12 @@ object GoogleSheetsManager {
                         prospect.company,
                         prospect.position,
                         prospect.linkedinURL,
-                        prospect.dateAdded
+                        prospect.dateAdded.toString()
                     )
                 )
                 val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(values)
                 val response = service.spreadsheets().values().append(SPREADSHEET_ID, "A1", body).setValueInputOption("RAW").execute()
-                logger.info("✅ Prospect saved to Google Sheets: ${response.updates.updatedCells} cells updated")
+                logger.info("✅ Prospect saved to Google Sheets: ${prospect.fullName}, ${response.updates.updatedCells} cells updated")
             }
             catch (e: Exception) {logger.error("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}", e)}
         }

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
+import data.ProspectStatus
 import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
@@ -40,10 +41,8 @@ import javafx.scene.web.WebView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.invoke
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import manager.GoogleSheetsManager
 import manager.JavaFxManager
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -164,12 +163,12 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
                                             currentProfile = scrapeLinkedInProfile(urlInput)
                                             isLoading = false
                                             statusMessage =
-                                                when (currentProfile?.status) {
+                                                when (currentProfile?.status.toString()) {
                                                     "completed" -> "✅ Profil récupéré avec succès"
                                                     "error" -> "❌ Erreur: ${currentProfile?.error ?: "Inconnue"}"
                                                     else -> "⚠️ Statut inattendu: ${currentProfile?.status}"
                                                 }
-                                            if (currentProfile?.status == "completed") {currentProfile?.let {/*googleSheetsManager.saveProspect(it, applicationScope)*/}}
+                                            if (currentProfile?.status.toString() == "completed") {currentProfile?.let {/*googleSheetsManager.saveProspect(it, applicationScope)*/}}
                                         }
                                     }
                                     else {statusMessage = "❌ URL invalide"}
@@ -218,7 +217,7 @@ suspend fun scrapeLinkedInProfile(url: String): ProspectData? = withContext(Disp
 
         ProspectData(
             linkedinURL = url,
-            status = "completed",
+            status = ProspectStatus.COMPLETED,
             fullName = fullName,
             firstName = firstName,
             lastName = lastName,
@@ -227,5 +226,5 @@ suspend fun scrapeLinkedInProfile(url: String): ProspectData? = withContext(Disp
             position = position
         )
     }
-    catch (e: Exception) {ProspectData(linkedinURL = url, status = "error", error = e.message ?: "Unknown error")}
+    catch (e: Exception) {ProspectData(linkedinURL = url, status = ProspectStatus.ERROR, error = e.message ?: "Unknown error")}
 }

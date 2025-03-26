@@ -7,42 +7,46 @@ object JavaFxManager {
     private var initialized = false
     private val logger = LoggerFactory.getLogger(JavaFxManager::class.java)
 
+    @Synchronized
     fun initialize() {
         if (!initialized) {
-            synchronized(this) {
-                if (!initialized) {
-                    try {
-                        Platform.runLater {
-                            Platform.startup {}
-                            initialized = true
-                            logger.info("JavaFX initialisé avec succès")
-                        }
-                    }
-                    catch (e: Exception) {
-                        if (e.message?.contains("Toolkit already initialized") == true) {
-                            initialized = true
-                            logger.info("JavaFX était déjà initialisé")
-                        }
-                        else {
-                            logger.error("Erreur lors de l'initialisation de JavaFX", e)
-                            throw e
-                        }
-                    }
+            try {
+                Platform.startup {}
+                initialized = true
+                logger.info("JavaFX initialized successfully")
+            }
+            catch (e: IllegalStateException) {
+                if (e.message?.contains("Toolkit already initialized") == true) {
+                    initialized = true
+                    logger.info("JavaFX was already initialized")
+                }
+                else {
+                    logger.error("Error during JavaFX initialization", e)
+                    throw e
                 }
             }
         }
     }
 
-    fun shutdown() {
-        if (initialized) {
+    @Synchronized
+    fun shutdown(): Boolean {
+        return if (initialized) {
             try {
                 Platform.exit()
                 initialized = false
-                logger.info("JavaFX arrêté avec succès")
+                logger.info("JavaFX shut down successfully")
+                true
             }
-            catch (e: Exception) {logger.error("Erreur lors de l'arrêt de JavaFX: ${e.message}", e)}
+            catch (e: Exception) {
+                logger.error("Error during JavaFX shutdown: ${e.message}", e)
+                false
+            }
+        }
+        else {
+            logger.warn("JavaFX is not initialized, shutdown skipped")
+            false
         }
     }
 
-    fun isInitialized(): Boolean {return initialized}
+    fun isInitialized(): Boolean = initialized
 }

@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 @Serializable
 data class ProspectData(
     val linkedinURL: String,
-    val status: String = "pending",
+    val status: ProspectStatus = ProspectStatus.PENDING,
     val fullName: String = "",
     val firstName: String = "",
     val lastName: String = "",
@@ -22,3 +22,5 @@ data class ProspectData(
 ) {
     fun isValidLinkedInURL(): Boolean {return linkedinURL.startsWith("https://www.linkedin.com/in/") || linkedinURL.startsWith("https://linkedin.com/in/")}
 }
+
+enum class ProspectStatus {PENDING, COMPLETED, IN_PROGRESS, ERROR}
