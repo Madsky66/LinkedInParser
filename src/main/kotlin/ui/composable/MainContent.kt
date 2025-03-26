@@ -52,24 +52,25 @@ import ui.composable.ProspectCard
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.net.MalformedURLException
-import java.net.URL
 import javax.swing.JPanel
 import kotlin.text.contains
 
 
 @Composable
-fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
+fun MainContent(windowState: WindowState, applicationScope: CoroutineScope, googleSheetsManager: GoogleSheetsManager, prospectList: MutableList<ProspectData>) {
     var urlInput by remember {mutableStateOf("")}
     var isLoggedInToLinkedIn by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf("En attente de connexion...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
     var webViewReady by remember {mutableStateOf(false)}
-//    val googleSheetsManager = remember {GoogleSheetsManager()}
     val logger = LoggerFactory.getLogger("App")
 
     val jfxPanel = remember {JFXPanel()}
     var webView by remember {mutableStateOf<WebView?>(null)}
+
+    var spreadsheetId by remember {mutableStateOf("")}
+    var newProspect by remember {mutableStateOf(ProspectData())}
 
     LaunchedEffect(Unit) {
         JavaFxManager.initialize()
@@ -163,12 +164,21 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
                                             currentProfile = scrapeLinkedInProfile(urlInput)
                                             isLoading = false
                                             statusMessage =
-                                                when (currentProfile?.status.toString()) {
-                                                    "completed" -> "✅ Profil récupéré avec succès"
-                                                    "error" -> "❌ Erreur: ${currentProfile?.error ?: "Inconnue"}"
+                                                when (currentProfile?.status) {
+                                                    ProspectStatus.COMPLETED -> "✅ Profil récupéré avec succès"
+                                                    ProspectStatus.ERROR -> "❌ Erreur: ${currentProfile?.error ?: "Inconnue"}"
+                                                    ProspectStatus.IN_PROGRESS -> "IN_PROGRESS"
+                                                    ProspectStatus.PENDING -> "PENDING"
                                                     else -> "⚠️ Statut inattendu: ${currentProfile?.status}"
                                                 }
-                                            if (currentProfile?.status.toString() == "completed") {currentProfile?.let {/*googleSheetsManager.saveProspect(it, applicationScope)*/}}
+                                            if (currentProfile?.status == ProspectStatus.COMPLETED) {
+                                                currentProfile?.let {
+//                                                    googleSheetsManager.writeProspectToSheet(spreadsheetId, newProspect)
+//                                                    prospectList.clear()
+//                                                    prospectList.addAll(googleSheetsManager.readProspectsFromSheet(spreadsheetId))
+//                                                    newProspect = ProspectData()
+                                                }
+                                            }
                                         }
                                     }
                                     else {statusMessage = "❌ URL invalide"}
@@ -198,10 +208,7 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope) {
 }
 
 fun isValidLinkedInURL(url: String): Boolean =
-    try {
-        val parsedURL = URL(url)
-        parsedURL.host.contains("linkedin.com") && url.startsWith("https://www.linkedin.com/in/")
-    }
+    try {url.startsWith("https://www.linkedin.com/in/") || url.startsWith("https://linkedin.com/in/")}
     catch (e: MalformedURLException) {false}
 
 suspend fun scrapeLinkedInProfile(url: String): ProspectData? = withContext(Dispatchers.IO) {

@@ -1,5 +1,3 @@
-package manager
-
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
@@ -10,77 +8,103 @@ import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.SheetsScopes
+import com.google.api.services.sheets.v4.model.ValueRange
 import data.ProspectData
-import java.io.File
-import java.io.FileInputStream
-import org.slf4j.LoggerFactory
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.io.IOException
-import java.security.GeneralSecurityException
+import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.InputStreamReader
 
-object GoogleSheetsManager {
-    private const val APPLICATION_NAME = "LinkedIn Parser"
+class GoogleSheetsManager {
+    private val APPLICATION_NAME = "LinkedIn Parser"
     private val JSON_FACTORY = GsonFactory.getDefaultInstance()
-    private const val TOKENS_DIRECTORY_PATH = "tokens"
-    private val SPREADSHEET_ID = System.getenv("GOOGLE_SHEET_ID") ?: "YOUR_DEFAULT_SPREADSHEET_ID"
+    private val TOKENS_DIRECTORY_PATH = "tokens"
     private val SCOPES = listOf(SheetsScopes.SPREADSHEETS)
-    private var sheetsService: Sheets? = null
+    private val CREDENTIALS_FILE_PATH = "extra/credentials.json"
     private val logger = LoggerFactory.getLogger(GoogleSheetsManager::class.java)
 
-    fun getSheetsService(): Sheets? {
-        if (sheetsService == null) {
-            try {
-                val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
-                val credential = getCredentials()
-                sheetsService = Sheets.Builder(httpTransport, JSON_FACTORY, credential).setApplicationName(APPLICATION_NAME).build()
-            }
-            catch (e: GeneralSecurityException) {e.printStackTrace()}
-            catch (e: IOException) {e.printStackTrace()}
-        }
-        return sheetsService
+    private var service: Sheets? = null
+
+    init {
+        val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
+        service = Sheets.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport)).setApplicationName(APPLICATION_NAME).build()
     }
 
-    private fun getCredentials(): Credential {
-        val credentialsFile = File("src/main/resources/extra/credentials.json")
-        if (!credentialsFile.exists()) {throw IllegalStateException("Credentials file not found: ${credentialsFile.absolutePath}")}
-        try {
-            FileInputStream(credentialsFile).use {fileStream ->
-                val clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, fileStream.reader())
-                val flow = GoogleAuthorizationCodeFlow.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, clientSecrets, SCOPES)
-                    .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
-                    .setAccessType("offline")
-                    .build()
-                return AuthorizationCodeInstalledApp(flow, LocalServerReceiver()).authorize("user")
-            }
-        }
-        catch (e: IOException) {
-            logger.error("Error loading credentials file", e)
-            throw e
-        }
+    @Throws(Exception::class)
+    private fun getCredentials(httpTransport: com.google.api.client.http.HttpTransport): Credential {
+        val inputStream = GoogleSheetsManager::class.java.getResourceAsStream(CREDENTIALS_FILE_PATH) ?: throw FileNotFoundException("Resource not found: $CREDENTIALS_FILE_PATH")
+        val clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, InputStreamReader(inputStream))
+
+        val flow = GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
+            .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
+            .setAccessType("offline")
+            .build()
+        val receiver = LocalServerReceiver.Builder().setPort(8888).build()
+        return AuthorizationCodeInstalledApp(flow, receiver).authorize("user")
     }
 
-    fun saveProspect(prospect: ProspectData, scope: CoroutineScope) {
-        scope.launch(Dispatchers.IO) {
+    suspend fun writeProspectToSheet(spreadsheetId: String, prospectData: ProspectData) {
+        withContext(Dispatchers.IO) {
             try {
-                val service = getSheetsService() ?: throw IllegalStateException("Sheets service is not initialized")
+                val range = "Prospects!A:G"
+                val valueRange = ValueRange()
                 val values = listOf(
                     listOf(
-                        prospect.fullName,
-                        prospect.email,
-                        prospect.generatedEmail,
-                        prospect.company,
-                        prospect.position,
-                        prospect.linkedinURL,
-                        prospect.dateAdded.toString()
+                        prospectData.fullName,
+                        prospectData.firstName,
+                        prospectData.lastName,
+                        prospectData.company,
+                        prospectData.position,
+                        prospectData.linkedinURL,
+                        prospectData.dateAdded.toString()
                     )
                 )
-                val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(values)
-                val response = service.spreadsheets().values().append(SPREADSHEET_ID, "A1", body).setValueInputOption("RAW").execute()
-                logger.info("✅ Prospect saved to Google Sheets: ${prospect.fullName}, ${response.updates.updatedCells} cells updated")
+                valueRange.setValues(values)
+                val appendRequest = service!!.spreadsheets().values().append(spreadsheetId, range, valueRange)
+                appendRequest.valueInputOption = "USER_ENTERED"
+                val response = appendRequest.execute()
+                logger.info("✅ Prospect saved to Google Sheets: ${prospectData.fullName}, ${response.updates.updatedCells} cells updated")
+                println(response)
+
             }
-            catch (e: Exception) {logger.error("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}", e)}
+            catch (e: Exception) {
+                logger.error("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}", e)
+                println("Error writing to sheet: ${e.localizedMessage}")
+                e.printStackTrace()
+            }
+        }
+    }
+
+    suspend fun readProspectsFromSheet(spreadsheetId: String): List<ProspectData> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val range = "Prospects!A:G"
+                val response = service!!.spreadsheets().values().get(spreadsheetId, range).execute()
+                val values = response.getValues()
+                if (values == null || values.isEmpty()) {
+                    println("No data found.")
+                    emptyList()
+                }
+                else {
+                    values.map {row ->
+                        ProspectData(
+                            firstName = row.elementAtOrNull(0)?.toString() ?: "",
+                            lastName = row.elementAtOrNull(1)?.toString() ?: "",
+                            company = row.elementAtOrNull(2)?.toString() ?: "",
+                            position = row.elementAtOrNull(3)?.toString() ?: "",
+                            linkedinURL = row.elementAtOrNull(4)?.toString() ?: ""
+                        )
+                    }
+                }
+            }
+            catch (e: Exception) {
+                logger.error("❌ Erreur lors de la lecture du fichier Google Sheets: ${e.message}", e)
+                println("Error reading sheet: ${e.localizedMessage}")
+                e.printStackTrace()
+                emptyList()
+            }
         }
     }
 }
