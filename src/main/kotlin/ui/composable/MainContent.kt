@@ -3,7 +3,9 @@ package ui.composable
 import GoogleSheetsManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
@@ -52,14 +54,17 @@ fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsMan
                     label = {Text("Coller le texte de la page LinkedIn ici...")},
                     modifier = Modifier.fillMaxSize(),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = MaterialTheme.colors.primary,
-                        unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
-                        disabledTextColor = MaterialTheme.colors.onSurface.copy(0.6f),
-                        disabledBorderColor = MaterialTheme.colors.onSurface.copy(0.12f),
-                        disabledLabelColor = MaterialTheme.colors.onSurface.copy(0.4f)
+                        textColor = Color.LightGray,
+                        focusedBorderColor = Color.LightGray.copy(0.25f),
+                        unfocusedBorderColor = Color.LightGray.copy(0.15f),
+                        focusedLabelColor = Color.LightGray.copy(0.5f),
+                        unfocusedLabelColor = Color.LightGray.copy(0.5f),
+                        placeholderColor = Color.LightGray.copy(0.25f)
                     )
                 )
+
                 Spacer(Modifier.width(10.dp))
+
                 // Statut
                 Text(
                     statusMessage, Modifier.padding(8.dp), color = when {
@@ -75,14 +80,26 @@ fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsMan
                 // Fiche contact
                 if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
                 else currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()
+
                 Spacer(Modifier.height(10.dp))
+
+                // Boutons
                 Column(Modifier.fillMaxSize().padding(10.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
                     Button(
-                        onClick = {
-                            if (currentProfile != null) {googleSheetsManager.exportToCSV(currentProfile!!, "src/main/resources/extra/data_export.csv")}
-                            else {statusMessage = "❌ Aucune donnée à exporter."}
-                        }
-                    ) {Text("Extraire [CSV]")}
+                        onClick = {googleSheetsManager.exportToCSV(currentProfile!!, "src/main/resources/extra/data_export.csv")},
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = (currentProfile?.fullName != "Nom inconnu"),
+                        elevation = ButtonDefaults.elevation(10.dp),
+                        shape = RoundedCornerShape(100),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color.DarkGray,
+                            contentColor = Color.LightGray,
+                            disabledBackgroundColor = Color.LightGray,
+                            disabledContentColor = Color.DarkGray
+                        )
+                    ) {
+                        Text("Extraire [CSV]")
+                    }
                 }
             }
         }

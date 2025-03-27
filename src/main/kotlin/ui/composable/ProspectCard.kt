@@ -16,12 +16,14 @@ import data.ProspectData
 @Composable
 fun ProspectCard(prospect: ProspectData) {
     Card(Modifier.fillMaxWidth().padding(vertical = 4.dp), elevation = 4.dp) {
-        Column(Modifier.padding(16.dp).fillMaxWidth()) {
-            Text(prospect.fullName.ifEmpty {"Nom inconnu"}, style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(4.dp))
+        Column(Modifier.padding(20.dp).fillMaxWidth()) {
+            Text(prospect.fullName.ifEmpty {"Nom inconnu"}, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(5.dp))
             Text(prospect.email.ifEmpty {"Email non trouvé"}, style = MaterialTheme.typography.body1)
-            Spacer(Modifier.height(4.dp))
-            Text(prospect.company.ifEmpty {"Entreprise inconnue"}, style = MaterialTheme.typography.body2)
+            Spacer(Modifier.height(10.dp))
+            Text(prospect.company.ifEmpty {"Entreprise inconnue"}, style = MaterialTheme.typography.h6, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(5.dp))
+            Text(prospect.jobTitle.ifEmpty {"Titre non trouvé"}, style = MaterialTheme.typography.body2)
         }
     }
 }
