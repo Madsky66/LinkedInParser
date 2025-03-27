@@ -69,7 +69,7 @@ fun main() = application {
                 }
             }
             Box(Modifier.fillMaxSize()) {
-                App(windowState)
+                App()
             }
         }
     }

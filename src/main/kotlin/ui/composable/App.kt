@@ -15,12 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.window.WindowState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun App(windowState: WindowState) {
+fun App() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 //    val googleSheetsManager = remember {GoogleSheetsManager()}
 //    val prospectList = remember {mutableStateListOf<ProspectData>()}
@@ -39,7 +38,7 @@ fun App(windowState: WindowState) {
             ) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu")
             }
-            MainContent(windowState, /*googleSheetsManager, prospectList*/)
+            MainContent(/*googleSheetsManager, prospectList*/)
         }
     }
 }
