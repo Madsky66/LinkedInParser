@@ -15,6 +15,7 @@ data class ProspectData(
     val generatedEmail: String = "",
     val company: String = "",
     val position: String = "",
+    val location: String = "",
     val source: String = "LinkedIn",
     val dateAdded: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     val lastUpdated: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
