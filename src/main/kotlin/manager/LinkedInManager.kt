@@ -5,10 +5,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
-import okhttp3.Response
 import org.json.JSONObject
+import java.util.logging.Logger
 
 class LinkedInManager {
+    private val client = OkHttpClient()
+    private val logger = Logger.getLogger(LinkedInManager::class.java.name)
 
     fun extractProfileData(text: String): ProspectData {
         val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
@@ -29,10 +31,11 @@ class LinkedInManager {
             val firstName = names.firstOrNull() ?: "Prénom inconnu"
             val lastName = names.lastOrNull() ?: "Nom de famille inconnu"
             val middleName = if (names.size > 2) names.subList(1, names.size - 1).joinToString(" ") else ""
+
             val domain = extractDomain(company)
             val apolloEmail = fetchApolloEmail(firstName, lastName, company)
 
-            print("apolloEmail = $apolloEmail")
+            logger.info("apolloEmail = $apolloEmail")
 
             val emails = generateEmailVariations(firstName, lastName, domain).toMutableList()
             if (!apolloEmail.isNullOrEmpty()) emails.add(apolloEmail)
@@ -51,13 +54,18 @@ class LinkedInManager {
         return emptyProspectData()
     }
 
-    private fun extractDomain(company: String): String {return company.lowercase().replace(Regex("[^a-z0-9]"), "") + ".com"}
+    private fun extractDomain(company: String): String {
+        if (company.isBlank()) return "domaine_inconnu.com"
+        return company.lowercase().replace(Regex("[^a-z0-9]"), "") + ".com"
+    }
 
     private fun generateEmailVariations(firstName: String, lastName: String, domain: String): List<String> {
         if (firstName.isBlank() || lastName.isBlank() || domain.isBlank()) return emptyList()
+
         val cleanFirstName = firstName.lowercase().replace(Regex("[^a-z]"), "")
         val cleanLastName = lastName.lowercase().replace(Regex("[^a-z]"), "")
         val cleanDomain = domain.lowercase()
+
         return listOf(
             "$cleanFirstName@$cleanDomain",
             "$cleanFirstName.$cleanLastName@$cleanDomain",
@@ -66,7 +74,7 @@ class LinkedInManager {
             "${cleanFirstName.first()}$cleanLastName@$cleanDomain",
             "$cleanFirstName${cleanLastName.first()}@$cleanDomain",
             "${cleanLastName.first()}$cleanFirstName@$cleanDomain",
-            "${cleanFirstName}_${cleanLastName}@${cleanDomain}",
+            "${cleanFirstName}_${cleanLastName}@$cleanDomain",
             "$cleanFirstName$cleanLastName@$cleanDomain",
             "$cleanLastName.$cleanFirstName@$cleanDomain",
             "${cleanFirstName.take(3)}${cleanLastName.take(3)}@$cleanDomain"
@@ -74,16 +82,17 @@ class LinkedInManager {
     }
 
     private fun fetchApolloEmail(firstName: String, lastName: String, company: String): String? {
-        return try {
-            val client = OkHttpClient()
-            val jsonBody = JSONObject().apply {
-                put("first_name", firstName)
-                put("last_name", lastName)
-                put("organization_name", company)
-                put("reveal_personal_emails", false)
-                put("reveal_phone_number", false)
-            }
+        if (firstName.isBlank() || lastName.isBlank() || company.isBlank()) return null
+        val apiKey = "yvak05gEB4UywwXxmRedew"
+        val jsonBody = JSONObject().apply {
+            put("first_name", firstName)
+            put("last_name", lastName)
+            put("organization_name", company)
+            put("reveal_personal_emails", false)
+            put("reveal_phone_number", false)
+        }
 
+        return try {
             val requestBody = RequestBody.create("application/json".toMediaType(), jsonBody.toString())
             val request = Request.Builder()
                 .url("https://api.apollo.io/api/v1/people/match")
@@ -91,19 +100,24 @@ class LinkedInManager {
                 .addHeader("accept", "application/json")
                 .addHeader("Cache-Control", "no-cache")
                 .addHeader("Content-Type", "application/json")
-                .addHeader("x-api-key", "yvak05gEB4UywwXxmRedew")
+                .addHeader("x-api-key", apiKey)
                 .build()
 
-            val response: Response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: return null
+            client.newCall(request).execute().use {response ->
+                if (!response.isSuccessful) {
+                    logger.warning("Échec de la récupération de l'email Apollo: ${response.code}")
+                    return null
+                }
+                val responseBody = response.body?.string() ?: return null
 
-            print("responseBody = $responseBody")
+                logger.info("responseBody = $responseBody")
 
-            val jsonResponse = JSONObject(responseBody)
-            jsonResponse.optString("email", null)
+                val jsonResponse = JSONObject(responseBody)
+                jsonResponse.optString("email", null)
+            }
         }
         catch (e: Exception) {
-            println("Erreur lors de la récupération de l'email Apollo: ${e.message}")
+            logger.severe("Erreur lors de la récupération de l'email Apollo: ${e.message}")
             null
         }
     }
