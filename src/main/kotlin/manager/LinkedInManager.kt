@@ -1,20 +1,23 @@
 package manager
 
 import data.ProspectData
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import org.json.JSONObject
 
 class LinkedInManager {
 
     fun extractProfileData(text: String): ProspectData {
         val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
         if (lines.isEmpty()) return emptyProspectData()
-        print("lines = $lines")
 
         val baseIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")}
-        if (baseIndex + 5 >= lines.size) return emptyProspectData()
+        if (baseIndex == -1 || baseIndex + 5 >= lines.size) return emptyProspectData()
 
-        val firstNameLastNameLine = lines.getOrNull(baseIndex+1) ?: ""
+        val firstNameLastNameLine = lines.getOrNull(baseIndex + 1) ?: ""
         val secondNameLine = lines.getOrNull(baseIndex + 2) ?: ""
 
         val jobTitle = lines.getOrNull(baseIndex + 3) ?: "Poste inconnu"
@@ -26,29 +29,13 @@ class LinkedInManager {
             val firstName = names.firstOrNull() ?: "Prénom inconnu"
             val lastName = names.lastOrNull() ?: "Nom de famille inconnu"
             val middleName = if (names.size > 2) names.subList(1, names.size - 1).joinToString(" ") else ""
-            print("\n\nfullName = $fullName\n\n\n\nfirstName = $firstName | middleName = $middleName | lastName = $lastName\n\n")
             val domain = extractDomain(company)
+            val apolloEmail = fetchApolloEmail(firstName, lastName, company)
 
-            val client = OkHttpClient()
+            print("apolloEmail = $apolloEmail")
 
-            val request = Request.Builder()
-                .url("https://api.apollo.io/api/v1/people/match?reveal_personal_emails=false&reveal_phone_number=false")
-                .post(null)
-                .addHeader("accept", "application/json")
-                .addHeader("Cache-Control", "no-cache")
-                .addHeader("Content-Type", "application/json")
-                .addHeader("x-api-key", "yvak05gEB4UywwXxmRedew")
-                .build()
-
-            val response = client.newCall(request).execute()
-
-            val apolloEmail = response.body.toString().first().["email"].toString()
-
-            val emails = generateEmailVariations(firstName, lastName, domain)
-            if (apolloEmail != null) {emails.plus(apolloEmail)}
-
-            print("company = $company | jobTitle = ${jobTitle} | domain = $domain")
-            print("\n\nemails = $emails\n\n")
+            val emails = generateEmailVariations(firstName, lastName, domain).toMutableList()
+            if (!apolloEmail.isNullOrEmpty()) emails.add(apolloEmail)
 
             return ProspectData(
                 fullName = fullName,
@@ -64,19 +51,61 @@ class LinkedInManager {
         return emptyProspectData()
     }
 
-    private fun extractDomain(company: String): String {return company.lowercase().replace(Regex("[^a-z0-9]"), "").plus(".com")}
+    private fun extractDomain(company: String): String {return company.lowercase().replace(Regex("[^a-z0-9]"), "") + ".com"}
 
     private fun generateEmailVariations(firstName: String, lastName: String, domain: String): List<String> {
-        if (firstName.isEmpty() || lastName.isEmpty()) return emptyList()
+        if (firstName.isBlank() || lastName.isBlank() || domain.isBlank()) return emptyList()
+        val cleanFirstName = firstName.lowercase().replace(Regex("[^a-z]"), "")
+        val cleanLastName = lastName.lowercase().replace(Regex("[^a-z]"), "")
+        val cleanDomain = domain.lowercase()
         return listOf(
-            "${firstName.lowercase()}@${domain.lowercase()}",
-            "${firstName.lowercase()}.${lastName.lowercase()}@${domain.lowercase()}",
-            "${lastName.lowercase()}@${domain.lowercase()}",
-            "${firstName.first().lowercase()}${lastName.lowercase()}@${domain.lowercase()}",
-            "${firstName.lowercase()}-${{lastName.lowercase()}}@${domain.lowercase()}",
-            "${firstName.lowercase()}${lastName.first().lowercase()}@${domain.lowercase()}",
-            "${lastName.first().lowercase()}${firstName.lowercase()}@${domain.lowercase()}"
-        )
+            "$cleanFirstName@$cleanDomain",
+            "$cleanFirstName.$cleanLastName@$cleanDomain",
+            "$cleanFirstName-$cleanLastName@$cleanDomain",
+            "$cleanLastName@$cleanDomain",
+            "${cleanFirstName.first()}$cleanLastName@$cleanDomain",
+            "$cleanFirstName${cleanLastName.first()}@$cleanDomain",
+            "${cleanLastName.first()}$cleanFirstName@$cleanDomain",
+            "${cleanFirstName}_${cleanLastName}@${cleanDomain}",
+            "$cleanFirstName$cleanLastName@$cleanDomain",
+            "$cleanLastName.$cleanFirstName@$cleanDomain",
+            "${cleanFirstName.take(3)}${cleanLastName.take(3)}@$cleanDomain"
+        ).distinct()
+    }
+
+    private fun fetchApolloEmail(firstName: String, lastName: String, company: String): String? {
+        return try {
+            val client = OkHttpClient()
+            val jsonBody = JSONObject().apply {
+                put("first_name", firstName)
+                put("last_name", lastName)
+                put("organization_name", company)
+                put("reveal_personal_emails", false)
+                put("reveal_phone_number", false)
+            }
+
+            val requestBody = RequestBody.create("application/json".toMediaType(), jsonBody.toString())
+            val request = Request.Builder()
+                .url("https://api.apollo.io/api/v1/people/match")
+                .post(requestBody)
+                .addHeader("accept", "application/json")
+                .addHeader("Cache-Control", "no-cache")
+                .addHeader("Content-Type", "application/json")
+                .addHeader("x-api-key", "yvak05gEB4UywwXxmRedew")
+                .build()
+
+            val response: Response = client.newCall(request).execute()
+            val responseBody = response.body?.string() ?: return null
+
+            print("responseBody = $responseBody")
+
+            val jsonResponse = JSONObject(responseBody)
+            jsonResponse.optString("email", null)
+        }
+        catch (e: Exception) {
+            println("Erreur lors de la récupération de l'email Apollo: ${e.message}")
+            null
+        }
     }
 
     private fun emptyProspectData(): ProspectData {

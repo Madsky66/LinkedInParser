@@ -60,18 +60,11 @@ dependencies {
     runtimeOnly("org.openjfx:javafx-swing:17:win")
     runtimeOnly("org.openjfx:javafx-web:17:win")
 
-    // Selenium
-    implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.18.1")
-    implementation("io.github.bonigarcia:webdrivermanager:5.8.0")
-
-    // Jsoup
-    implementation("org.jsoup:jsoup:1.17.2")
-
     // OkHttp3
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Skikio
-    implementation("org.jetbrains.skiko:skiko-awt-runtime-windows-x64:0.7.7")
+    // JSONObject
+    implementation("org.json:json:20250107")
 }
 
 javafx {
