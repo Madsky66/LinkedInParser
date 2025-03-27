@@ -36,7 +36,7 @@ class GoogleSheetsManager {
         val file = File(filePath)
         file.printWriter().use {out ->
             out.println("First Name,Last Name,LinkedIn URL,Position,Emails")
-            out.println("${profile.firstName},${profile.lastName},${profile.linkedinURL},${profile.position},${profile.generatedEmails.joinToString("; ")}")
+            out.println("${profile.firstName},${profile.lastName},${profile.linkedinURL},${profile.jobTitle},${profile.generatedEmails.joinToString("; ")}")
         }
     }
 
@@ -64,9 +64,8 @@ class GoogleSheetsManager {
                         prospectData.firstName,
                         prospectData.lastName,
                         prospectData.company,
-                        prospectData.position,
+                        prospectData.jobTitle,
                         prospectData.linkedinURL,
-                        prospectData.dateAdded.toString()
                     )
                 )
                 valueRange.setValues(values)

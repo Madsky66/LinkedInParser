@@ -5,35 +5,28 @@ import data.ProspectData
 class LinkedInManager {
 
     fun extractProfileData(text: String): ProspectData {
-        val titleRegex = """Entrepreneur innovant / Freelance - ([\w\s&-]+)""".toRegex()
-        val locationRegex = """\n([\w\s, -]+)\s+Coordonnées""".toRegex()
-        val experienceRegex = """ExpérienceExpérience\s+([\w\s&.-]+)\nMadsky · Freelance""".toRegex()
-
-        val title = titleRegex.find(text)?.groupValues?.get(1) ?: "Titre inconnu"
-        val location = locationRegex.find(text)?.groupValues?.get(1) ?: "Localisation inconnue"
-        val experience = experienceRegex.find(text)?.groupValues?.get(1) ?: "Expérience non trouvée"
-
         val lines = text.split("\n")
-        val nameLineIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")} + 1
-
-        print("text = $text")
         print("lines = $lines")
-        print("nameLineIndex = $nameLineIndex")
 
-        val firstNameLastNameLine = if (nameLineIndex < lines.size) lines[nameLineIndex].trim() else ""
-        val secondNameLine = if (nameLineIndex + 1 < lines.size) lines[nameLineIndex + 1].trim() else ""
+        val baseIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")} + 2
 
-        print("firstNameLastNameLine = $firstNameLastNameLine")
-        print("secondNameLine = $secondNameLine")
+        val firstNameLastNameLine = lines[baseIndex].trim()
+        val secondNameLine = lines[baseIndex + 2].trim()
+
+        val jobTitle = lines[baseIndex + 3]
+        val company = lines[baseIndex + 5].trim()
 
         if (firstNameLastNameLine == secondNameLine && firstNameLastNameLine.isNotEmpty()) {
             val names = firstNameLastNameLine.split(" ")
             val firstName = names.firstOrNull() ?: ""
             val lastName = names.lastOrNull() ?: ""
             val middleName = if (names.size > 2) names.subList(1, names.size - 1).joinToString(" ") else ""
+            print("\n\nfirstName = $firstName, middleName = $middleName, lastName = $lastName\n\n")
 
             val emails = mutableListOf<String>()
-            val domain = experience.lowercase().replace(" ", "") + ".com"
+            val domain = company.lowercase().replace(" ", "") + ".com"
+
+            print("company = $company | domain = $domain")
 
             if (firstName.isNotEmpty() && lastName.isNotEmpty()) {
                 emails.add("$firstName.$lastName@$domain")
@@ -44,11 +37,10 @@ class LinkedInManager {
 
             return ProspectData(
                 fullName = firstNameLastNameLine,
-                position = title,
-                company = experience,
+                jobTitle = jobTitle,
+                company = company,
                 firstName = firstName,
                 lastName = lastName,
-                location = location,
                 email = emails.firstOrNull() ?: "",
                 generatedEmails = emails,
             )
@@ -56,11 +48,10 @@ class LinkedInManager {
 
         return ProspectData(
             fullName = "Nom inconnu",
-            position = title,
-            company = experience,
+            jobTitle = jobTitle,
+            company = company,
             firstName = "",
             lastName = "",
-            location = location,
             email = "",
             generatedEmails = emptyList(),
         )
