@@ -38,19 +38,21 @@ class LinkedInManager {
             val middleName = if (names.size > 2) names.subList(1, names.size - 1).joinToString(" ") else ""
 
             val apolloData = fetchApolloData(firstName, lastName)
-            val linkedInURL = apolloData.JSONObject("person")?.optString("linkedin_url", null)
-            val email = apolloData.JSONObject("person")?.optString("email", null)
-            val company = apolloData.JSONObject("person")?.optString("organization_name", null)
+            val personData = apolloData?.optJSONObject("person")
+
+            val linkedInURL = personData?.optString("linkedin_url", null)
+            val email = personData?.optString("email", null)
+            val company = personData?.optString("organization_name", null) ?: "Entreprise inconnue"
             val domain = extractDomain(company)
-            val jobTitle = apolloData.JSONObject("person")?.optString("headline", null)
+            val jobTitle = personData?.optString("headline", null) ?: "Poste inconnu"
 
             val emails = generateEmailVariations(firstName, lastName, domain).toMutableList()
-            if (email.isNullOrEmpty()) emails.add(email)
+            if (!email.isNullOrEmpty() && !emails.contains(email)) emails.add(email)
 
             logger.info("Emails générés : ${emails.joinToString(", ")}")
 
             return ProspectData(
-                linkedinURL = linkedInURL,
+                linkedinURL = linkedInURL.toString(),
                 fullName = fullName,
                 firstName = firstName,
                 middleName = middleName,
@@ -116,10 +118,13 @@ class LinkedInManager {
                     logger.warning("Échec de la récupération des données Apollo: ${response.code}")
                     return null
                 }
-                val responseBody = response.body?.string() ?: return null
+                val responseBody = response.body?.string()
+                if (responseBody.isNullOrEmpty()) {
+                    logger.warning("Réponse Apollo vide")
+                    return null
+                }
                 logger.info("Réponse Apollo : $responseBody")
-                val jsonResponse = JSONObject(responseBody)
-                jsonResponse.optJSONObject("person")
+                return JSONObject(responseBody)
             }
         }
         catch (e: Exception) {
