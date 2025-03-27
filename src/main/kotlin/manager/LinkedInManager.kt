@@ -16,6 +16,14 @@ class LinkedInManager {
         val location = locationRegex.find(text)?.groupValues?.get(1) ?: "Localisation inconnue"
         val experience = experienceRegex.find(text)?.groupValues?.get(1) ?: "Expérience non trouvée"
 
+        val emails = mutableListOf<String>()
+        val domain = profile.company.lowercase().replace(" ", "") + ".com"
+
+        emails.add("${profile.firstName.lowercase()}.${profile.lastName.lowercase()}@$domain")
+        emails.add("${profile.firstName.lowercase()}@$domain")
+        emails.add("${profile.lastName.lowercase()}@$domain")
+        emails.add("${profile.firstName.lowercase().first()}${profile.lastName.lowercase()}@$domain")
+
 
         return ProspectData(
             fullName = name,
@@ -24,7 +32,8 @@ class LinkedInManager {
             firstName = name.split(" ").firstOrNull() ?: "",
             lastName = name.split(" ").lastOrNull() ?: "",
             location = location,
+            email = emails.first(),
+            generatedEmails = emails,
         )
     }
-
 }

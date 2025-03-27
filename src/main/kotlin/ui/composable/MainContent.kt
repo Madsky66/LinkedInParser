@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
@@ -39,18 +41,24 @@ fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsMan
     val logger = LoggerFactory.getLogger("App")
 
     val linkedInManager = LinkedInManager()
+    val googleSheetsManager = GoogleSheetsManager()
 
-    currentProfile = linkedInManager.extractProfileData(pastedInput)
+    val filePath = "src/main/resources/extra/data_export.csv"
 
 //    var spreadsheetId by remember {mutableStateOf("")}
 //    var newProspect by remember {mutableStateOf(ProspectData())}
 
     MaterialTheme(colors = darkColors()) {
         Row(Modifier.fillMaxSize().background(Color.DarkGray).padding(10.dp)) {
+            // Colonne principale
             Column(Modifier.weight(2f).fillMaxHeight(), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
+                // Zone de texte
                 OutlinedTextField(
                     value = pastedInput,
-                    onValueChange = {pastedInput = it},
+                    onValueChange = {
+                        pastedInput = it
+                        currentProfile = linkedInManager.extractProfileData(pastedInput)
+                    },
                     label = {Text("Coller le texte de la page LinkedIn ici...")},
                     modifier = Modifier.fillMaxSize(),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -61,14 +69,6 @@ fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsMan
                         disabledLabelColor = MaterialTheme.colors.onSurface.copy(0.4f)
                     )
                 )
-
-            }
-            Spacer(Modifier.width(10.dp))
-            // Colonne de droite
-            Column(Modifier.weight(1f).fillMaxSize()) {
-                // Fiche contact
-                if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-                else currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()
                 Spacer(Modifier.width(10.dp))
                 // Statut
                 Text(
@@ -79,6 +79,22 @@ fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsMan
                     }
                 )
             }
+            Spacer(Modifier.width(10.dp))
+            // Colonne de droite
+            Column(Modifier.weight(1f).fillMaxSize()) {
+                // Fiche contact
+                if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+                else currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()
+                Spacer(Modifier.height(10.dp))
+                Column(Modifier.fillMaxSize().padding(10.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
+                    Button(
+                        onClick = {
+                            googleSheetsManager.exportToCSV(currentProfile!!, filePath)
+                        }
+                    ) {Text("Extraire [CSV]")}
+                }
+            }
+
         }
     }
 }

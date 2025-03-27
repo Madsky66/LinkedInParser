@@ -12,7 +12,7 @@ data class ProspectData(
     val firstName: String = "",
     val lastName: String = "",
     val email: String = "",
-    val generatedEmail: String = "",
+    val generatedEmails: List<String>,
     val company: String = "",
     val position: String = "",
     val location: String = "",
