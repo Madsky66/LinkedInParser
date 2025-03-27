@@ -1,13 +1,8 @@
+package ui.composable
+
+import GoogleSheetsManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
@@ -28,9 +23,6 @@ import androidx.compose.ui.window.WindowState
 import data.ProspectData
 import manager.LinkedInManager
 import org.slf4j.LoggerFactory
-import ui.composable.EmptyProspectCard
-import ui.composable.ProspectCard
-
 
 @Composable
 fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsManager, prospectList: MutableList<ProspectData>*/) {
@@ -42,8 +34,6 @@ fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsMan
 
     val linkedInManager = LinkedInManager()
     val googleSheetsManager = GoogleSheetsManager()
-
-    val filePath = "src/main/resources/extra/data_export.csv"
 
 //    var spreadsheetId by remember {mutableStateOf("")}
 //    var newProspect by remember {mutableStateOf(ProspectData())}
@@ -89,12 +79,12 @@ fun MainContent(windowState: WindowState, /*googleSheetsManager: GoogleSheetsMan
                 Column(Modifier.fillMaxSize().padding(10.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
                     Button(
                         onClick = {
-                            googleSheetsManager.exportToCSV(currentProfile!!, filePath)
+                            if (currentProfile != null) {googleSheetsManager.exportToCSV(currentProfile!!, "src/main/resources/extra/data_export.csv")}
+                            else {statusMessage = "❌ Aucune donnée à exporter."}
                         }
                     ) {Text("Extraire [CSV]")}
                 }
             }
-
         }
     }
 }

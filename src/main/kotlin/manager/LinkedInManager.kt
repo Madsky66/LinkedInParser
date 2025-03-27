@@ -2,7 +2,6 @@ package manager
 
 import data.ProspectData
 
-
 class LinkedInManager {
 
     fun extractProfileData(text: String): ProspectData {
@@ -17,22 +16,26 @@ class LinkedInManager {
         val experience = experienceRegex.find(text)?.groupValues?.get(1) ?: "Expérience non trouvée"
 
         val emails = mutableListOf<String>()
-        val domain = profile.company.lowercase().replace(" ", "") + ".com"
+        val domain = experience.lowercase().replace(" ", "") + ".com"
 
-        emails.add("${profile.firstName.lowercase()}.${profile.lastName.lowercase()}@$domain")
-        emails.add("${profile.firstName.lowercase()}@$domain")
-        emails.add("${profile.lastName.lowercase()}@$domain")
-        emails.add("${profile.firstName.lowercase().first()}${profile.lastName.lowercase()}@$domain")
-
+        if (name.isNotEmpty()) {
+            val names = name.split(" ")
+            val firstName = names.firstOrNull() ?: ""
+            val lastName = names.lastOrNull() ?: ""
+            emails.add("$firstName.$lastName@$domain")
+            emails.add("$firstName@$domain")
+            emails.add("$lastName@$domain")
+            emails.add("${firstName.first()}${lastName}@$domain")
+        }
 
         return ProspectData(
             fullName = name,
             position = title,
-            company = (experience.firstOrNull() ?: "").toString(),
+            company = experience,
             firstName = name.split(" ").firstOrNull() ?: "",
             lastName = name.split(" ").lastOrNull() ?: "",
             location = location,
-            email = emails.first(),
+            email = emails.firstOrNull() ?: "",
             generatedEmails = emails,
         )
     }
