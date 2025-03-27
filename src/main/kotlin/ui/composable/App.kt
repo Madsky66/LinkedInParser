@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.WindowState
@@ -19,11 +20,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun App(windowState: WindowState, applicationScope: CoroutineScope) {
+fun App(windowState: WindowState) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 //    val googleSheetsManager = remember {GoogleSheetsManager()}
 //    val prospectList = remember {mutableStateListOf<ProspectData>()}
 
+    val applicationScope: CoroutineScope = rememberCoroutineScope()
     ModalDrawer({DrawerMenu()}, Modifier.fillMaxSize().background(MaterialTheme.colors.background), drawerState) {
         Box(Modifier.fillMaxSize()) {
             IconButton(

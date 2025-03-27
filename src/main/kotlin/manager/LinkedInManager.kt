@@ -30,19 +30,20 @@ class LinkedInManager {
         val firstNameLastNameLine = lines.getOrNull(baseIndex + 1) ?: ""
         val secondNameLine = lines.getOrNull(baseIndex + 2) ?: ""
 
-        if (firstNameLastNameLine == secondNameLine && firstNameLastNameLine.isNotEmpty()) {
-            val names = firstNameLastNameLine.split(" ").filter {it.isNotEmpty()}
-            val fullName = firstNameLastNameLine
-            val firstName = names.firstOrNull() ?: "Prénom inconnu"
-            val lastName = names.lastOrNull() ?: "Nom de famille inconnu"
-            val middleName = if (names.size > 2) names.subList(1, names.size - 1).joinToString(" ") else ""
+        var company = lines.getOrNull(baseIndex + 4) ?: "Entreprise inconnue"
 
-            val apolloData = fetchApolloData(firstName, lastName)
+        if (firstNameLastNameLine == secondNameLine && firstNameLastNameLine.isNotEmpty()) {
+            val fullName = firstNameLastNameLine.split(" ").filter {it.isNotEmpty()}
+            val firstName = fullName.firstOrNull() ?: "Prénom inconnu"
+            val lastName = fullName.lastOrNull() ?: "Nom de famille inconnu"
+            val middleName = if (fullName.size > 2) fullName.subList(1, fullName.size - 1).joinToString(" ") else ""
+
+            val apolloData = fetchApolloData(firstName, lastName, company)
             val personData = apolloData?.optJSONObject("person")
 
             val linkedInURL = personData?.optString("linkedin_url", null)
             val email = personData?.optString("email", null)
-            val company = personData?.optString("organization_name", null) ?: "Entreprise inconnue"
+            company = personData?.optString("organization_name", null) ?: "Entreprise inconnue"
             val domain = extractDomain(company)
             val jobTitle = personData?.optString("headline", null) ?: "Poste inconnu"
 
@@ -53,7 +54,7 @@ class LinkedInManager {
 
             return ProspectData(
                 linkedinURL = linkedInURL.toString(),
-                fullName = fullName,
+                fullName = fullName.toString(),
                 firstName = firstName,
                 middleName = middleName,
                 lastName = lastName,
@@ -91,7 +92,7 @@ class LinkedInManager {
         ).distinct()
     }
 
-    private fun fetchApolloData(firstName: String, lastName: String): JSONObject? {
+    private fun fetchApolloData(firstName: String, lastName: String, company: String): JSONObject? {
         if (firstName.isBlank() || lastName.isBlank()) {
             logger.warning("Données incomplètes pour interroger Apollo")
             return null
@@ -100,8 +101,8 @@ class LinkedInManager {
         val jsonBody = JSONObject().apply {
             put("first_name", firstName)
             put("last_name", lastName)
-            put("reveal_personal_emails", false)
-            put("reveal_phone_number", false)
+            put("organization_name", company)
+            put("reveal_personal_emails", true)
         }
         return try {
             val requestBody = RequestBody.create("application/json".toMediaType(), jsonBody.toString())
