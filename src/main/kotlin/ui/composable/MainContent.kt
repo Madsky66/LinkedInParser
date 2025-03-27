@@ -29,6 +29,8 @@ import data.ProspectData
 import manager.LinkedInManager
 import org.slf4j.LoggerFactory
 import ui.theme.Colors
+import java.awt.Desktop
+import java.net.URI
 
 @Composable
 fun MainContent(/*googleSheetsManager: GoogleSheetsManager, prospectList: MutableList<ProspectData>*/) {
@@ -103,7 +105,15 @@ fun MainContent(/*googleSheetsManager: GoogleSheetsManager, prospectList: Mutabl
                                 )
                             )
                             Button(
-                                onClick = {},
+                                onClick = {
+                                    if (pastedURL.isNotEmpty()) {
+                                        try {
+                                            val uri = URI(pastedURL)
+                                            if (Desktop.isDesktopSupported()) {Desktop.getDesktop().browse(uri)}
+                                        }
+                                        catch (e: Exception) {println("Erreur lors de l'ouverture de l'URL : ${e.message}")}
+                                    }
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = pastedURL.isNotEmpty(),
                                 elevation = ButtonDefaults.elevation(10.dp),
@@ -147,9 +157,9 @@ fun MainContent(/*googleSheetsManager: GoogleSheetsManager, prospectList: Mutabl
             Spacer(Modifier.height(10.dp))
 
             // Console
-            Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black).padding(10.dp)) {
+            Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center, Alignment.Start) {
                 Text(
-                    statusMessage, Modifier.padding(10.dp), color = when {
+                    statusMessage, Modifier.padding(20.dp, 10.dp), color = when {
                         statusMessage.startsWith("✅") -> Color.Green
                         statusMessage.startsWith("❌") -> Color.Red
                         else -> Color.LightGray
