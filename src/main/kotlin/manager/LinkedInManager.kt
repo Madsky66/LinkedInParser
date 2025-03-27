@@ -26,8 +26,7 @@ class LinkedInManager {
         print("firstNameLastNameLine = $firstNameLastNameLine")
         print("secondNameLine = $secondNameLine")
 
-        // Vérifier si les deux lignes sont identiques
-        if (firstNameLastNameLine == secondNameLine) {
+        if (firstNameLastNameLine == secondNameLine && firstNameLastNameLine.isNotEmpty()) {
             val names = firstNameLastNameLine.split(" ")
             val firstName = names.firstOrNull() ?: ""
             val lastName = names.lastOrNull() ?: ""
