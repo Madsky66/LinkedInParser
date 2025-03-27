@@ -1,9 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm") version "1.9.0"
-    kotlin("plugin.serialization") version "1.9.0"
-    id("org.jetbrains.compose") version "1.5.11"
+    kotlin("jvm") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
+    id("org.jetbrains.compose") version "1.7.3"
     id("org.openjfx.javafxplugin") version "0.0.13"
     id("org.javamodularity.moduleplugin") version "1.8.15"
 }
@@ -59,6 +59,10 @@ dependencies {
     runtimeOnly("org.openjfx:javafx-fxml:17:win")
     runtimeOnly("org.openjfx:javafx-swing:17:win")
     runtimeOnly("org.openjfx:javafx-web:17:win")
+
+    // Selenium
+    implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.18.1")
+    implementation("io.github.bonigarcia:webdrivermanager:5.8.0")
 
     // Jsoup
     implementation("org.jsoup:jsoup:1.17.2")
