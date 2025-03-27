@@ -8,8 +8,28 @@ import kotlin.system.exitProcess
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpSize
 import ui.composable.App
+import java.io.File
+import java.io.IOException
 
 private val logger = LoggerFactory.getLogger("Main")
+
+fun launchChrome() {
+    val chromePath = "C:\\Users\\Pierr\\Desktop\\FREELANCE\\Madsky\\Code\\IntelliJ IDEA\\Apps\\LinkedInParser\\resources\\extra\\chrome\\chrome.exe"
+    val linkedInLoginUrl = "https://www.linkedin.com/login"
+
+    val chromeFile = File(chromePath)
+    if (!chromeFile.exists()) {
+        println("Chrome executable not found at: $chromePath")
+        return
+    }
+
+    try {
+        val processBuilder = ProcessBuilder("\"$chromePath\"", linkedInLoginUrl)
+        processBuilder.start()
+    } catch (e: IOException) {
+        println("Error launching Chrome: ${e.message}")
+    }
+}
 
 fun main() = application {
     System.setProperty("networkaddress.cache.ttl", "60")

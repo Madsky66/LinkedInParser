@@ -72,6 +72,8 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope, /*go
 //    var spreadsheetId by remember {mutableStateOf("")}
 //    var newProspect by remember {mutableStateOf(ProspectData())}
 
+    launchChrome()
+
     LaunchedEffect(Unit) {
         JavaFxManager.initialize()
         delay(500)
@@ -82,9 +84,9 @@ fun MainContent(windowState: WindowState, applicationScope: CoroutineScope, /*go
                 jfxPanel.scene = Scene(localWebView)
                 webView = localWebView
                 webView?.apply {
-//                    engine.load("https://www.linkedin.com/login")
+                    engine.load("https://www.linkedin.com/login")
                     engine.javaScriptEnabledProperty()
-                    engine.load("https://www.google.com")
+//                    engine.load("https://www.google.com")
                     engine.locationProperty().addListener {_, _, newLocation ->
                         if (newLocation != null) {
                             Platform.runLater {

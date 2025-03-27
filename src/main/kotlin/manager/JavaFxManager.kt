@@ -2,10 +2,6 @@ package manager
 
 import javafx.application.Platform
 import org.slf4j.LoggerFactory
-import org.openqa.selenium.chrome.ChromeDriver
-import org.openqa.selenium.chrome.ChromeOptions
-import java.io.File
-import io.github.bonigarcia.wdm.WebDriverManager
 
 object JavaFxManager {
     private var initialized = false
@@ -50,16 +46,5 @@ object JavaFxManager {
             logger.warn("JavaFX is not initialized, shutdown skipped")
             false
         }
-    }
-
-    fun isInitialized(): Boolean = initialized
-
-    fun initDriver(): ChromeDriver {
-        WebDriverManager.chromedriver().setup()
-        val options = ChromeOptions()
-        val chromeExecutablePath = "resources/extra/chrome/chrome.exe"
-        options.setBinary(File(chromeExecutablePath))
-        options.addArguments("--headless=new")
-        return ChromeDriver(options)
     }
 }
