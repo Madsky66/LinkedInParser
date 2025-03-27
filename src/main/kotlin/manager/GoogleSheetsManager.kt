@@ -29,7 +29,7 @@ class GoogleSheetsManager {
 
     init {
         val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
-        service = Sheets.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport)).setApplicationName(APPLICATION_NAME).build()
+//        service = Sheets.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport)).setApplicationName(APPLICATION_NAME).build()
     }
 
     fun exportToCSV(profile: ProspectData, filePath: String) {
