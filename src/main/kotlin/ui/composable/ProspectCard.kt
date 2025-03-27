@@ -22,9 +22,6 @@ fun ProspectCard(prospect: ProspectData) {
             Text(prospect.email.ifEmpty {"Email non trouvé"}, style = MaterialTheme.typography.body1)
             Spacer(Modifier.height(4.dp))
             Text(prospect.company.ifEmpty {"Entreprise inconnue"}, style = MaterialTheme.typography.body2)
-            Spacer(Modifier.height(8.dp))
-            if (prospect.status.toString() == "error") {Text("Erreur: ${prospect.error ?: "Inconnue"}", style = MaterialTheme.typography.body2, color = Color.Red)}
-            else {LinearProgressIndicator(progress = if (prospect.status.toString() == "completed") 1f else 0.5f, Modifier.fillMaxWidth().padding(vertical = 8.dp))}
         }
     }
 }
