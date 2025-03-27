@@ -13,11 +13,19 @@ class LinkedInManager {
     private val logger = Logger.getLogger(LinkedInManager::class.java.name)
 
     fun extractProfileData(text: String): ProspectData {
-        val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
-        if (lines.isEmpty()) return emptyProspectData()
+        logger.info("Début de l'extraction des données du profil")
 
-        val baseIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")}
-        if (baseIndex == -1 || baseIndex + 5 >= lines.size) return emptyProspectData()
+        val lines = text.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        if (lines.isEmpty()) {
+            logger.warning("Texte vide ou aucune donnée exploitable")
+            return emptyProspectData()
+        }
+
+        val baseIndex = lines.indexOfFirst { it.contains("Image d’arrière-plan") }
+        if (baseIndex == -1 || baseIndex + 5 >= lines.size) {
+            logger.warning("Indexation incorrecte des lignes du profil")
+            return emptyProspectData()
+        }
 
         val firstNameLastNameLine = lines.getOrNull(baseIndex + 1) ?: ""
         val secondNameLine = lines.getOrNull(baseIndex + 2) ?: ""
@@ -32,13 +40,13 @@ class LinkedInManager {
             val lastName = names.lastOrNull() ?: "Nom de famille inconnu"
             val middleName = if (names.size > 2) names.subList(1, names.size - 1).joinToString(" ") else ""
 
-            val domain = extractDomain(company)
-            val apolloEmail = fetchApolloEmail(firstName, lastName, company)
+            val apolloEmail = fetchApolloData(firstName, lastName)
+            logger.info("Email Apollo récupéré : $apolloEmail")
 
-            logger.info("apolloEmail = $apolloEmail")
-
-            val emails = generateEmailVariations(firstName, lastName, domain).toMutableList()
+            val emails = generateEmailVariations(firstName, lastName, "domain").toMutableList()
             if (!apolloEmail.isNullOrEmpty()) emails.add(apolloEmail)
+
+            logger.info("Emails générés : ${emails.joinToString(", ")}")
 
             return ProspectData(
                 fullName = fullName,
@@ -50,13 +58,14 @@ class LinkedInManager {
                 jobTitle = jobTitle
             )
         }
-
+        logger.warning("Impossible de déterminer le nom et le prénom correctement")
         return emptyProspectData()
     }
 
     private fun extractDomain(company: String): String {
         if (company.isBlank()) return "domaine_inconnu.com"
-        return company.lowercase().replace(Regex("[^a-z0-9]"), "") + ".com"
+        val cleanCompany = company.lowercase().replace(Regex("[^a-z0-9]"), "")
+        return "$cleanCompany.com"
     }
 
     private fun generateEmailVariations(firstName: String, lastName: String, domain: String): List<String> {
@@ -64,35 +73,37 @@ class LinkedInManager {
 
         val cleanFirstName = firstName.lowercase().replace(Regex("[^a-z]"), "")
         val cleanLastName = lastName.lowercase().replace(Regex("[^a-z]"), "")
-        val cleanDomain = domain.lowercase()
 
         return listOf(
-            "$cleanFirstName@$cleanDomain",
-            "$cleanFirstName.$cleanLastName@$cleanDomain",
-            "$cleanFirstName-$cleanLastName@$cleanDomain",
-            "$cleanLastName@$cleanDomain",
-            "${cleanFirstName.first()}$cleanLastName@$cleanDomain",
-            "$cleanFirstName${cleanLastName.first()}@$cleanDomain",
-            "${cleanLastName.first()}$cleanFirstName@$cleanDomain",
-            "${cleanFirstName}_${cleanLastName}@$cleanDomain",
-            "$cleanFirstName$cleanLastName@$cleanDomain",
-            "$cleanLastName.$cleanFirstName@$cleanDomain",
-            "${cleanFirstName.take(3)}${cleanLastName.take(3)}@$cleanDomain"
+            "$cleanFirstName@$domain",
+            "$cleanFirstName.$cleanLastName@$domain",
+            "$cleanFirstName-$cleanLastName@$domain",
+            "$cleanLastName@$domain",
+            "${cleanFirstName.first()}$cleanLastName@$domain",
+            "$cleanFirstName${cleanLastName.first()}@$domain",
+            "${cleanLastName.first()}$cleanFirstName@$domain",
+            "${cleanFirstName}_${cleanLastName}@$domain",
+            "$cleanFirstName$cleanLastName@$domain",
+            "$cleanLastName.$cleanFirstName@$domain",
+            "${cleanFirstName.take(3)}${cleanLastName.take(3)}@$domain"
         ).distinct()
     }
 
-    private fun fetchApolloEmail(firstName: String, lastName: String, company: String): String? {
-        if (firstName.isBlank() || lastName.isBlank() || company.isBlank()) return null
+    private fun fetchApolloData(firstName: String, lastName: String): String? {
+        if (firstName.isBlank() || lastName.isBlank()) {
+            logger.warning("Données incomplètes pour interroger Apollo")
+            return null
+        }
+
         val apiKey = "yvak05gEB4UywwXxmRedew"
         val jsonBody = JSONObject().apply {
             put("first_name", firstName)
             put("last_name", lastName)
-            put("organization_name", company)
             put("reveal_personal_emails", false)
             put("reveal_phone_number", false)
         }
 
-        return try {
+        try {
             val requestBody = RequestBody.create("application/json".toMediaType(), jsonBody.toString())
             val request = Request.Builder()
                 .url("https://api.apollo.io/api/v1/people/match")
@@ -105,7 +116,7 @@ class LinkedInManager {
 
             client.newCall(request).execute().use {response ->
                 if (!response.isSuccessful) {
-                    logger.warning("Échec de la récupération de l'email Apollo: ${response.code}")
+                    logger.warning("Échec de la récupération des données Apollo: ${response.code}")
                     return null
                 }
                 val responseBody = response.body?.string() ?: return null
@@ -113,11 +124,17 @@ class LinkedInManager {
                 logger.info("responseBody = $responseBody")
 
                 val jsonResponse = JSONObject(responseBody)
-                jsonResponse.optString("email", null)
+                val linkedInURL = jsonResponse.optJSONObject("person")?.optString("linkedin_url", null)
+                val email = jsonResponse.optJSONObject("person")?.optString("email", null)
+                val company = extractDomain(jsonResponse.optJSONObject("person")?.optString("organization_name", null).toString())
+                val emails = generateEmailVariations(firstName, lastName, company)
+                val jobTitle = jsonResponse.optJSONObject("person")?.optString("headline", null)
+                val data = arrayOf(linkedInURL, firstName + lastName, firstName, lastName, email, emails, company, jobTitle)
             }
+            return data.toString()
         }
         catch (e: Exception) {
-            logger.severe("Erreur lors de la récupération de l'email Apollo: ${e.message}")
+            logger.severe("Erreur lors de la récupération des données Apollo: ${e.message}")
             null
         }
     }
