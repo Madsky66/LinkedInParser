@@ -13,12 +13,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogWindow
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
 import java.awt.Desktop
+import java.awt.FileDialog
+import java.awt.Frame
 import java.net.URI
+
+enum class StatusType {INFO, SUCCESS, ERROR, WARNING}
+data class StatusMessage(val message: String, val type: StatusType)
+
+fun openFileDialog(): String? {
+    val fileDialog = FileDialog(Frame(), "Importer un fichier", FileDialog.LOAD)
+    fileDialog.isVisible = true
+    return if (fileDialog.file != null) {fileDialog.directory + fileDialog.file} else {null}
+}
 
 @Composable
 fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: Color, COLOR_SECONDARY: Color) {
@@ -26,14 +38,24 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
     var pastedURL by remember {mutableStateOf("")}
     var pastedAPI by remember {mutableStateOf("")}
 
-    var statusMessage by remember {mutableStateOf("En attente de données...")}
+    var apiKey by remember {mutableStateOf("")}
+
+    var statusMessage by remember {mutableStateOf(StatusMessage("En attente de données...", StatusType.INFO))}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
+    var showExportModal by remember {mutableStateOf(false)}
     var isLoading by remember {mutableStateOf(false)}
 
     val linkedInManager = LinkedInManager()
     val googleSheetsManager = remember {GoogleSheetsManager()}
     val prospectList = remember {mutableStateListOf<ProspectData>()}
     var newProspect by remember {mutableStateOf(ProspectData())}
+
+    val statusColor = when (statusMessage.type) {
+        StatusType.SUCCESS -> Color.Green
+        StatusType.ERROR -> Color.Red
+        StatusType.WARNING -> Color.Yellow
+        else -> COLOR_SECONDARY
+    }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().background(COLOR_NEUTRAL).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
@@ -44,18 +66,17 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                         value = pastedInput,
                         onValueChange = {
                             pastedInput = it
-                            if (pastedInput == "") {applicationScope.launch {statusMessage = "En attente de données..."}}
+                            if (pastedInput == "") {applicationScope.launch {statusMessage = StatusMessage("En attente de données...", StatusType.INFO)}}
                             else {
                                 applicationScope.launch {
                                     isLoading = true
-                                    statusMessage = "⏳ Extraction des informations en cours..."
-                                    try {currentProfile = linkedInManager.extractProfileData(pastedInput)}
-                                    catch (e: Exception) {statusMessage = "❌ Erreur lors de l'extraction des informations : ${e.message}"}
+                                    statusMessage = StatusMessage("⏳ Extraction des informations en cours...", StatusType.INFO)
+                                    currentProfile = linkedInManager.extractProfileData(pastedInput, apiKey)
                                     statusMessage =
-                                        if (currentProfile?.fullName == "") {"❌ Aucune information extraite"}
-                                        else if (currentProfile?.fullName != "Prénom iconnu Nom de famille inconnu") {"❌ Erreur lors de l'extraction des informations"}
-                                        else if (currentProfile?.firstName == "Prénom inconnu" || currentProfile?.lastName == "Nom de famille inconnu") {"⚠\uFE0F Extraction des données incomplète"}
-                                        else {"✅ Extraction des informations réussie"}
+                                        if (currentProfile?.fullName == "") {StatusMessage("❌ Aucune information extraite", StatusType.ERROR)}
+                                        else if (currentProfile?.fullName != "Prénom iconnu Nom de famille inconnu") {statusMessage = StatusMessage("❌ Erreur lors de l'extraction des informations", StatusType.ERROR)}
+                                        else if (currentProfile?.firstName == "Prénom inconnu" || currentProfile?.lastName == "Nom de famille inconnu") {StatusMessage("⚠\uFE0F Extraction des données incomplète", StatusType.WARNING)}
+                                        else {StatusMessage("✅ Extraction des informations réussie", StatusType.SUCCESS)}
                                     isLoading = false
                                 }
                             }
@@ -114,7 +135,7 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                             val uri = URI(pastedURL)
                                             if (Desktop.isDesktopSupported()) {Desktop.getDesktop().browse(uri)}
                                         }
-                                        catch (e: Exception) {statusMessage = "❌ Erreur lors de l'ouverture de l'URL : ${e.message}"}
+                                        catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", StatusType.ERROR)}
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -162,13 +183,13 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                     onClick = {
                                         applicationScope.launch {
                                             isLoading = true
-                                            val apiKey = pastedAPI
-                                            statusMessage = "⏳ Validation de la clé API par Apollo en cours..."
+                                            apiKey = pastedAPI
+                                            statusMessage = StatusMessage("⏳ Validation de la clé API par Apollo en cours...", StatusType.INFO)
                                             try {
                                                 // <--- Vérifier la validité de la clé ici
-                                                statusMessage = "✅ La clé API à bien été validée par Apollo"
+                                                statusMessage = StatusMessage("✅ La clé API à bien été validée par Apollo", StatusType.SUCCESS)
                                             }
-                                            catch (e: Exception) {statusMessage = "❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}"}
+                                            catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", StatusType.ERROR)}
                                             isLoading = false
                                         }
                                     },
@@ -186,21 +207,30 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                     Text("Valider")
                                 }
                             }
+
                             Button(
                                 onClick = {
                                     applicationScope.launch {
-                                        isLoading = true
-                                        statusMessage = "⏳ Exportation du fichier CSV en cours..."
-                                        try {
-                                            googleSheetsManager.exportToCSV(currentProfile!!, "data_export.csv")
-                                            statusMessage = "✅ Exportation du fichier CSV réussie"
+                                        val filePath = openFileDialog()
+                                        if (filePath != null) {
+                                            statusMessage = StatusMessage("⏳ Importation du fichier...", StatusType.INFO)
+                                            try {
+                                                // importFile(filePath)
+                                                statusMessage = StatusMessage("✅ Importation réussie", StatusType.SUCCESS)
+                                            }
+                                            catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de l'importation : ${e.message}", StatusType.ERROR)}
                                         }
-                                        catch (e: Exception) {statusMessage = "❌ Erreur lors de l'exportation du fichier CSV : ${e.message}"}
-                                        isLoading = false
+                                        else {statusMessage = StatusMessage("⚠️ Aucune sélection de fichier", StatusType.WARNING)}
                                     }
                                 },
+                            ) {
+                                Text("Importer")
+                            }
+
+                            Button(
+                                onClick = {showExportModal = true},
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled = statusMessage == "✅ Extraction des informations réussie" || statusMessage == "⏳ Exportation du fichier CSV en cours...",
+                                enabled = statusMessage == StatusMessage("✅ Extraction des informations réussie", StatusType.SUCCESS),
                                 elevation = ButtonDefaults.elevation(10.dp),
                                 shape = RoundedCornerShape(100),
                                 colors = ButtonDefaults.buttonColors(
@@ -212,6 +242,27 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                             ) {
                                 Text("Extraire [CSV]")
                             }
+                            if (showExportModal) {
+                                ExportModal(
+                                    onExport = {filePath, format ->
+                                        showExportModal = false
+                                        applicationScope.launch {
+                                            isLoading = true
+                                            statusMessage = StatusMessage("⏳ Exportation du fichier CSV en cours...", StatusType.INFO)
+                                            try {
+                                                when (format) {
+                                                    ExportFormat.CSV -> googleSheetsManager.exportToCSV(currentProfile!!, filePath)
+                                                    ExportFormat.XLSX -> {/*googleSheetsManager.exportToXLSX(currentProfile!!, filePath)*/}
+                                                }
+                                                statusMessage = StatusMessage("✅ Exportation du fichier CSV réussie", StatusType.SUCCESS)
+                                            }
+                                            catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de l'exportation du fichier CSV : ${e.message}", StatusType.ERROR)}
+                                            isLoading = false
+                                        }
+                                    },
+                                    onDismissRequest = {showExportModal = false}
+                                )
+                            }
                         }
                     }
                 }
@@ -222,14 +273,46 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
 
             // Console
             Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center) {
-                Text(
-                    statusMessage, Modifier.padding(20.dp, 10.dp), fontSize = 15.sp, color = when {
-                        statusMessage.startsWith("✅") -> Color.Green
-                        statusMessage.startsWith("❌") -> Color.Red
-                        else -> COLOR_SECONDARY
-                    }
-                )
+                Text(statusMessage.message, Modifier.padding(20.dp, 10.dp), fontSize = 15.sp, color = statusColor)
             }
         }
     }
 }
+
+@Composable
+fun ExportModal(onExport: (filePath: String, format: ExportFormat) -> Unit, onDismissRequest: () -> Unit) {
+    var filePath by remember {mutableStateOf("")}
+    var selectedFormat by remember {mutableStateOf(ExportFormat.CSV)}
+
+    DialogWindow(onCloseRequest = onDismissRequest) {
+        Surface(shape = RoundedCornerShape(8.dp), color = Color.White) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Exporter", fontSize = 20.sp)
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = filePath,
+                    onValueChange = {filePath = it},
+                    label = {Text("Chemin du fichier")},
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(16.dp))
+                Text("Format:")
+                Row(Modifier.fillMaxWidth()) {
+                    RadioButton(selected = (selectedFormat == ExportFormat.CSV), onClick = {selectedFormat = ExportFormat.CSV})
+                    Text("CSV", Modifier.align(Alignment.CenterVertically))
+                    Spacer(Modifier.width(16.dp))
+                    RadioButton(selected = (selectedFormat == ExportFormat.XLSX), onClick = {selectedFormat = ExportFormat.XLSX})
+                    Text("XLSX", modifier = Modifier.align(Alignment.CenterVertically))
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    Button(onClick = onDismissRequest) {Text("Annuler")}
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = {onExport(filePath, selectedFormat)}) {Text("Exporter")}
+                }
+            }
+        }
+    }
+}
+
+enum class ExportFormat {CSV, XLSX}
