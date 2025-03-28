@@ -31,68 +31,63 @@ fun main() = application {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val applicationScope: CoroutineScope = rememberCoroutineScope()
 
-    Window(
-        onCloseRequest = {exitApplication()},
-        visible = true,
-        state = windowState,
-        title = "LinkedIn Parser",
-        undecorated = true,
-    ) {
+    Window(onCloseRequest = {exitApplication()}, visible = true, state = windowState, title = "LinkedIn Parser", undecorated = true,) {
         var isMaximized by remember {mutableStateOf(false)}
         Column(Modifier.fillMaxSize()) {
             WindowDraggableArea(Modifier.fillMaxWidth().height(45.dp).background(Colors().DARK_GRAY).align(Alignment.CenterHorizontally)) {
                 Row(Modifier.fillMaxSize().padding(15.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+
+                    // Titre
                     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+
+                        // Icone de menu
                         IconButton(
-                            onClick = {
-                                applicationScope.launch {
-                                    if (drawerState.isOpen) drawerState.close()
-                                    else drawerState.open()
-                                }
-                            },
+                            onClick = {applicationScope.launch {if (drawerState.isOpen) drawerState.close() else drawerState.open()}},
                             modifier = Modifier.size(15.dp).clip(RoundedCornerShape(100))
                         ) {
                             Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.LightGray)
                         }
-
                         Spacer(Modifier.width(15.dp))
 
+                        // Texte
                         Text("LinkedIn Parser", Modifier.height(15.dp), color = Color.LightGray)
                     }
+
+                    // Boutons
                     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+
+                        // Minimiser
                         IconButton(
                             onClick = {},
                             modifier = Modifier.size(15.dp).clip(RoundedCornerShape(100))
                         ) {
                             Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Minimiser", tint = Color.LightGray)
                         }
-
                         Spacer(Modifier.width(15.dp))
 
+                        // Maximiser / Restaurer
                         IconButton(
-                            onClick = {
-                                isMaximized = !isMaximized
-                                if (isMaximized) {windowState.size = DpSize(1920.dp, 1080.dp)}
-                                else {windowState.size = DpSize(1280.dp, 720.dp)}
-                            },
+                            onClick = {isMaximized = !isMaximized; if (isMaximized) {windowState.size = DpSize(1920.dp, 1080.dp)} else {windowState.size = DpSize(1280.dp, 720.dp)}},
                             modifier = Modifier.size(15.dp).clip(RoundedCornerShape(100))
                         ) {
                             Icon(Icons.Filled.Window, contentDescription = "Maximiser / Restaurer", tint = Color.LightGray)
                         }
-
                         Spacer(Modifier.width(15.dp))
 
+                        // Quitter
                         IconButton(
                             onClick = {exitProcess(0)},
                             modifier = Modifier.size(15.dp).clip(RoundedCornerShape(100))
                         ) {
                             Icon(Icons.Filled.Close, contentDescription = "Quitter", tint = Color.LightGray)
                         }
+
                     }
+
                 }
             }
             Box(Modifier.fillMaxSize()) {
-                App()
+                App(applicationScope)
             }
         }
     }

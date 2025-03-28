@@ -1,6 +1,7 @@
 package manager
 
 import data.ProspectData
+import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -12,7 +13,7 @@ class LinkedInManager {
     private val client = OkHttpClient()
     private val logger = Logger.getLogger(LinkedInManager::class.java.name)
 
-    fun extractProfileData(text: String): ProspectData {
+    suspend fun extractProfileData(text: String): ProspectData {
         logger.info("Début de l'extraction des données du profil")
 
         val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
@@ -31,6 +32,7 @@ class LinkedInManager {
         val secondNameLine = lines.getOrNull(baseIndex + 2) ?: ""
 
         var company = lines.getOrNull(baseIndex + 4) ?: "Entreprise inconnue"
+        print(company)
 
         if (firstNameLastNameLine == secondNameLine && firstNameLastNameLine.isNotEmpty()) {
             val fullName = firstNameLastNameLine.split(" ").filter {it.isNotEmpty()}
@@ -39,11 +41,17 @@ class LinkedInManager {
             val middleName = if (fullName.size > 2) fullName.subList(1, fullName.size - 1).joinToString(" ") else ""
 
             val apolloData = fetchApolloData(firstName, lastName, company)
+            delay(500)
             val personData = apolloData?.optJSONObject("person")
 
             val linkedInURL = personData?.optString("linkedin_url", null)
             val email = personData?.optString("email", null)
-            company = personData?.optString("organization_name", null) ?: "Entreprise inconnue"
+            company = when (personData?.optString("organization_name").toString()) {
+                company -> personData?.optString("organization_name").toString()
+                "" -> "Entreprise inconnue"
+                else -> personData?.optString("organization_name").toString()
+            }
+            print(company)
             val domain = extractDomain(company)
             val jobTitle = personData?.optString("headline", null) ?: "Poste inconnu"
 
