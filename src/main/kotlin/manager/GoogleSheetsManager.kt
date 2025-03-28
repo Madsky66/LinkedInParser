@@ -35,8 +35,8 @@ class GoogleSheetsManager {
     fun exportToCSV(profile: ProspectData, filePath: String) {
         val file = File(filePath)
         file.printWriter().use {out ->
-            out.println("First Name,Last Name,LinkedIn URL,Position,Emails")
-            out.println("${profile.firstName},${profile.lastName},${profile.linkedinURL},${profile.jobTitle},${profile.generatedEmails.joinToString("; ")}")
+            out.println("First name,Last name,LinkedIn URL,Job Title,Email,Generated Emails")
+            out.println("${profile.firstName},${profile.lastName},${profile.linkedinURL},${profile.jobTitle},${profile.email},${profile.generatedEmails.joinToString("; ")}")
         }
     }
 

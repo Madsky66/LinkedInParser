@@ -65,6 +65,9 @@ dependencies {
 
     // JSONObject
     implementation("org.json:json:20250107")
+
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended:1.7.3")
 }
 
 javafx {
