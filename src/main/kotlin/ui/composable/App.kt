@@ -17,12 +17,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
 import org.slf4j.LoggerFactory
-import ui.theme.Colors
 import java.awt.Desktop
 import java.net.URI
 
 @Composable
-fun App(applicationScope: CoroutineScope) {
+fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: Color, COLOR_SECONDARY: Color) {
     var pastedInput by remember {mutableStateOf("")}
     var pastedURL by remember {mutableStateOf("")}
     var statusMessage by remember {mutableStateOf("En attente de données...")}
@@ -37,7 +36,7 @@ fun App(applicationScope: CoroutineScope) {
 //    var newProspect by remember {mutableStateOf(ProspectData())}
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().background(Color.DarkGray).padding(10.dp)) {
+        Column(Modifier.fillMaxSize().background(COLOR_NEUTRAL).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
             Row(Modifier.weight(0.9f).fillMaxWidth()) {
                 // Zone de texte
                 Column(Modifier.weight(2f).fillMaxHeight(), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
@@ -62,12 +61,12 @@ fun App(applicationScope: CoroutineScope) {
                         label = {Text("Coller le texte de la page LinkedIn ici...")},
                         modifier = Modifier.weight(0.9f).fillMaxWidth().clip(RectangleShape),
                         colors = TextFieldDefaults.outlinedTextFieldColors(
-                            textColor = Color.LightGray,
-                            focusedBorderColor = Color.LightGray.copy(0.25f),
-                            unfocusedBorderColor = Color.LightGray.copy(0.15f),
-                            focusedLabelColor = Color.LightGray.copy(0.5f),
-                            unfocusedLabelColor = Color.LightGray.copy(0.5f),
-                            placeholderColor = Color.LightGray.copy(0.25f)
+                            textColor = COLOR_SECONDARY,
+                            focusedBorderColor = COLOR_SECONDARY.copy(0.25f),
+                            unfocusedBorderColor = COLOR_SECONDARY.copy(0.15f),
+                            focusedLabelColor = COLOR_SECONDARY.copy(0.5f),
+                            unfocusedLabelColor = COLOR_SECONDARY.copy(0.5f),
+                            placeholderColor = COLOR_SECONDARY.copy(0.25f)
                         )
                     )
                 }
@@ -76,33 +75,34 @@ fun App(applicationScope: CoroutineScope) {
                 Spacer(Modifier.width(10.dp))
 
                 // Colonne de droite
-                Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
+                Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                     Column(Modifier.fillMaxWidth()) {
                         // Fiche contact
                         if (isLoading) {CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))}
-                        else {currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()}
+                        else {currentProfile?.let {ProspectCard(it, COLOR_PRIMARY, COLOR_SECONDARY)} ?: EmptyProspectCard(COLOR_PRIMARY, COLOR_SECONDARY)}
 
                         // Spaced Divider
                         Spacer(Modifier.height(15.dp))
-                        Divider(Modifier.fillMaxWidth())
+                        Divider(Modifier.fillMaxWidth().padding(50.dp, 0.dp), color = COLOR_SECONDARY.copy(0.05f))
                         Spacer(Modifier.height(10.dp))
                     }
 
-                    // Boutons
+                    // Options
                     Column(Modifier.fillMaxSize(), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                         Column(Modifier.fillMaxWidth()) {
+                            // Input
                             OutlinedTextField(
                                 value = pastedURL,
                                 onValueChange = {pastedURL = it},
                                 label = {Text("Coller l'URL de la page LinkedIn ici...")},
                                 modifier = Modifier.fillMaxWidth().clip(RectangleShape),
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    textColor = Color.LightGray,
-                                    focusedBorderColor = Color.LightGray.copy(0.25f),
-                                    unfocusedBorderColor = Color.LightGray.copy(0.15f),
-                                    focusedLabelColor = Color.LightGray.copy(0.5f),
-                                    unfocusedLabelColor = Color.LightGray.copy(0.5f),
-                                    placeholderColor = Color.LightGray.copy(0.25f)
+                                    textColor = COLOR_SECONDARY,
+                                    focusedBorderColor = COLOR_SECONDARY.copy(0.25f),
+                                    unfocusedBorderColor = COLOR_SECONDARY.copy(0.15f),
+                                    focusedLabelColor = COLOR_SECONDARY.copy(0.5f),
+                                    unfocusedLabelColor = COLOR_SECONDARY.copy(0.5f),
+                                    placeholderColor = COLOR_SECONDARY.copy(0.25f)
                                 )
                             )
                             Button(
@@ -123,10 +123,10 @@ fun App(applicationScope: CoroutineScope) {
                                 elevation = ButtonDefaults.elevation(10.dp),
                                 shape = RoundedCornerShape(0, 0, 50, 50),
                                 colors = ButtonDefaults.buttonColors(
-                                    backgroundColor = Color.DarkGray,
-                                    contentColor = Color.LightGray,
-                                    disabledBackgroundColor = Colors().DARK_GRAY,
-                                    disabledContentColor = Color.DarkGray,
+                                    backgroundColor = COLOR_NEUTRAL,
+                                    contentColor = COLOR_SECONDARY,
+                                    disabledBackgroundColor = COLOR_PRIMARY,
+                                    disabledContentColor = COLOR_NEUTRAL,
                                 )
                             ) {
                                 Text("Ouvrir le profil")
@@ -134,7 +134,7 @@ fun App(applicationScope: CoroutineScope) {
 
                             // Spaced Divider
                             Spacer(Modifier.height(15.dp))
-                            Divider(Modifier.fillMaxWidth())
+                            Divider(Modifier.fillMaxWidth().padding(50.dp, 0.dp), color = COLOR_SECONDARY.copy(0.05f))
                             Spacer(Modifier.height(15.dp))
                         }
 
@@ -159,10 +159,10 @@ fun App(applicationScope: CoroutineScope) {
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = Color.DarkGray,
-                                contentColor = Color.LightGray,
-                                disabledBackgroundColor = Colors().DARK_GRAY,
-                                disabledContentColor = Color.DarkGray,
+                                backgroundColor = COLOR_NEUTRAL,
+                                contentColor = COLOR_SECONDARY,
+                                disabledBackgroundColor = COLOR_PRIMARY,
+                                disabledContentColor = COLOR_NEUTRAL,
                             )
                         ) {
                             Text("Extraire [CSV]")
@@ -175,20 +175,14 @@ fun App(applicationScope: CoroutineScope) {
             Spacer(Modifier.height(10.dp))
 
             // Console
-            Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black)) {
+            Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center) {
                 Text(
                     statusMessage, Modifier.padding(20.dp, 10.dp), color = when {
                         statusMessage.startsWith("✅") -> Color.Green
                         statusMessage.startsWith("❌") -> Color.Red
-                        else -> Color.LightGray
+                        else -> COLOR_SECONDARY
                     }
                 )
-            }
-
-            if (isLoading) {
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(0.5f)), Alignment.Center) {
-                    CircularProgressIndicator()
-                }
             }
         }
     }
