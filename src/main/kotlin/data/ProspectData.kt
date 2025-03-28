@@ -15,5 +15,3 @@ data class ProspectData(
     val jobTitle: String = "",
     val error: String? = null
 )
-
-enum class ProspectStatus {PENDING, COMPLETED, IN_PROGRESS, ERROR}
