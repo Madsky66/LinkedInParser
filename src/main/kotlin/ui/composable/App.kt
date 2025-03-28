@@ -5,12 +5,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ImportExport
+import androidx.compose.material.icons.filled.IosShare
+import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
@@ -23,13 +30,14 @@ import java.awt.FileDialog
 import java.awt.Frame
 import java.net.URI
 
-enum class StatusType {INFO, SUCCESS, ERROR, WARNING}
 data class StatusMessage(val message: String, val type: StatusType)
+enum class StatusType {INFO, SUCCESS, ERROR, WARNING}
+enum class ExportFormat {CSV, XLSX}
 
 fun openFileDialog(): String? {
     val fileDialog = FileDialog(Frame(), "Importer un fichier", FileDialog.LOAD)
     fileDialog.isVisible = true
-    return if (fileDialog.file != null) {fileDialog.directory + fileDialog.file} else {null}
+    return fileDialog.takeIf {it.file != null }?.let { it.directory + it.file}
 }
 
 @Composable
@@ -60,23 +68,32 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().background(COLOR_NEUTRAL).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
             Row(Modifier.weight(0.9f).fillMaxWidth()) {
-                // Zone de texte
+                // Colonne de saisie principale
                 Column(Modifier.weight(2f).fillMaxHeight(), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
                     OutlinedTextField(
                         value = pastedInput,
-                        onValueChange = {
-                            pastedInput = it
-                            if (pastedInput == "") {applicationScope.launch {statusMessage = StatusMessage("En attente de données...", StatusType.INFO)}}
+                        onValueChange = {newInput ->
+                            pastedInput = newInput
+                            if (newInput.isBlank()) {
+                                applicationScope.launch {
+                                    statusMessage = StatusMessage("En attente de données...", StatusType.INFO)
+                                    currentProfile = null
+                                }
+                            }
+                            else if (newInput.length < 5000) {
+                                applicationScope.launch {
+                                    statusMessage = StatusMessage("⚠\uFE0FTrop peu de texte, veuillez vérifier la copie et l'URL de la page (\"http(s)://(www.)linkedin.com/in/...\")", StatusType.INFO)
+                                    currentProfile = null
+                                }
+                            }
                             else {
                                 applicationScope.launch {
                                     isLoading = true
                                     statusMessage = StatusMessage("⏳ Extraction des informations en cours...", StatusType.INFO)
-                                    currentProfile = linkedInManager.extractProfileData(pastedInput, apiKey)
-                                    statusMessage =
-                                        if (currentProfile?.fullName == "") {StatusMessage("❌ Aucune information extraite", StatusType.ERROR)}
-                                        else if (currentProfile?.fullName != "Prénom iconnu Nom de famille inconnu") {statusMessage = StatusMessage("❌ Erreur lors de l'extraction des informations", StatusType.ERROR)}
-                                        else if (currentProfile?.firstName == "Prénom inconnu" || currentProfile?.lastName == "Nom de famille inconnu") {StatusMessage("⚠\uFE0F Extraction des données incomplète", StatusType.WARNING)}
-                                        else {StatusMessage("✅ Extraction des informations réussie", StatusType.SUCCESS)}
+                                    currentProfile = linkedInManager.extractProfileData(newInput, apiKey)
+                                    statusMessage = if (currentProfile == null || currentProfile?.fullName.isNullOrBlank() || currentProfile?.fullName == "Prénom inconnu Nom de famille inconnu") {StatusMessage("❌ Aucune information traitable ou format incorrect", StatusType.ERROR)}
+                                    else if (currentProfile?.firstName == "Prénom inconnu" || currentProfile?.lastName == "Nom de famille inconnu") {StatusMessage("⚠️ Extraction des données incomplète", StatusType.WARNING)}
+                                    else {StatusMessage("✅ Extraction des informations réussie", StatusType.SUCCESS)}
                                     isLoading = false
                                 }
                             }
@@ -113,7 +130,7 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                     // Options
                     Column(Modifier.fillMaxSize(), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                         Column(Modifier.fillMaxWidth()) {
-                            // Input
+                            // Saisie de l'URL
                             OutlinedTextField(
                                 value = pastedURL,
                                 onValueChange = {pastedURL = it},
@@ -130,7 +147,7 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                             )
                             Button(
                                 onClick = {
-                                    if (pastedURL.isNotEmpty()) {
+                                    if (pastedURL.isNotBlank()) {
                                         try {
                                             val uri = URI(pastedURL)
                                             if (Desktop.isDesktopSupported()) {Desktop.getDesktop().browse(uri)}
@@ -155,20 +172,20 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                 Text("Ouvrir le profil")
                             }
 
-                            // Spaced Divider
+                            // Diviseur espacé
                             Spacer(Modifier.height(15.dp))
                             Divider(Modifier.fillMaxWidth().padding(50.dp, 0.dp), color = COLOR_SECONDARY.copy(0.05f))
                             Spacer(Modifier.height(15.dp))
                         }
-
-                        // Bouton d'extraction CSV
+                        // Boutons d'action (Validation API, Import & Export)
                         Column(Modifier.fillMaxWidth()) {
-                            Row(Modifier.fillMaxWidth()){
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                                 OutlinedTextField(
                                     value = pastedAPI,
                                     onValueChange = {pastedAPI = it},
+                                    modifier = Modifier.clip(RectangleShape).weight(2f),
+                                    textStyle = TextStyle.Default,
                                     label = {Text("Clé API Apollo...")},
-                                    modifier = Modifier.fillMaxWidth(0.5f).clip(RectangleShape),
                                     colors = TextFieldDefaults.outlinedTextFieldColors(
                                         textColor = COLOR_SECONDARY,
                                         focusedBorderColor = COLOR_SECONDARY.copy(0.25f),
@@ -187,16 +204,16 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                             statusMessage = StatusMessage("⏳ Validation de la clé API par Apollo en cours...", StatusType.INFO)
                                             try {
                                                 // <--- Vérifier la validité de la clé ici
-                                                statusMessage = StatusMessage("✅ La clé API à bien été validée par Apollo", StatusType.SUCCESS)
+                                                statusMessage = StatusMessage("✅ La clé API a bien été validée par Apollo", StatusType.SUCCESS)
                                             }
                                             catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", StatusType.ERROR)}
                                             isLoading = false
                                         }
                                     },
-                                    modifier = Modifier.fillMaxWidth(0.5f),
+                                    modifier = Modifier.padding(top = 8.dp).weight(0.75f).height(54.dp),
                                     enabled = pastedAPI.isNotBlank(),
                                     elevation = ButtonDefaults.elevation(10.dp),
-                                    shape = RoundedCornerShape(100),
+                                    shape = RoundedCornerShape(0, 100, 100, 0),
                                     colors = ButtonDefaults.buttonColors(
                                         backgroundColor = COLOR_NEUTRAL,
                                         contentColor = COLOR_SECONDARY,
@@ -204,10 +221,14 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                         disabledContentColor = COLOR_NEUTRAL,
                                     )
                                 ) {
-                                    Text("Valider")
+                                    if (!isLoading) {Icon(Icons.Filled.Send, "")} else {CircularProgressIndicator()}
                                 }
                             }
 
+                            // Spacer
+                            Spacer(Modifier.height(10.dp))
+
+                            // Bouton d'importation de fichier
                             Button(
                                 onClick = {
                                     applicationScope.launch {
@@ -223,14 +244,8 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                         else {statusMessage = StatusMessage("⚠️ Aucune sélection de fichier", StatusType.WARNING)}
                                     }
                                 },
-                            ) {
-                                Text("Importer")
-                            }
-
-                            Button(
-                                onClick = {showExportModal = true},
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled = statusMessage == StatusMessage("✅ Extraction des informations réussie", StatusType.SUCCESS),
+                                enabled = true,
                                 elevation = ButtonDefaults.elevation(10.dp),
                                 shape = RoundedCornerShape(100),
                                 colors = ButtonDefaults.buttonColors(
@@ -240,7 +255,32 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                     disabledContentColor = COLOR_NEUTRAL,
                                 )
                             ) {
-                                Text("Extraire [CSV]")
+                                Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.SaveAlt, "")
+                                    Spacer(Modifier.width(10.dp))
+                                    Text("Importer [CSV / XLSX]")
+                                }
+                            }
+
+                            // Bouton d'exportation
+                            Button(
+                                onClick = {showExportModal = true},
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = currentProfile != null && statusMessage.type == StatusType.SUCCESS,
+                                elevation = ButtonDefaults.elevation(10.dp),
+                                shape = RoundedCornerShape(100),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = COLOR_NEUTRAL,
+                                    contentColor = COLOR_SECONDARY,
+                                    disabledBackgroundColor = COLOR_PRIMARY,
+                                    disabledContentColor = COLOR_NEUTRAL,
+                                )
+                            ) {
+                                Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.IosShare, "")
+                                    Spacer(Modifier.width(10.dp))
+                                    Text("Exporter [CSV / XLSX]")
+                                }
                             }
                             if (showExportModal) {
                                 ExportModal(
@@ -271,7 +311,7 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
             // Spacer
             Spacer(Modifier.height(10.dp))
 
-            // Console
+            // Console de statut
             Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center) {
                 Text(statusMessage.message, Modifier.padding(20.dp, 10.dp), fontSize = 15.sp, color = statusColor)
             }
@@ -314,5 +354,3 @@ fun ExportModal(onExport: (filePath: String, format: ExportFormat) -> Unit, onDi
         }
     }
 }
-
-enum class ExportFormat {CSV, XLSX}
