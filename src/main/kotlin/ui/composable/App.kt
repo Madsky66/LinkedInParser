@@ -32,9 +32,8 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
 
     val linkedInManager = LinkedInManager()
     val googleSheetsManager = remember {GoogleSheetsManager()}
-//    val prospectList = remember {mutableStateListOf<ProspectData>()}
-//    var spreadsheetId by remember {mutableStateOf("")}
-//    var newProspect by remember {mutableStateOf(ProspectData())}
+    val prospectList = remember {mutableStateListOf<ProspectData>()}
+    var newProspect by remember {mutableStateOf(ProspectData())}
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().background(COLOR_NEUTRAL).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
