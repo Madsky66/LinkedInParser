@@ -23,47 +23,70 @@ class LinkedInManager {
 
         return try {
             val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
+                .filterNot {
+                    it.contains("Pour les entreprises")
+                            || it.contains("Premium")
+                            || it.contains("Image")
+                            || it.contains("Le statut est accessible")
+                            || it.contains("echerche")
+                            || it.contains("otification")
+                            || it.contains("accourcis")
+                            || it.contains("clavier")
+                            || it.contains("Fermer le menu de navigation")
+                            || it.contains("nouvelles")
+                            || it.contains("actualité")
+                            || it.contains("Accueil")
+                            || it.contains("Réseau")
+                            || it.contains("contenu")
+                            || it.contains("Emplois")
+                            || it.contains("Messagerie")
+                            || it.contains("Vous")
+                            || it.contains("test")
+                            || it.contains("relation")
+                }
 
-            val baseIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")}
-            val jobIndex = lines.indexOfFirst {it.contains("ExpérienceExpérience")}
-            if (baseIndex == -1 || baseIndex + 5 >= lines.size) {
-                logger.warning("Indexation incorrecte des lignes du profil")
-                return emptyProspectData()
-            }
-
-            val fullName = lines[baseIndex + 1].split(" ").filter {it.isNotEmpty()}
+            // Extraction robuste du nom
+            val fullName = lines.getOrNull(2)?.split(" ")?.filter {it.isNotEmpty()} ?: emptyList()
             val firstName = fullName.firstOrNull() ?: "Prénom inconnu"
             val middleName = if (fullName.size > 2) fullName.subList(1, fullName.size - 1).joinToString(" ") else ""
             val lastName = fullName.lastOrNull() ?: "Nom de famille inconnu"
 
-            var company = lines.getOrNull(jobIndex + 4).toString().split(" ").firstOrNull() ?: "Entreprise inconnue"
+            // Récupération de l'entreprise
+            var company = (lines.getOrNull(5) ?: "Entreprise inconnue").toString()
+            var jobTitle = (lines.getOrNull(4) ?: "Poste inconnu").toString()
 
+            // Récupération des données Apollo
             val apolloData = fetchApolloData(firstName, lastName, company)
             delay(500)
             val personData = apolloData?.optJSONObject("person")
-            val linkedInURL = personData?.optString("linkedin_url", null)
+            val linkedInURL = personData?.optString("linkedin_url", "URL introuvable").toString()
 
-            val lastJobHistory = personData?.optJSONArray("employment_history")?.optJSONObject(0)
-            val apolloCompany = lastJobHistory?.optString("organization_name", null)
-            company = when (apolloCompany) {
-                company -> apolloCompany
-                "" -> "Entreprise inconnue"
-                else -> apolloCompany
-            }.toString()
+            // Récupération de l'entreprise et du poste
+            if (company == "Entreprise inconnue") {
+                val lastJobHistory = personData?.optJSONArray("employment_history")?.optJSONObject(0)
+                val apolloCompany = lastJobHistory?.optString("organization_name", "Entreprise inconnue")?.takeIf {it.isNotBlank()}
+                company = if (apolloCompany != "") {"Entreprise inconnue"} else {apolloCompany.toString()}
+            }
             val domain = extractDomain(company)
-            val jobTitle = lastJobHistory?.optString("title", null) ?: "Poste inconnu"
+            if (jobTitle == "Poste inconnu") {
+                val lastJobHistory = personData?.optJSONArray("employment_history")?.optJSONObject(0)
+                val apolloJobTitle = lastJobHistory?.optString("title", "Poste inconnu")?.takeIf {it.isNotBlank()}
+                jobTitle = if (apolloJobTitle != "") {"Poste inconnu"} else {apolloJobTitle.toString()}
+            }
 
-            val generatedEmails = generateEmailVariations(firstName, lastName, domain).toMutableList()
-            val email = personData?.optString("email", null)
-            if (!email.isNullOrEmpty() && !generatedEmails.contains(email)) generatedEmails.add(email)
+            // Génération des emails
+            val email = personData?.optString("email")?.takeIf {it.isNotBlank()}.toString()
+            var generatedEmails = mutableListOf<String>()
+            generatedEmails.add(email)
+            generateEmailVariations(firstName, lastName, domain).toMutableList().forEach {email -> generatedEmails.add(email)}
 
-            ProspectData(
-                linkedinURL = linkedInURL.toString(),
+            return ProspectData(
+                linkedinURL = linkedInURL,
                 fullName = "$firstName $lastName",
                 firstName = firstName,
                 middleName = middleName,
                 lastName = lastName,
-                email = generatedEmails.firstOrNull() ?: "",
+                email = email,
                 generatedEmails = generatedEmails,
                 company = company,
                 jobTitle = jobTitle
