@@ -25,6 +25,7 @@ class LinkedInManager {
             val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
 
             val baseIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")}
+            val jobIndex = lines.indexOfFirst {it.contains("ExpérienceExpérience")}
             if (baseIndex == -1 || baseIndex + 5 >= lines.size) {
                 logger.warning("Indexation incorrecte des lignes du profil")
                 return emptyProspectData()
@@ -35,22 +36,22 @@ class LinkedInManager {
             val middleName = if (fullName.size > 2) fullName.subList(1, fullName.size - 1).joinToString(" ") else ""
             val lastName = fullName.lastOrNull() ?: "Nom de famille inconnu"
 
-            var company = lines.getOrNull(baseIndex + 4) ?: "Entreprise inconnue"
+            var company = lines.getOrNull(jobIndex + 4).toString().split(" ").firstOrNull() ?: "Entreprise inconnue"
 
             val apolloData = fetchApolloData(firstName, lastName, company)
             delay(500)
             val personData = apolloData?.optJSONObject("person")
-
             val linkedInURL = personData?.optString("linkedin_url", null)
 
-            company = when (personData?.optString("organization_name").toString()) {
-                company -> personData?.optString("organization_name").toString()
+            val lastJobHistory = personData?.optJSONArray("employment_history")?.optJSONObject(0)
+            val apolloCompany = lastJobHistory?.optString("organization_name", null)
+            company = when (apolloCompany) {
+                company -> apolloCompany
                 "" -> "Entreprise inconnue"
-                else -> personData?.optString("organization_name").toString()
-            }
-            print(company)
+                else -> apolloCompany
+            }.toString()
             val domain = extractDomain(company)
-            val jobTitle = personData?.optString("headline", null) ?: "Poste inconnu"
+            val jobTitle = lastJobHistory?.optString("title", null) ?: "Poste inconnu"
 
             val generatedEmails = generateEmailVariations(firstName, lastName, domain).toMutableList()
             val email = personData?.optString("email", null)
