@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -72,7 +73,7 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                 }
 
                 // Spacer
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(15.dp))
 
                 // Colonne de droite
                 Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
@@ -177,7 +178,7 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
             // Console
             Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center) {
                 Text(
-                    statusMessage, Modifier.padding(20.dp, 10.dp), color = when {
+                    statusMessage, Modifier.padding(20.dp, 10.dp), fontSize = 15.sp, color = when {
                         statusMessage.startsWith("✅") -> Color.Green
                         statusMessage.startsWith("❌") -> Color.Red
                         else -> COLOR_SECONDARY

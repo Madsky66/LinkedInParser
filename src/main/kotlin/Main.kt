@@ -34,9 +34,10 @@ fun main() = application {
     Window(onCloseRequest = {exitApplication()}, visible = true, state = windowState, title = "LinkedIn Parser", undecorated = true) {
         var isMaximized by remember {mutableStateOf(false)}
         var isDarkTheme = remember {mutableStateOf(true)}
-        val COLOR_PRIMARY = if (isDarkTheme.value) {Colors().DARK_GRAY} else {Color.LightGray}
-        val COLOR_NEUTRAL = Color.DarkGray
-        val COLOR_SECONDARY = if (isDarkTheme.value) {Color.LightGray} else {Colors().DARK_GRAY}
+
+        val COLOR_PRIMARY = if (isDarkTheme.value) {Colors().DARK_GRAY} else {Color.DarkGray}
+        val COLOR_NEUTRAL = if (isDarkTheme.value) {Color.DarkGray} else {Color.LightGray}
+        val COLOR_SECONDARY = if (isDarkTheme.value) {Color.LightGray} else {Color.LightGray}
 
         Column(Modifier.fillMaxSize()) {
             // Barre de titre
