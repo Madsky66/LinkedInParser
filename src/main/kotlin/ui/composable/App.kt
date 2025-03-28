@@ -2,31 +2,10 @@ package ui.composable
 
 import GoogleSheetsManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
-import androidx.compose.material.TextFieldDefaults
-import androidx.compose.material.darkColors
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +45,19 @@ fun App(applicationScope: CoroutineScope) {
                         value = pastedInput,
                         onValueChange = {
                             pastedInput = it
-                            applicationScope.launch{currentProfile = linkedInManager.extractProfileData(pastedInput)}
+                            applicationScope.launch {
+                                isLoading = true
+                                statusMessage = "⏳ Extraction des données en cours..."
+                                try {
+                                    currentProfile = linkedInManager.extractProfileData(pastedInput)
+                                    statusMessage = "✅ Extraction réussie"
+                                }
+                                catch (e: Exception) {
+                                    statusMessage = "❌ Erreur lors de l'extraction : ${e.message}"
+                                    logger.error("Erreur extraction LinkedIn", e)
+                                }
+                                isLoading = false
+                            }
                         },
                         label = {Text("Coller le texte de la page LinkedIn ici...")},
                         modifier = Modifier.weight(0.9f).fillMaxWidth().clip(RectangleShape),
@@ -88,8 +79,8 @@ fun App(applicationScope: CoroutineScope) {
                 Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                     Column(Modifier.fillMaxWidth()) {
                         // Fiche contact
-                        if (isLoading) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-                        else currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()
+                        if (isLoading) {CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))}
+                        else {currentProfile?.let {ProspectCard(it)} ?: EmptyProspectCard()}
 
                         // Spaced Divider
                         Spacer(Modifier.height(15.dp))
@@ -121,11 +112,14 @@ fun App(applicationScope: CoroutineScope) {
                                             val uri = URI(pastedURL)
                                             if (Desktop.isDesktopSupported()) {Desktop.getDesktop().browse(uri)}
                                         }
-                                        catch (e: Exception) {println("Erreur lors de l'ouverture de l'URL : ${e.message}")}
+                                        catch (e: Exception) {
+                                            statusMessage = "❌ Erreur ouverture URL : ${e.message}"
+                                            logger.error("Erreur ouverture URL", e)
+                                        }
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled = pastedURL.isNotEmpty(),
+                                enabled = pastedURL.startsWith("https://www.linkedin.com/in") || pastedURL.startsWith("https://linkedin.com/in"),
                                 elevation = ButtonDefaults.elevation(10.dp),
                                 shape = RoundedCornerShape(0, 0, 50, 50),
                                 colors = ButtonDefaults.buttonColors(
@@ -145,9 +139,23 @@ fun App(applicationScope: CoroutineScope) {
                         }
 
                         Button(
-                            onClick = {googleSheetsManager.exportToCSV(currentProfile!!, "src/main/resources/extra/data_export.csv")},
+                            onClick = {
+                                applicationScope.launch {
+                                    isLoading = true
+                                    statusMessage = "⏳ Exportation en cours..."
+                                    try {
+                                        googleSheetsManager.exportToCSV(currentProfile!!, "data_export.csv")
+                                        statusMessage = "✅ Exportation réussie"
+                                    }
+                                    catch (e: Exception) {
+                                        statusMessage = "❌ Erreur exportation : ${e.message}"
+                                        logger.error("Erreur exportation CSV", e)
+                                    }
+                                    isLoading = false
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = currentProfile?.fullName != "Nom inconnu" && currentProfile?.fullName != "",
+                            enabled = currentProfile?.fullName != "" && currentProfile?.fullName != "Nom inconnu",
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = ButtonDefaults.buttonColors(
@@ -167,7 +175,7 @@ fun App(applicationScope: CoroutineScope) {
             Spacer(Modifier.height(10.dp))
 
             // Console
-            Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center, Alignment.Start) {
+            Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black)) {
                 Text(
                     statusMessage, Modifier.padding(20.dp, 10.dp), color = when {
                         statusMessage.startsWith("✅") -> Color.Green
