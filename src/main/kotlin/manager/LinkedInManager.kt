@@ -16,36 +16,33 @@ class LinkedInManager {
     suspend fun extractProfileData(text: String): ProspectData {
         logger.info("Début de l'extraction des données du profil")
 
-        val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
-        if (lines.isEmpty()) {
+        if (text.isBlank()) {
             logger.warning("Texte vide ou aucune donnée exploitable")
             return emptyProspectData()
         }
 
-        val baseIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")}
-        if (baseIndex == -1 || baseIndex + 5 >= lines.size) {
-            logger.warning("Indexation incorrecte des lignes du profil")
-            return emptyProspectData()
-        }
+        return try {
+            val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
 
-        val firstNameLastNameLine = lines.getOrNull(baseIndex + 1) ?: ""
-        val secondNameLine = lines.getOrNull(baseIndex + 2) ?: ""
+            val baseIndex = lines.indexOfFirst {it.contains("Image d’arrière-plan")}
+            if (baseIndex == -1 || baseIndex + 5 >= lines.size) {
+                logger.warning("Indexation incorrecte des lignes du profil")
+                return emptyProspectData()
+            }
 
-        var company = lines.getOrNull(baseIndex + 4) ?: "Entreprise inconnue"
-        print(company)
-
-        if (firstNameLastNameLine == secondNameLine && firstNameLastNameLine.isNotEmpty()) {
-            val fullName = firstNameLastNameLine.split(" ").filter {it.isNotEmpty()}
+            val fullName = lines[baseIndex + 1].split(" ").filter {it.isNotEmpty()}
             val firstName = fullName.firstOrNull() ?: "Prénom inconnu"
-            val lastName = fullName.lastOrNull() ?: "Nom de famille inconnu"
             val middleName = if (fullName.size > 2) fullName.subList(1, fullName.size - 1).joinToString(" ") else ""
+            val lastName = fullName.lastOrNull() ?: "Nom de famille inconnu"
+
+            var company = lines.getOrNull(baseIndex + 4) ?: "Entreprise inconnue"
 
             val apolloData = fetchApolloData(firstName, lastName, company)
             delay(500)
             val personData = apolloData?.optJSONObject("person")
 
             val linkedInURL = personData?.optString("linkedin_url", null)
-            val email = personData?.optString("email", null)
+
             company = when (personData?.optString("organization_name").toString()) {
                 company -> personData?.optString("organization_name").toString()
                 "" -> "Entreprise inconnue"
@@ -55,25 +52,23 @@ class LinkedInManager {
             val domain = extractDomain(company)
             val jobTitle = personData?.optString("headline", null) ?: "Poste inconnu"
 
-            val emails = generateEmailVariations(firstName, lastName, domain).toMutableList()
-            if (!email.isNullOrEmpty() && !emails.contains(email)) emails.add(email)
+            val generatedEmails = generateEmailVariations(firstName, lastName, domain).toMutableList()
+            val email = personData?.optString("email", null)
+            if (!email.isNullOrEmpty() && !generatedEmails.contains(email)) generatedEmails.add(email)
 
-            logger.info("Emails générés : ${emails.joinToString(", ")}")
-
-            return ProspectData(
+            ProspectData(
                 linkedinURL = linkedInURL.toString(),
-                fullName = fullName.toString(),
+                fullName = "$firstName $lastName",
                 firstName = firstName,
                 middleName = middleName,
                 lastName = lastName,
-                email = emails.firstOrNull() ?: "",
-                generatedEmails = emails,
+                email = generatedEmails.firstOrNull() ?: "",
+                generatedEmails = generatedEmails,
                 company = company,
                 jobTitle = jobTitle
             )
         }
-        logger.warning("Impossible de déterminer le nom et le prénom correctement")
-        return emptyProspectData()
+        catch (e: Exception) {emptyProspectData()}
     }
 
     private fun extractDomain(company: String): String {

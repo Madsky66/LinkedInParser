@@ -36,7 +36,7 @@ fun App(applicationScope: CoroutineScope) {
 //    var spreadsheetId by remember {mutableStateOf("")}
 //    var newProspect by remember {mutableStateOf(ProspectData())}
 
-    MaterialTheme(colors = darkColors()) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().background(Color.DarkGray).padding(10.dp)) {
             Row(Modifier.weight(0.9f).fillMaxWidth()) {
                 // Zone de texte
@@ -183,6 +183,12 @@ fun App(applicationScope: CoroutineScope) {
                         else -> Color.LightGray
                     }
                 )
+            }
+
+            if (isLoading) {
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(0.5f)), Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
         }
     }
