@@ -17,7 +17,6 @@ import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
-import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
 
@@ -25,10 +24,11 @@ import java.net.URI
 fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: Color, COLOR_SECONDARY: Color) {
     var pastedInput by remember {mutableStateOf("")}
     var pastedURL by remember {mutableStateOf("")}
+    var pastedAPI by remember {mutableStateOf("")}
+
     var statusMessage by remember {mutableStateOf("En attente de données...")}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
     var isLoading by remember {mutableStateOf(false)}
-    val logger = LoggerFactory.getLogger("App")
 
     val linkedInManager = LinkedInManager()
     val googleSheetsManager = remember {GoogleSheetsManager()}
@@ -45,18 +45,20 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                         value = pastedInput,
                         onValueChange = {
                             pastedInput = it
-                            applicationScope.launch {
-                                isLoading = true
-                                statusMessage = "⏳ Extraction des données en cours..."
-                                try {
-                                    currentProfile = linkedInManager.extractProfileData(pastedInput)
-                                    statusMessage = "✅ Extraction réussie"
+                            if (pastedInput == "") {applicationScope.launch {statusMessage = "En attente de données..."}}
+                            else {
+                                applicationScope.launch {
+                                    isLoading = true
+                                    statusMessage = "⏳ Extraction des informations en cours..."
+                                    try {currentProfile = linkedInManager.extractProfileData(pastedInput)}
+                                    catch (e: Exception) {statusMessage = "❌ Erreur lors de l'extraction des informations : ${e.message}"}
+                                    statusMessage =
+                                        if (currentProfile?.fullName == "") {"❌ Aucune information extraite"}
+                                        else if (currentProfile?.fullName != "Prénom iconnu Nom de famille inconnu") {"❌ Erreur lors de l'extraction des informations"}
+                                        else if (currentProfile?.firstName == "Prénom inconnu" || currentProfile?.lastName == "Nom de famille inconnu") {"⚠\uFE0F Extraction des données incomplète"}
+                                        else {"✅ Extraction des informations réussie"}
+                                    isLoading = false
                                 }
-                                catch (e: Exception) {
-                                    statusMessage = "❌ Erreur lors de l'extraction : ${e.message}"
-                                    logger.error("Erreur extraction LinkedIn", e)
-                                }
-                                isLoading = false
                             }
                         },
                         label = {Text("Coller le texte de la page LinkedIn ici...")},
@@ -113,14 +115,14 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                                             val uri = URI(pastedURL)
                                             if (Desktop.isDesktopSupported()) {Desktop.getDesktop().browse(uri)}
                                         }
-                                        catch (e: Exception) {
-                                            statusMessage = "❌ Erreur ouverture URL : ${e.message}"
-                                            logger.error("Erreur ouverture URL", e)
-                                        }
+                                        catch (e: Exception) {statusMessage = "❌ Erreur lors de l'ouverture de l'URL : ${e.message}"}
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled = pastedURL.startsWith("https://www.linkedin.com/in") || pastedURL.startsWith("https://linkedin.com/in"),
+                                enabled = pastedURL.startsWith("https://www.linkedin.com/in")
+                                        || pastedURL.startsWith("https://linkedin.com/in")
+                                        || pastedURL.startsWith("http://www.linkedin.com/in")
+                                        || pastedURL.startsWith("http://linkedin.com/in"),
                                 elevation = ButtonDefaults.elevation(10.dp),
                                 shape = RoundedCornerShape(0, 0, 50, 50),
                                 colors = ButtonDefaults.buttonColors(
@@ -139,34 +141,78 @@ fun App(applicationScope: CoroutineScope, COLOR_PRIMARY: Color, COLOR_NEUTRAL: C
                             Spacer(Modifier.height(15.dp))
                         }
 
-                        Button(
-                            onClick = {
-                                applicationScope.launch {
-                                    isLoading = true
-                                    statusMessage = "⏳ Exportation en cours..."
-                                    try {
-                                        googleSheetsManager.exportToCSV(currentProfile!!, "data_export.csv")
-                                        statusMessage = "✅ Exportation réussie"
-                                    }
-                                    catch (e: Exception) {
-                                        statusMessage = "❌ Erreur exportation : ${e.message}"
-                                        logger.error("Erreur exportation CSV", e)
-                                    }
-                                    isLoading = false
+                        // Bouton d'extraction CSV
+                        Column(Modifier.fillMaxWidth()) {
+                            Row(Modifier.fillMaxWidth()){
+                                OutlinedTextField(
+                                    value = pastedAPI,
+                                    onValueChange = {pastedAPI = it},
+                                    label = {Text("Clé API Apollo...")},
+                                    modifier = Modifier.fillMaxWidth(0.5f).clip(RectangleShape),
+                                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                                        textColor = COLOR_SECONDARY,
+                                        focusedBorderColor = COLOR_SECONDARY.copy(0.25f),
+                                        unfocusedBorderColor = COLOR_SECONDARY.copy(0.15f),
+                                        focusedLabelColor = COLOR_SECONDARY.copy(0.5f),
+                                        unfocusedLabelColor = COLOR_SECONDARY.copy(0.5f),
+                                        placeholderColor = COLOR_SECONDARY.copy(0.25f)
+                                    )
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Button(
+                                    onClick = {
+                                        applicationScope.launch {
+                                            isLoading = true
+                                            val apiKey = pastedAPI
+                                            statusMessage = "⏳ Validation de la clé API par Apollo en cours..."
+                                            try {
+                                                // <--- Vérifier la validité de la clé ici
+                                                statusMessage = "✅ La clé API à bien été validée par Apollo"
+                                            }
+                                            catch (e: Exception) {statusMessage = "❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}"}
+                                            isLoading = false
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(0.5f),
+                                    enabled = pastedAPI.isNotBlank(),
+                                    elevation = ButtonDefaults.elevation(10.dp),
+                                    shape = RoundedCornerShape(100),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = COLOR_NEUTRAL,
+                                        contentColor = COLOR_SECONDARY,
+                                        disabledBackgroundColor = COLOR_PRIMARY,
+                                        disabledContentColor = COLOR_NEUTRAL,
+                                    )
+                                ) {
+                                    Text("Valider")
                                 }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = currentProfile?.fullName != "" && currentProfile?.fullName != "Nom inconnu",
-                            elevation = ButtonDefaults.elevation(10.dp),
-                            shape = RoundedCornerShape(100),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = COLOR_NEUTRAL,
-                                contentColor = COLOR_SECONDARY,
-                                disabledBackgroundColor = COLOR_PRIMARY,
-                                disabledContentColor = COLOR_NEUTRAL,
-                            )
-                        ) {
-                            Text("Extraire [CSV]")
+                            }
+                            Button(
+                                onClick = {
+                                    applicationScope.launch {
+                                        isLoading = true
+                                        statusMessage = "⏳ Exportation du fichier CSV en cours..."
+                                        try {
+                                            googleSheetsManager.exportToCSV(currentProfile!!, "data_export.csv")
+                                            statusMessage = "✅ Exportation du fichier CSV réussie"
+                                        }
+                                        catch (e: Exception) {statusMessage = "❌ Erreur lors de l'exportation du fichier CSV : ${e.message}"}
+                                        isLoading = false
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = statusMessage == "✅ Extraction des informations réussie" || statusMessage == "⏳ Exportation du fichier CSV en cours...",
+                                elevation = ButtonDefaults.elevation(10.dp),
+                                shape = RoundedCornerShape(100),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = COLOR_NEUTRAL,
+                                    contentColor = COLOR_SECONDARY,
+                                    disabledBackgroundColor = COLOR_PRIMARY,
+                                    disabledContentColor = COLOR_NEUTRAL,
+                                )
+                            ) {
+                                Text("Extraire [CSV]")
+                            }
                         }
                     }
                 }

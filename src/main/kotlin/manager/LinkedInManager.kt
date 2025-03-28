@@ -13,7 +13,7 @@ class LinkedInManager {
     private val client = OkHttpClient()
     private val logger = Logger.getLogger(LinkedInManager::class.java.name)
 
-    suspend fun extractProfileData(text: String): ProspectData {
+    suspend fun extractProfileData(text: String, apiKey: String = ""): ProspectData {
         logger.info("Début de l'extraction des données du profil")
 
         if (text.isBlank()) {
@@ -23,8 +23,7 @@ class LinkedInManager {
 
         return try {
             val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
-                .filterNot {
-                    it.contains("Pour les entreprises")
+                .filterNot {it.contains("Pour les entreprises")
                             || it.contains("Premium")
                             || it.contains("Image")
                             || it.contains("Le statut est accessible")
@@ -56,7 +55,7 @@ class LinkedInManager {
             var jobTitle = (lines.getOrNull(4) ?: "Poste inconnu").toString()
 
             // Récupération des données Apollo
-            val apolloData = fetchApolloData(firstName, lastName, company)
+            val apolloData = fetchApolloData(firstName, lastName, company, apiKey)
             delay(500)
             val personData = apolloData?.optJSONObject("person")
             val linkedInURL = personData?.optString("linkedin_url", "URL introuvable").toString()
@@ -119,12 +118,11 @@ class LinkedInManager {
         ).distinct()
     }
 
-    private fun fetchApolloData(firstName: String, lastName: String, company: String): JSONObject? {
+    private fun fetchApolloData(firstName: String, lastName: String, company: String, apiKey: String): JSONObject? {
         if (firstName.isBlank() || lastName.isBlank()) {
             logger.warning("Données incomplètes pour interroger Apollo")
             return null
         }
-        val apiKey = "yvak05gEB4UywwXxmRedew"
         val jsonBody = JSONObject().apply {
             put("first_name", firstName)
             put("last_name", lastName)
