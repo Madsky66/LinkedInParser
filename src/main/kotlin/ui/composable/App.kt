@@ -168,7 +168,8 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                         isExportationLoading = true
                         statusMessage = StatusMessage("⏳ Exportation du fichier $fileFormat en cours...", StatusType.INFO)
                         try {
-                            when (it) {
+                            val selectedFormat: ExportFormat = it
+                            when (selectedFormat) {
                                 ExportFormat.XLSX -> {/*fileManager.exportToXLSX(currentProfile!!, filePath)*/}
                                 ExportFormat.CSV -> fileManager.exportToCSV(currentProfile!!, filePath.toString())
                             }
