@@ -2,7 +2,7 @@ package ui.composable
 
 import FileManager
 import androidx.compose.foundation.BorderStroke
-import utils.StatusMessage
+import utils.ConsoleMessage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -17,41 +17,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
-import utils.ExportFormat
-import utils.StatusType
+import utils.FileFormat
+import utils.ConsoleMessageType
 import java.awt.Desktop
 import java.awt.FileDialog
 import java.awt.Frame
+import java.io.File
 import java.net.URI
 
-fun processInput(input: String, applicationScope: CoroutineScope, linkedInManager: LinkedInManager, apiKey: String, setStatus: (StatusMessage) -> Unit, setProfile: (ProspectData?) -> Unit, setLoading: (Boolean) -> Unit) {
+fun processInput(input: String, applicationScope: CoroutineScope, linkedInManager: LinkedInManager, apiKey: String, setStatus: (ConsoleMessage) -> Unit, setProfile: (ProspectData?) -> Unit, setLoading: (Boolean) -> Unit) {
     applicationScope.launch {
         setLoading(true)
         if (input.isBlank()) {
-            setStatus(StatusMessage("En attente de données...", StatusType.INFO))
+            setStatus(ConsoleMessage("En attente de données...", ConsoleMessageType.INFO))
             setProfile(null)
         }
         else if (input.length < 5000) {
-            setStatus(StatusMessage("⚠\uFE0F Trop peu de texte, veuillez vérifier la copie et l'URL de la page (\"http(s)://(www.)linkedin.com/in/...\")", StatusType.WARNING))
+            setStatus(ConsoleMessage("⚠\uFE0F Trop peu de texte, veuillez vérifier la copie et l'URL de la page (\"http(s)://(www.)linkedin.com/in/...\")", ConsoleMessageType.WARNING))
             setProfile(null)
         }
         else {
             setLoading(true)
-            setStatus(StatusMessage("⏳ Extraction des informations en cours...", StatusType.INFO))
+            setStatus(ConsoleMessage("⏳ Extraction des informations en cours...", ConsoleMessageType.INFO))
             setProfile(linkedInManager.extractProfileData(input, apiKey))
             val newProfile = linkedInManager.extractProfileData(input, apiKey)
             print(newProfile)
             setStatus(
-                if (newProfile.fullName.isBlank() || newProfile.fullName == "Prénom inconnu Nom de famille inconnu") {StatusMessage("❌ Aucune information traitable ou format du texte copié incorrect", StatusType.ERROR)}
-                else if (newProfile.firstName == "Prénom inconnu" || newProfile.lastName == "Nom de famille inconnu") {StatusMessage("⚠️ Extraction des données incomplète", StatusType.WARNING)}
-                else {StatusMessage("✅ Extraction des informations réussie", StatusType.SUCCESS)}
+                if (newProfile.fullName.isBlank() || newProfile.fullName == "Prénom inconnu Nom de famille inconnu") {ConsoleMessage("❌ Aucune information traitable ou format du texte copié incorrect", ConsoleMessageType.ERROR)}
+                else if (newProfile.firstName == "Prénom inconnu" || newProfile.lastName == "Nom de famille inconnu") {ConsoleMessage("⚠️ Extraction des données incomplète", ConsoleMessageType.WARNING)}
+                else {ConsoleMessage("✅ Extraction des informations réussie", ConsoleMessageType.SUCCESS)}
             )
             setLoading(false)
         }
@@ -59,9 +59,9 @@ fun processInput(input: String, applicationScope: CoroutineScope, linkedInManage
     }
 }
 
-fun openFileDialog(): String? {
-    val fileDialog = FileDialog(Frame(), "Importer un fichier", FileDialog.LOAD)
-    fileDialog.isVisible = true
+fun openDialog(dialogTitle: String, isVisible: Boolean = true): String? {
+    val fileDialog = FileDialog(Frame(), dialogTitle, FileDialog.LOAD)
+    fileDialog.isVisible = isVisible
     return fileDialog.takeIf {it.file != null}?.let {it.directory + it.file}
 }
 
@@ -80,28 +80,16 @@ fun getButtonColors(backgroundColor: Color, disabledBackgroundColor: Color, cont
     ButtonDefaults.buttonColors(backgroundColor, contentColor, disabledBackgroundColor, disabledContentColor = contentColor.copy(0.5f))
 
 @Composable
-fun SpacedDivider(modifier: Modifier = Modifier, direction: String, thick: Dp = 1.dp, firstSpacer: Dp, secondSpacer: Dp) {
-    when (direction) {
-        "horizontal" -> Spacer(Modifier.width(firstSpacer))
-        "vertical" -> Spacer(Modifier.height(firstSpacer))
-    }
-    Divider(modifier)
-    when (direction) {
-        "horizontal" -> Spacer(Modifier.width(secondSpacer))
-        "vertical" -> Spacer(Modifier.height(secondSpacer))
-    }
-}
-
-@Composable
 fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: String?) {
     var pastedInput by remember {mutableStateOf("")}
     var pastedURL by remember {mutableStateOf("")}
 
-    var statusMessage by remember {mutableStateOf(StatusMessage("En attente de données...", StatusType.INFO))}
+    var consoleMessage by remember {mutableStateOf(ConsoleMessage("En attente de données...", ConsoleMessageType.INFO))}
     var currentProfile by remember {mutableStateOf<ProspectData?>(null)}
-    var showExportModal by remember {mutableStateOf(false)}
+    var loadedFile by remember {mutableStateOf<File?>(null)}
 
     var isExtractionLoading by remember {mutableStateOf(false)}
+    var isImportationLoading by remember {mutableStateOf(false)}
     var isExportationLoading by remember {mutableStateOf(false)}
 
     val linkedInManager = remember {LinkedInManager()}
@@ -109,27 +97,80 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
     val prospectList = remember {mutableStateListOf<ProspectData>()}
     var newProspect by remember {mutableStateOf(ProspectData())}
 
-    var fileFormat by remember {mutableStateOf(ExportFormat.XLSX)}
+    var fileFormat by remember {mutableStateOf<FileFormat?>(null)}
     var filePath by remember {mutableStateOf<String?>("")}
 
     val (darkGray, middleGray, lightGray) = themeColors
 
-    val statusColor = when (statusMessage.type) {
-        StatusType.SUCCESS -> Color.Green
-        StatusType.ERROR -> Color.Red
-        StatusType.WARNING -> Color.Yellow
+    val statusColor = when (consoleMessage.type) {
+        ConsoleMessageType.SUCCESS -> Color.Green
+        ConsoleMessageType.ERROR -> Color.Red
+        ConsoleMessageType.WARNING -> Color.Yellow
         else -> lightGray
+    }
+
+    var showExportModal by remember {mutableStateOf(false)}
+    var showImportModal by remember {mutableStateOf(false)}
+
+    // Modale d'importation
+    if (showImportModal) {
+        val importFilePath = openDialog("Sélectionner un fichier à importer...")
+        applicationScope.launch {
+            if (importFilePath != null) {
+                consoleMessage = ConsoleMessage("⏳ Importation du fichier $fileFormat...", ConsoleMessageType.INFO)
+                try {
+                    val importFilePathString = importFilePath.toString()
+                    val importFileFullName = importFilePathString.split("/").last()
+                    val importFileFormatString = importFileFullName.split(".").last()
+                    fileFormat =
+                        when (importFileFormatString.lowercase()) {
+                            "csv" -> FileFormat.CSV
+                            "xlsx" -> FileFormat.XLSX
+                            else -> null
+                        }
+                    fileManager.importFromFile(importFilePathString, fileFormat)
+                    consoleMessage = ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)
+                }
+                catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'importation du fichier $fileFormat : ${e.message}", ConsoleMessageType.ERROR)}
+            }
+            else {consoleMessage = ConsoleMessage("⚠️ Aucun fichier $fileFormat sélectionné", ConsoleMessageType.WARNING)}
+        }
+    }
+
+    // Modale d'exportation
+    if (showExportModal) {
+        FileExportModal(
+            themeColors = themeColors,
+            onExport = {exportFilePath, exportFileFormat ->
+                applicationScope.launch {
+                    isExportationLoading = true
+                    consoleMessage = ConsoleMessage("⏳ Exportation du fichier $exportFileFormat en cours...", ConsoleMessageType.INFO)
+                    try {
+                        when (exportFileFormat) {
+                            FileFormat.XLSX -> {/*fileManager.exportToXLSX(currentProfile!!, exportFilePath.toString()*/}
+                            FileFormat.CSV -> fileManager.exportToFile(currentProfile!!, exportFilePath.toString())
+                        }
+                        consoleMessage = ConsoleMessage("✅ Exportation du fichier $exportFileFormat réussie", ConsoleMessageType.SUCCESS)
+                    }
+                    catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'exportation du fichier $exportFileFormat : ${e.message}", ConsoleMessageType.ERROR)}
+                    isExportationLoading = false
+                }
+                showExportModal = false
+            },
+            onDialogWindowDismissRequest = {showExportModal = false}
+        )
     }
 
     Column(Modifier.fillMaxSize().background(middleGray).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
         Row(Modifier.weight(0.9f).fillMaxWidth()) {
+            // Zone de texte
             InputSection(
                 applicationScope, pastedInput, isExtractionLoading, themeColors,
                 onInputChange = {pastedInput = it},
                 onProcessInput = {input ->
                     processInput(
                         input, applicationScope, linkedInManager, apiKey.toString(),
-                        setStatus = {statusMessage = it},
+                        setStatus = {consoleMessage = it},
                         setProfile = {currentProfile = it},
                         setLoading = {isExtractionLoading = it}
                     )
@@ -139,61 +180,29 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
             // Spacer
             Spacer(Modifier.width(15.dp))
 
+            // Section du profil et  options
             ProfileAndOptionsSection(
-                applicationScope, currentProfile, isExtractionLoading, isExportationLoading, pastedURL, statusMessage, themeColors,
-                {pastedURL = it},
-                {isExtractionLoading = it},
-                {isExportationLoading = it},
+                currentProfile, isExtractionLoading, isImportationLoading, isExportationLoading, loadedFile, filePath, fileFormat, pastedURL, consoleMessage, themeColors, {pastedURL = it}, {showImportModal = true}, {showExportModal = true},
                 {
                     if (pastedURL.isNotBlank()) {
                         try {
                             val uri = URI(pastedURL)
                             if (Desktop.isDesktopSupported()) {Desktop.getDesktop().browse(uri)}
                         }
-                        catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", StatusType.ERROR)}
-                    }
-                },
-                {
-                    applicationScope.launch {
-                        filePath = openFileDialog()
-                        if (filePath != null) {
-                            statusMessage = StatusMessage("⏳ Importation du fichier $fileFormat...", StatusType.INFO)
-                            try {
-                                // importFile(filePath)
-                                statusMessage = StatusMessage("✅ Importation du fichier $fileFormat réussie", StatusType.SUCCESS)
-                            }
-                            catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de l'importation du fichier $fileFormat : ${e.message}", StatusType.ERROR)}
-                        }
-                        else {statusMessage = StatusMessage("⚠️ Aucun fichier $fileFormat sélectionné", StatusType.WARNING)}
-                    }
-                },
-                {
-                    applicationScope.launch {
-                        isExportationLoading = true
-                        statusMessage = StatusMessage("⏳ Exportation du fichier $fileFormat en cours...", StatusType.INFO)
-                        try {
-                            val selectedFormat: ExportFormat = it
-                            when (selectedFormat) {
-                                ExportFormat.XLSX -> {/*fileManager.exportToXLSX(currentProfile!!, filePath)*/}
-                                ExportFormat.CSV -> fileManager.exportToCSV(currentProfile!!, filePath.toString())
-                            }
-                            statusMessage = StatusMessage("✅ Exportation du fichier $fileFormat réussie", StatusType.SUCCESS)
-                        }
-                        catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de l'exportation du fichier $fileFormat : ${e.message}", StatusType.ERROR)}
-                        isExportationLoading = false
+                        catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
                     }
                 }
             )
         }
         Spacer(Modifier.height(10.dp))
-        StatusBar(statusMessage, statusColor)
+        StatusBar(consoleMessage, statusColor)
     }
 }
 
 @Composable
 fun RowScope.InputSection(applicationScope: CoroutineScope, pastedInput: String, isLoading: Boolean, themeColors: List<Color>, onInputChange: (String) -> Unit, onProcessInput: (String) -> Unit) {
     val (darkGray, middleGray, lightGray) = themeColors
-    Column(Modifier.weight(2.5f).fillMaxHeight(), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
+    Column(Modifier.weight(2.5f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
         OutlinedTextField(
             value = pastedInput,
             onValueChange = {
@@ -217,33 +226,18 @@ fun RowScope.InputSection(applicationScope: CoroutineScope, pastedInput: String,
 }
 
 @Composable
-fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, currentProfile: ProspectData?, isExtractionLoading: Boolean, isExportationLoading: Boolean, pastedURL: String, statusMessage: StatusMessage, themeColors: List<Color>, onUrlChange: (String) -> Unit, onExtractionLoading: (Boolean) -> Unit, onExportationLoading: (Boolean) -> Unit, onOpenUrl: (String) -> Unit, onImportFile: () -> Unit, onExportFile: (ExportFormat) -> Unit) {
-    var showExportModal by remember {mutableStateOf(false)}
+fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractionLoading: Boolean, isImportationLoading: Boolean, isExportationLoading: Boolean, loadedFile: File?, filePath: String?, fileFormat: FileFormat?, pastedURL: String, consoleMessage: ConsoleMessage, themeColors: List<Color>, onUrlChange: (String) -> Unit, onImportButtonClick: () -> Unit, onExportButtonClick: () -> Unit, onOpenUrl: (String) -> Unit) {
     var (darkGray, middleGray, lightGray) = themeColors
-
-    if (showExportModal) {
-        ExportModal(
-            onExport = {filepath, selectedFormat ->
-//                fileFormat = selectedFormat
-                showExportModal = false
-                onExportFile(selectedFormat)
-            },
-            onDismissRequest = {showExportModal = false}
-        )
-    }
 
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
         // Fiche contact
-        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {
-            if (isExtractionLoading) {CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))}
-            else {currentProfile?.let {ProspectCard(it, darkGray, lightGray)} ?: EmptyProspectCard(darkGray, lightGray)}
-        }
+        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {currentProfile?.let {ProspectCard(it, themeColors, isImportationLoading, isExtractionLoading)} ?: EmptyProspectCard(themeColors, isImportationLoading, isExtractionLoading)}
 
         // Diviseur espacé
         SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)
 
-        // Ouverture du profil LinkedIn
+        // Profil LinkedIn
         Column(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterHorizontally) {
             // Saisie de l'URL
             OutlinedTextField(
@@ -270,15 +264,15 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, currentP
         // Diviseur espacé
         SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 15.dp)
 
-        // Validation de la clé API
+        // Options
         Column(Modifier.fillMaxWidth(), Arrangement.Bottom, Alignment.CenterHorizontally) {
-            var loadedFile = null
             var isFileLoaded = (loadedFile != null)
-            var loadedFileName = "test.xlsx"
+            var loadedFileName = "${loadedFile.toString()}.${fileFormat.toString()}"
 
             val file = if (isFileLoaded) {loadedFileName} else {"Aucun fichier chargé"}
             val text = "Fichier chargé : "
 
+            // Afficheur de nom de fichier
             Row(Modifier.border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp).fillMaxWidth(), Arrangement.SpaceBetween) {
                 Text(text, Modifier, lightGray)
                 Text(file, Modifier, color = if (isFileLoaded) {Color.Green.copy(0.5f)} else {lightGray})
@@ -289,8 +283,9 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, currentP
 
             // Bouton d'importation de fichier
             Button(
-                onClick = onImportFile,
+                onClick = onImportButtonClick,
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isExtractionLoading && !isImportationLoading && !isExportationLoading,
                 elevation = ButtonDefaults.elevation(10.dp),
                 shape = RoundedCornerShape(100),
                 colors = getButtonColors(middleGray, darkGray, lightGray)
@@ -303,9 +298,9 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, currentP
             }
 
             Button(
-                onClick = {showExportModal = true},
+                onClick = onExportButtonClick,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = currentProfile != null && statusMessage.type == StatusType.SUCCESS,
+                enabled = currentProfile != null && consoleMessage.type == ConsoleMessageType.SUCCESS,
                 elevation = ButtonDefaults.elevation(10.dp),
                 shape = RoundedCornerShape(100),
                 colors = getButtonColors(middleGray, darkGray, lightGray)
@@ -321,9 +316,9 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, currentP
 }
 
 @Composable
-fun ColumnScope.StatusBar(statusMessage: StatusMessage, statusColor: Color) {
+fun ColumnScope.StatusBar(consoleMessage: ConsoleMessage, statusColor: Color) {
     // Console de statut
     Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center) {
-        Text(statusMessage.message, Modifier.padding(20.dp, 10.dp), fontSize = 15.sp, color = statusColor)
+        Text(consoleMessage.message, Modifier.padding(20.dp, 10.dp), fontSize = 15.sp, color = statusColor)
     }
 }

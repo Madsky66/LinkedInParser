@@ -4,9 +4,9 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.Color
 
 
-data class StatusMessage(val message: String, val type: StatusType)
-enum class StatusType {INFO, SUCCESS, ERROR, WARNING}
-enum class ExportFormat {XLSX, CSV}
+data class ConsoleMessage(val message: String, val type: ConsoleMessageType)
+enum class ConsoleMessageType {INFO, SUCCESS, ERROR, WARNING}
+enum class FileFormat {XLSX, CSV}
 class Colors {
     fun get(isDarkTheme: MutableState<Boolean>): List<Color> {
         var themeColors =

@@ -1,19 +1,61 @@
 import data.ProspectData
-import org.slf4j.LoggerFactory
+import utils.FileFormat
 import java.io.File
 
 class FileManager {
-//    private val logger = LoggerFactory.getLogger(FileManager::class.java)
 
-    fun exportToCSV(profile: ProspectData, filePath: String) {
-        val file = File(filePath)
-        file.printWriter().use {out ->
-            out.println("First name,Last name,LinkedIn URL,Job Title,Email,Generated Emails")
-            out.println("${profile.firstName},${profile.lastName},${profile.linkedinURL},${profile.jobTitle},${profile.email},${profile.generatedEmails.joinToString("; ")}")
+    fun importFromFile(filePath: String, importFileFormat: FileFormat) {
+        val fileToImport = File(filePath)
+        if (!fileToImport.exists()) {throw IllegalArgumentException("Le fichier spécifié n'existe pas : $filePath")}
+        when (importFileFormat) {
+            FileFormat.CSV -> {
+                File(filePath).readLines().drop(1).mapNotNull {line ->
+                    val columns = line.split(",")
+                    if (columns.size >= 9) {
+                        ProspectData(
+                            linkedinURL = "${columns[2].takeIf {it.isNotBlank()}}",
+                            fullName = "${columns[0].takeIf {it.isNotBlank()}} ${columns[1].takeIf {it.isNotBlank()}} ${columns[2].takeIf {it.isNotBlank()}}",
+                            firstName = "${columns[0].takeIf {it.isNotBlank()}}",
+                            middleName = "${columns[1].takeIf {it.isNotBlank()}}",
+                            lastName = "${columns[2].takeIf {it.isNotBlank()}}",
+                            email = "${columns[4].takeIf {it.isNotBlank()}}",
+                            generatedEmails = columns[5].split(";").map {it.trim()}.filter {it.isNotEmpty()},
+                            company = "${columns[6].takeIf {it.isNotBlank()}}",
+                            jobTitle = "${columns[3].takeIf {it.isNotBlank()}}",
+                        )
+                    }
+                    else {
+                        print("columns.size < 9")
+                        null
+                    }
+                }
+            }
+            FileFormat.XLSX -> {}
+            else -> {print("Le format du fichier est incorrect")}
         }
     }
 
-//    suspend fun writeProspectToSheet(spreadsheetId: String, prospectData: ProspectData) {
+   /*suspend*/ fun exportToFile(/*spreadsheetId: String, */prospectData: ProspectData, filePath: String, exportFileFormat: FileFormat) {
+        when (exportFileFormat) {
+            FileFormat.CSV -> {
+                val fileToExport = File(filePath)
+                fileToExport.printWriter().use {out ->
+                    out.println("First name,Middle Name,Last name,LinkedIn URL,Email,Generated Emails,Company,Job Title")
+                    out.println(
+                        "${prospectData.firstName}," +
+                                "${prospectData.middleName}," +
+                                "${prospectData.lastName}," +
+                                "${prospectData.linkedinURL}," +
+                                "${prospectData.email}," +
+                                "${prospectData.generatedEmails.joinToString(";")}," +
+                                "${prospectData.company}," +
+                                prospectData.jobTitle
+                    )
+                }
+            }
+            FileFormat.XLSX -> {val fileToExport = File(filePath)}
+            else -> {}
+        }
 //        withContext(Dispatchers.IO) {
 //            try {
 //                val range = "Prospects!A:G"
@@ -39,5 +81,5 @@ class FileManager {
 //                e.printStackTrace()
 //            }
 //        }
-//    }
+   }
 }

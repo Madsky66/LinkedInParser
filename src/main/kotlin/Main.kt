@@ -39,12 +39,12 @@ import kotlinx.coroutines.launch
 import ui.composable.App
 import ui.composable.DrawerContent
 import utils.Colors
-import utils.StatusMessage
-import utils.StatusType
+import utils.ConsoleMessage
+import utils.ConsoleMessageType
 import kotlin.system.exitProcess
 
 fun main() = application {
-    val windowState = rememberWindowState(placement = WindowPlacement.Floating, isMinimized = false, position = WindowPosition.PlatformDefault, size = DpSize(1280.dp, 720.dp))
+    val windowState = rememberWindowState(WindowPlacement.Floating, isMinimized = false, WindowPosition.PlatformDefault, DpSize(1280.dp, 720.dp))
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val applicationScope: CoroutineScope = rememberCoroutineScope()
     var isDarkTheme = remember {mutableStateOf(true)}
@@ -53,35 +53,35 @@ fun main() = application {
     var pastedAPI by remember {mutableStateOf("")}
     var apiKey by remember {mutableStateOf<String?>((""))}
     var isApolloValidationLoading by remember {mutableStateOf(false)}
-    var statusMessage by remember {mutableStateOf(StatusMessage("", StatusType.INFO))}
+    var statusMessage by remember {mutableStateOf(ConsoleMessage("", ConsoleMessageType.INFO))}
 
     val (darkGray, middleGray, lightGray) = themeColors
     var isMaximized by remember {mutableStateOf(false)}
 
-    Window(onCloseRequest = {exitApplication()}, state = windowState, visible = true, title = "LinkedIn Parser", undecorated = true) {
+    Window({exitApplication()}, windowState, visible = true, "LinkedIn Parser", undecorated = true) {
         ModalDrawer(
             drawerContent = {
                 Card(
-                    modifier = Modifier.fillMaxHeight().fillMaxWidth(0.25f),
+                    modifier = Modifier.fillMaxHeight().fillMaxWidth(0.3f),
                     shape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
                     backgroundColor = middleGray,
                     border = BorderStroke(1.dp, darkGray),
                     elevation = 5.dp
                 ) {
                     DrawerContent(
-                        themeColors, pastedAPI, isApolloValidationLoading,
+                        themeColors, pastedAPI, apiKey.toString(), isApolloValidationLoading,
                         onApiKeyChange = {pastedAPI = it},
                         onProcessApiKey = {
                             applicationScope.launch {
                                 isApolloValidationLoading = true
                                 apiKey = pastedAPI
-                                statusMessage = StatusMessage("⏳ Validation de la clé API par Apollo en cours...", StatusType.INFO)
+                                statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
                                 try {
                                     // <--- Vérifier la validité de la clé ici
                                     delay(500) // Simulation de la validation
-                                    statusMessage = StatusMessage("✅ La clé API a bien été validée par Apollo", StatusType.SUCCESS)
+                                    statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
                                 }
-                                catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", StatusType.ERROR)}
+                                catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
                                 isApolloValidationLoading = false
                             }
                         }

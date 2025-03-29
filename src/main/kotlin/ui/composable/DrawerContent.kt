@@ -1,5 +1,7 @@
 package ui.composable
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +21,10 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,10 +33,26 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
-
 @Composable
-fun DrawerContent(themeColors: List<Color>, pastedAPI: String, isApolloValidationLoading: Boolean, onApiKeyChange: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
+fun DrawerContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, isApolloValidationLoading: Boolean, onApiKeyChange: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
+    var showConfirmModal by remember {mutableStateOf(false)}
     val (darkGray, middleGray, lightGray) = themeColors
+    var confirmMessage by remember {mutableStateOf("")}
+    confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $apiKey -----"
+
+    // Modale de confirmation
+    if (showConfirmModal) {
+        CustomConfirmModal(
+            themeColors, apiKey, confirmMessage,
+            firstButtonText = "Annuler",
+            secondButtonText = "Confirmer",
+            onSecondButtonClick = {
+                onProcessApiKey(apiKey)
+                showConfirmModal = false
+            },
+            onDismissRequest = {showConfirmModal = false}
+        )
+    }
 
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
@@ -49,15 +71,21 @@ fun DrawerContent(themeColors: List<Color>, pastedAPI: String, isApolloValidatio
 
             // Bouton de validation
             Button(
-                onClick = {onProcessApiKey(pastedAPI)},
+                onClick = {showConfirmModal = true},
                 modifier = Modifier.padding(top = 8.dp).weight(0.75f).height(54.dp),
                 enabled = pastedAPI.isNotBlank(),
                 elevation = ButtonDefaults.elevation(10.dp),
                 shape = RoundedCornerShape(0, 100, 100, 0),
                 colors = getButtonColors(middleGray, darkGray, lightGray)
             ) {
-                if (!isApolloValidationLoading) {Icon(Icons.Filled.Send, "")} else {CircularProgressIndicator(Modifier.align(Alignment.CenterVertically))}
+                if (!isApolloValidationLoading) {Icon(Icons.Filled.Send, "")} else {CustomProgressIndicator(themeColors)}
             }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth().border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp), Arrangement.SpaceBetween) {
+            val text = if (apiKey.isBlank()) {"Aucune clé validée"} else {apiKey}
+            Text("Clé actuelle : ", color = lightGray)
+            Text(text, color = if (apiKey.isBlank()) {lightGray} else {Color.Green.copy(0.5f)})
         }
     }
 }

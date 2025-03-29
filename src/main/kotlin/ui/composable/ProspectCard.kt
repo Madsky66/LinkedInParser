@@ -15,29 +15,35 @@ import androidx.compose.ui.unit.dp
 import data.ProspectData
 
 @Composable
-fun ProspectCard(prospect: ProspectData, COLOR_PRIMARY: Color, COLOR_SECONDARY: Color) {
-    Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = COLOR_PRIMARY) {
+fun ProspectCard(prospect: ProspectData, themeColors: List<Color>, isImportationLoading: Boolean, isExportationLoading: Boolean) {
+    val (darkGray, middleGray, lightGray) = themeColors
+    Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = darkGray) {
         Column(Modifier.padding(25.dp, 20.dp).fillMaxWidth(), horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.Center) {
-            Text(prospect.fullName.ifEmpty {"Nom inconnu"}, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold, color = COLOR_SECONDARY)
-            Spacer(Modifier.height(5.dp))
-            Text(prospect.email.ifEmpty {"Email non trouvé"}, style = MaterialTheme.typography.body1, color = COLOR_SECONDARY)
-            Spacer(Modifier.height(20.dp))
-            Text(prospect.company.ifEmpty {"Entreprise inconnue"}, style = MaterialTheme.typography.h6, fontWeight = FontWeight.SemiBold, color = COLOR_SECONDARY)
-            Spacer(Modifier.height(5.dp))
-            Text(prospect.jobTitle.ifEmpty {"Titre non trouvé"}, style = MaterialTheme.typography.body2, color = COLOR_SECONDARY)
+            if (isImportationLoading ||isExportationLoading) {CustomProgressIndicator(themeColors)} else {
+                Text(prospect.fullName.ifEmpty {"Nom inconnu"}, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold, color = lightGray)
+                Spacer(Modifier.height(5.dp))
+                Text(prospect.email.ifEmpty {"Email non trouvé"}, style = MaterialTheme.typography.body1, color = lightGray)
+                Spacer(Modifier.height(20.dp))
+                Text(prospect.company.ifEmpty {"Entreprise inconnue"}, style = MaterialTheme.typography.h6, fontWeight = FontWeight.SemiBold, color = lightGray)
+                Spacer(Modifier.height(5.dp))
+                Text(prospect.jobTitle.ifEmpty {"Titre non trouvé"}, style = MaterialTheme.typography.body2, color = lightGray)
+            }
         }
     }
 }
 
 @Composable
-fun EmptyProspectCard(COLOR_PRIMARY: Color, COLOR_SECONDARY: Color) {
-    Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = COLOR_PRIMARY) {
+fun EmptyProspectCard(themeColors: List<Color>, isImportationLoading: Boolean, isExportationLoading: Boolean) {
+    val (darkGray, middleGray, lightGray) = themeColors
+    Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = darkGray) {
         Column(Modifier.padding(25.dp, 40.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(Icons.Default.Person, contentDescription = "Contact", Modifier.size(50.dp), tint = COLOR_SECONDARY)
-            Spacer(Modifier.height(10.dp))
-            Text("Aucun profil sélectionné", style = MaterialTheme.typography.h6, textAlign = TextAlign.Center, color = COLOR_SECONDARY)
-            Spacer(Modifier.height(5.dp))
-            Text("Entrez une URL LinkedIn pour commencer", style = MaterialTheme.typography.body2, textAlign = TextAlign.Center, color = COLOR_SECONDARY.copy(0.5f))
+            if (isImportationLoading ||isExportationLoading) {CustomProgressIndicator(themeColors)} else {
+                Icon(Icons.Default.Person, contentDescription = "Contact", Modifier.size(50.dp), tint = lightGray)
+                Spacer(Modifier.height(10.dp))
+                Text("Aucun profil sélectionné", style = MaterialTheme.typography.h6, textAlign = TextAlign.Center, color = lightGray)
+                Spacer(Modifier.height(5.dp))
+                Text("Entrez une URL LinkedIn pour commencer", style = MaterialTheme.typography.body2, textAlign = TextAlign.Center, color = lightGray.copy(0.5f))
+            }
         }
     }
 }
