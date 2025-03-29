@@ -1,3 +1,4 @@
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
+import androidx.compose.material.Card
 import androidx.compose.material.DrawerValue
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -30,7 +32,6 @@ import androidx.compose.ui.window.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -60,31 +61,39 @@ fun main() = application {
     Window(onCloseRequest = {exitApplication()}, state = windowState, visible = true, title = "LinkedIn Parser", undecorated = true) {
         ModalDrawer(
             drawerContent = {
-                DrawerContent(
-                    themeColors, pastedAPI, isApolloValidationLoading,
-                    onApiKeyChange = {pastedAPI  = it},
-                    onProcessApiKey = {
-                        applicationScope.launch {
-                            isApolloValidationLoading = true
-                            apiKey = pastedAPI
-                            statusMessage = StatusMessage("⏳ Validation de la clé API par Apollo en cours...", StatusType.INFO)
-                            try {
-                                // <--- Vérifier la validité de la clé ici
-                                delay(500) // Simulation de la validation
-                                statusMessage = StatusMessage("✅ La clé API a bien été validée par Apollo", StatusType.SUCCESS)
+                Card(
+                    modifier = Modifier.fillMaxHeight().fillMaxWidth(0.25f),
+                    shape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
+                    backgroundColor = middleGray,
+                    border = BorderStroke(1.dp, darkGray),
+                    elevation = 5.dp
+                ) {
+                    DrawerContent(
+                        themeColors, pastedAPI, isApolloValidationLoading,
+                        onApiKeyChange = {pastedAPI = it},
+                        onProcessApiKey = {
+                            applicationScope.launch {
+                                isApolloValidationLoading = true
+                                apiKey = pastedAPI
+                                statusMessage = StatusMessage("⏳ Validation de la clé API par Apollo en cours...", StatusType.INFO)
+                                try {
+                                    // <--- Vérifier la validité de la clé ici
+                                    delay(500) // Simulation de la validation
+                                    statusMessage = StatusMessage("✅ La clé API a bien été validée par Apollo", StatusType.SUCCESS)
+                                }
+                                catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", StatusType.ERROR)}
+                                isApolloValidationLoading = false
                             }
-                            catch (e: Exception) {statusMessage = StatusMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", StatusType.ERROR)}
-                            isApolloValidationLoading = false
                         }
-                    }
-                )
+                    )
+                }
             },
-            modifier = Modifier.fillMaxSize().background(Color.Transparent),
+            modifier = Modifier.fillMaxSize(),
             drawerState =  drawerState,
             gesturesEnabled = true,
             drawerShape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
             drawerElevation = 5.dp,
-            drawerBackgroundColor = middleGray
+            drawerBackgroundColor = darkGray
         ) {
             Column(Modifier.fillMaxSize().background(darkGray)) {
                 // Barre de titre
