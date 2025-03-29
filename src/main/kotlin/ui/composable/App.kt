@@ -1,7 +1,7 @@
 package ui.composable
 
 import FileManager
-import StatusMessage
+import utils.StatusMessage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +22,8 @@ import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
+import utils.ExportFormat
+import utils.StatusType
 import java.awt.Desktop
 import java.awt.FileDialog
 import java.awt.Frame
@@ -83,8 +85,8 @@ fun SpacedDivider(modifier: Modifier = Modifier, direction: String, thick: Dp = 
     }
     Divider(modifier)
     when (direction) {
-        "horizontal" -> Spacer(Modifier.width(firstSpacer))
-        "vertical" -> Spacer(Modifier.height(firstSpacer))
+        "horizontal" -> Spacer(Modifier.width(secondSpacer))
+        "vertical" -> Spacer(Modifier.height(secondSpacer))
     }
 }
 

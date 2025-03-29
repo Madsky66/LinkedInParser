@@ -1,6 +1,7 @@
 package ui.composable
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -33,7 +34,7 @@ import androidx.compose.ui.unit.dp
 fun DrawerContent(themeColors: List<Color>, pastedAPI: String, isApolloValidationLoading: Boolean, onApiKeyChange: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
     val (darkGray, middleGray, lightGray) = themeColors
 
-    Box(Modifier.fillMaxHeight().fillMaxWidth(0.25f).background(darkGray)) {
+    Box(Modifier.fillMaxHeight().fillMaxWidth(0.25f).border(BorderStroke(1.dp, darkGray), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp))) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
             // Zone de texte
             OutlinedTextField(
