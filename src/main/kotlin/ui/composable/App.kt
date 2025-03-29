@@ -1,8 +1,10 @@
 package ui.composable
 
 import FileManager
+import androidx.compose.foundation.BorderStroke
 import utils.StatusMessage
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -270,7 +272,17 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, currentP
 
         // Validation de la clé API
         Column(Modifier.fillMaxWidth(), Arrangement.Bottom, Alignment.CenterHorizontally) {
+            var loadedFile = null
+            var isFileLoaded = (loadedFile != null)
+            var loadedFileName = "test.xlsx"
 
+            val file = if (isFileLoaded) {loadedFileName} else {"Aucun fichier chargé"}
+            val text = "Fichier chargé : "
+
+            Row(Modifier.border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp).fillMaxWidth(), Arrangement.SpaceBetween) {
+                Text(text, Modifier, lightGray)
+                Text(file, Modifier, color = if (isFileLoaded) {Color.Green.copy(0.5f)} else {lightGray})
+            }
 
             // Spacer
             Spacer(Modifier.height(10.dp))
