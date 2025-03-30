@@ -20,36 +20,41 @@ import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.RadioButton
 import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.rememberDialogState
 import utils.FileFormat
 
 @Composable
 fun FileExportModal(themeColors: List<Color>, onExport: (filePath: String, format: FileFormat) -> Unit, onDialogWindowDismissRequest: () -> Unit) {
     var filePath by remember {mutableStateOf("")}
-    var selectedFormat by remember {mutableStateOf(FileFormat.CSV)}
+    var exportFileFormat by remember {mutableStateOf(FileFormat.CSV)}
     val (darkGray, middleGray, lightGray) = themeColors
+    val dialogState = rememberDialogState(size = DpSize(640.dp, 360.dp))
 
-    DialogWindow(onDialogWindowDismissRequest, transparent = true, undecorated = true) {
+    DialogWindow(onDialogWindowDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
             Card(Modifier, shape = RectangleShape, backgroundColor = middleGray, contentColor = lightGray, border = BorderStroke(1.dp, darkGray), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
@@ -58,45 +63,52 @@ fun FileExportModal(themeColors: List<Color>, onExport: (filePath: String, forma
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.Top) {
                             // Titre et icone
                             Row(Modifier, Arrangement.Start, Alignment.CenterVertically) {
-                                Icon(Icons.Filled.Warning, "", Modifier.size(30.dp))
+                                Icon(Icons.Filled.SaveAlt, "", Modifier.size(30.dp))
                                 Spacer(Modifier.width(20.dp))
-                                Text("Confirmation", fontSize = 25.sp)
+                                Text("Exportation", fontSize = 25.sp)
                             }
                             // Bouton de fermeture
-                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {Icon(Icons.Filled.Close, "Quitter")}
+                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton({onDialogWindowDismissRequest}) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
                         SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }
-                    OutlinedTextField(
-                        value = filePath,
-                        onValueChange = {filePath = it},
-                        label = {Text("Chemin du fichier")},
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            textColor = lightGray,
-                            focusedBorderColor = lightGray.copy(0.25f),
-                            unfocusedBorderColor = lightGray.copy(0.15f),
-                            focusedLabelColor = lightGray.copy(0.5f),
-                            unfocusedLabelColor = lightGray.copy(0.5f),
-                            placeholderColor = lightGray.copy(0.25f)
-                        ),
-                        leadingIcon = {
-                            IconButton(
-                                onClick = {try {filePath = openDialog("Sélectionner un emplacement...").toString()} catch (e: Exception) {print("Erreur : $e")}},
-                                modifier = Modifier.padding(5.dp).align(Alignment.End)
-                            ) {
-                                Icon(Icons.Filled.Search, "Rechercher")
-                            }
+                    // Contenu
+                    Row(Modifier.weight(1f, true).fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                        // Zone de texte
+                        Column(Modifier.weight(0.525f), Arrangement.Center, Alignment.CenterHorizontally) {
+                            Column(Modifier.padding(10.dp, 0.dp).fillMaxWidth(), Arrangement.Center, Alignment.Start) {Text("Format(s) d'exportation :", color = lightGray, fontSize = 20.sp)}
+                            Spacer(Modifier.height(5.dp))
+                            OutlinedTextField(
+                                value = filePath,
+                                onValueChange = {filePath = it},
+                                label = {Text("Sélectionner un emplacement...")},
+                                singleLine = true,
+                                colors = TextFieldDefaults.outlinedTextFieldColors(
+                                    textColor = lightGray,
+                                    focusedBorderColor = lightGray.copy(0.25f),
+                                    unfocusedBorderColor = lightGray.copy(0.15f),
+                                    focusedLabelColor = lightGray.copy(0.5f),
+                                    unfocusedLabelColor = lightGray.copy(0.5f),
+                                    placeholderColor = lightGray.copy(0.25f)
+                                ),
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = {try {filePath = openDialog("Sélectionner un emplacement...").toString()} catch (e: Exception) {print("Erreur : $e")}},
+                                        modifier = Modifier.size(25.dp).align(Alignment.CenterHorizontally)
+                                    ) {
+                                        Icon(Icons.Filled.Search, "Rechercher")
+                                    }
+                                }
+                            )
                         }
-                    )
-                    Spacer(Modifier.height(20.dp))
-                    Text("Format:")
-                    Row(Modifier.fillMaxWidth()) {
-                        RadioButton(selected = (selectedFormat == FileFormat.CSV), onClick = {selectedFormat = FileFormat.CSV})
-                        Text("CSV", Modifier.align(Alignment.CenterVertically))
-                        Spacer(Modifier.width(20.dp))
-                        RadioButton(selected = (selectedFormat == FileFormat.XLSX), onClick = {selectedFormat = FileFormat.XLSX})
-                        Text("XLSX", Modifier.align(Alignment.CenterVertically))
+                        // Spacer
+                        Spacer(Modifier.fillMaxWidth(0.05f))
+                        // Choix du format
+                        Column(Modifier.weight(0.425f), Arrangement.Center, Alignment.CenterHorizontally) {
+                            Column(Modifier.padding(10.dp, 0.dp).fillMaxWidth(), Arrangement.Center, Alignment.Start) {Text("Format(s) d'exportation :", color = lightGray, fontSize = 20.sp)}
+                            Spacer(Modifier.height(5.dp))
+                            MultiChoiceSegmentedButton(themeColors)
+                        }
                     }
                     // Diviseur espacé
                     SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
@@ -118,7 +130,7 @@ fun FileExportModal(themeColors: List<Color>, onExport: (filePath: String, forma
                         }
                         Spacer(Modifier.weight(0.1f))
                         Button(
-                            onClick = {onExport(filePath, selectedFormat)},
+                            onClick = {onExport(filePath, exportFileFormat)},
                             modifier = Modifier.weight(1f),
                             enabled = true,
                             elevation = ButtonDefaults.elevation(10.dp),

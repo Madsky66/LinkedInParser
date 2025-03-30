@@ -63,6 +63,7 @@ fun DrawerContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, i
                 modifier = Modifier.clip(RectangleShape).weight(2f),
                 textStyle = TextStyle.Default,
                 label = {Text("Clé API Apollo...")},
+                maxLines = 1,
                 colors = getTextFieldColors(lightGray)
             )
 

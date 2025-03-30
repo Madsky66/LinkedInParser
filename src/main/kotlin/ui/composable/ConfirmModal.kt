@@ -18,6 +18,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -57,7 +58,7 @@ fun CustomConfirmModal(themeColors: List<Color>, string: String = "", modalMessa
                                 Text(text = "Confirmation", fontSize = 25.sp)
                             }
                             // Bouton de fermeture
-                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {Icon(Icons.Filled.Close, "Quitter")}
+                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton(onDismissRequest) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
                         SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }

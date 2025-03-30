@@ -96,6 +96,7 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
     val fileManager = remember {FileManager()}
     val prospectList = remember {mutableStateListOf<ProspectData>()}
     var newProspect by remember {mutableStateOf(ProspectData())}
+    var isIncompleteProspectData by remember {mutableStateOf(false)}
 
     var fileFormat by remember {mutableStateOf<FileFormat?>(null)}
     var filePath by remember {mutableStateOf<String?>("")}
@@ -114,8 +115,8 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
 
     // Modale d'importation
     if (showImportModal) {
-        val importFilePath = openDialog("Sélectionner un fichier à importer...")
         applicationScope.launch {
+            val importFilePath = openDialog("Sélectionner un fichier à importer...")
             if (importFilePath != null) {
                 consoleMessage = ConsoleMessage("⏳ Importation du fichier $fileFormat...", ConsoleMessageType.INFO)
                 try {
@@ -128,12 +129,17 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                             "xlsx" -> FileFormat.XLSX
                             else -> null
                         }
-                    fileManager.importFromFile(importFilePathString, fileFormat)
-                    consoleMessage = ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)
+                    if (fileFormat == null) {consoleMessage = ConsoleMessage("❌ Le format du fichier est incorrect [Formats acceptés : XLSX, CSV]", ConsoleMessageType.ERROR)}
+                    else {
+                        fileManager.importFromFile(importFilePathString, fileFormat) {isIncompleteProspectData = it}
+                        consoleMessage =
+                            if (isIncompleteProspectData) {ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)}
+                            else {ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)}
+                    }
                 }
                 catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'importation du fichier $fileFormat : ${e.message}", ConsoleMessageType.ERROR)}
             }
-            else {consoleMessage = ConsoleMessage("⚠️ Aucun fichier $fileFormat sélectionné", ConsoleMessageType.WARNING)}
+            else {consoleMessage = ConsoleMessage("⚠️ Aucun fichier sélectionné", ConsoleMessageType.WARNING)}
         }
     }
 
@@ -146,10 +152,7 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                     isExportationLoading = true
                     consoleMessage = ConsoleMessage("⏳ Exportation du fichier $exportFileFormat en cours...", ConsoleMessageType.INFO)
                     try {
-                        when (exportFileFormat) {
-                            FileFormat.XLSX -> {/*fileManager.exportToXLSX(currentProfile!!, exportFilePath.toString()*/}
-                            FileFormat.CSV -> fileManager.exportToFile(currentProfile!!, exportFilePath.toString())
-                        }
+                        fileManager.exportToFile(currentProfile!!, exportFilePath.toString(), exportFileFormat)
                         consoleMessage = ConsoleMessage("✅ Exportation du fichier $exportFileFormat réussie", ConsoleMessageType.SUCCESS)
                     }
                     catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'exportation du fichier $exportFileFormat : ${e.message}", ConsoleMessageType.ERROR)}

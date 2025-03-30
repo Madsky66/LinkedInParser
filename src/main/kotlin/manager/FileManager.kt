@@ -4,7 +4,7 @@ import java.io.File
 
 class FileManager {
 
-    fun importFromFile(filePath: String, importFileFormat: FileFormat) {
+    fun importFromFile(filePath: String, importFileFormat: FileFormat?, onIncompleteProspectData: (Boolean) -> Unit) {
         val fileToImport = File(filePath)
         if (!fileToImport.exists()) {throw IllegalArgumentException("Le fichier spécifié n'existe pas : $filePath")}
         when (importFileFormat) {
@@ -23,9 +23,10 @@ class FileManager {
                             company = "${columns[6].takeIf {it.isNotBlank()}}",
                             jobTitle = "${columns[3].takeIf {it.isNotBlank()}}",
                         )
+                        onIncompleteProspectData(false)
                     }
                     else {
-                        print("columns.size < 9")
+                        onIncompleteProspectData(true)
                         null
                     }
                 }
