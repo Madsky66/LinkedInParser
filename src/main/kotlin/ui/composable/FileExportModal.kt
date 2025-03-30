@@ -36,7 +36,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -53,6 +52,7 @@ fun FileExportModal(themeColors: List<Color>, onExport: (filePath: String, forma
     var exportFileFormat by remember {mutableStateOf(FileFormat.CSV)}
     val (darkGray, middleGray, lightGray) = themeColors
     val dialogState = rememberDialogState(size = DpSize(640.dp, 360.dp))
+    val selectedOptions = rememberSaveable {mutableStateListOf(false, false)}
 
     DialogWindow(onDialogWindowDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
@@ -107,7 +107,7 @@ fun FileExportModal(themeColors: List<Color>, onExport: (filePath: String, forma
                         Column(Modifier.weight(0.425f), Arrangement.Center, Alignment.CenterHorizontally) {
                             Column(Modifier.padding(10.dp, 0.dp).fillMaxWidth(), Arrangement.Center, Alignment.Start) {Text("Format(s) d'exportation :", color = lightGray, fontSize = 20.sp)}
                             Spacer(Modifier.height(5.dp))
-                            MultiChoiceSegmentedButton(themeColors)
+                            MultiChoiceSegmentedButton(themeColors, selectedOptions) {format -> exportFileFormat = format}
                         }
                     }
                     // Diviseur espacé

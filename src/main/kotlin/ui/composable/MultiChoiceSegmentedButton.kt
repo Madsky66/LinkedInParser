@@ -8,18 +8,16 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import utils.FileFormat
 
 
 @Composable
-fun MultiChoiceSegmentedButton(themeColors: List<Color>) {
+fun MultiChoiceSegmentedButton(themeColors: List<Color>, selectedOptions: MutableList<Boolean>, onFormatSelected: (FileFormat) -> Unit) {
     val (darkGray, middleGray, lightGray) = themeColors
-    val selectedOptions = rememberSaveable {mutableStateListOf(false, false)}
     val switchLeftBackgroundColor = if (selectedOptions[0]) {darkGray.copy(0.5f)} else {middleGray}
     val switchRightBackgroundColor = if (selectedOptions[1]) {darkGray.copy(0.5f)} else {middleGray}
 

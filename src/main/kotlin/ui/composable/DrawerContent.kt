@@ -37,17 +37,16 @@ import androidx.compose.ui.unit.dp
 fun DrawerContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, isApolloValidationLoading: Boolean, onApiKeyChange: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
     var showConfirmModal by remember {mutableStateOf(false)}
     val (darkGray, middleGray, lightGray) = themeColors
-    var confirmMessage by remember {mutableStateOf("")}
-    confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $apiKey -----"
+    val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $pastedAPI -----"
 
     // Modale de confirmation
     if (showConfirmModal) {
         CustomConfirmModal(
-            themeColors, apiKey, confirmMessage,
+            themeColors, pastedAPI, confirmMessage,
             firstButtonText = "Annuler",
             secondButtonText = "Confirmer",
             onSecondButtonClick = {
-                onProcessApiKey(apiKey)
+                onProcessApiKey(pastedAPI)
                 showConfirmModal = false
             },
             onDismissRequest = {showConfirmModal = false}

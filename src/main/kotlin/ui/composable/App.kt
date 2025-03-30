@@ -62,7 +62,7 @@ fun processInput(input: String, applicationScope: CoroutineScope, linkedInManage
 fun openDialog(dialogTitle: String, isVisible: Boolean = true): String? {
     val fileDialog = FileDialog(Frame(), dialogTitle, FileDialog.LOAD)
     fileDialog.isVisible = isVisible
-    return fileDialog.takeIf {it.file != null}?.let {it.directory + it.file}
+    return if (fileDialog.file != null) {fileDialog.directory + fileDialog.file} else {null}
 }
 
 @Composable
@@ -113,34 +113,41 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
     var showExportModal by remember {mutableStateOf(false)}
     var showImportModal by remember {mutableStateOf(false)}
 
-    // Modale d'importation
+// Modale d'importation
     if (showImportModal) {
-        applicationScope.launch {
-            val importFilePath = openDialog("Sélectionner un fichier à importer...")
-            if (importFilePath != null) {
-                consoleMessage = ConsoleMessage("⏳ Importation du fichier $fileFormat...", ConsoleMessageType.INFO)
-                try {
-                    val importFilePathString = importFilePath.toString()
-                    val importFileFullName = importFilePathString.split("/").last()
-                    val importFileFormatString = importFileFullName.split(".").last()
-                    fileFormat =
-                        when (importFileFormatString.lowercase()) {
-                            "csv" -> FileFormat.CSV
-                            "xlsx" -> FileFormat.XLSX
-                            else -> null
+        FileImportModal(
+            themeColors = themeColors,
+            onImportFile = {importFilePath, importFileFormat ->
+                if (importFilePath != null) {
+                    applicationScope.launch {
+                        isImportationLoading = true
+                        consoleMessage = ConsoleMessage("⏳ Importation du fichier $importFileFormat...", ConsoleMessageType.INFO)
+                        try {
+                            val importFilePathString = importFilePath.toString()
+                            val importFileFullName = importFilePathString.split("/").last()
+                            val importFileFormatString = importFileFullName.split(".").last()
+                            fileFormat =
+                                when (importFileFormatString.lowercase()) {
+                                    "csv" -> FileFormat.CSV
+                                    "xlsx" -> FileFormat.XLSX
+                                    else -> null
+                                }
+                            if (fileFormat == null) {consoleMessage = ConsoleMessage("❌ Le format du fichier est incorrect [Formats acceptés : XLSX, CSV]", ConsoleMessageType.ERROR)}
+                            else {
+                                fileManager.importFromFile(importFilePathString, fileFormat) {isIncompleteProspectData = it}
+                                consoleMessage =
+                                    if (isIncompleteProspectData) {ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)}
+                                    else {ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)}
+                            }
                         }
-                    if (fileFormat == null) {consoleMessage = ConsoleMessage("❌ Le format du fichier est incorrect [Formats acceptés : XLSX, CSV]", ConsoleMessageType.ERROR)}
-                    else {
-                        fileManager.importFromFile(importFilePathString, fileFormat) {isIncompleteProspectData = it}
-                        consoleMessage =
-                            if (isIncompleteProspectData) {ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)}
-                            else {ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)}
+                        catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'importation du fichier $fileFormat : ${e.message}", ConsoleMessageType.ERROR)}
+                        isImportationLoading = false
                     }
                 }
-                catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'importation du fichier $fileFormat : ${e.message}", ConsoleMessageType.ERROR)}
-            }
-            else {consoleMessage = ConsoleMessage("⚠️ Aucun fichier sélectionné", ConsoleMessageType.WARNING)}
-        }
+                else {consoleMessage = ConsoleMessage("⚠️ Aucun fichier sélectionné", ConsoleMessageType.WARNING)}
+            },
+            onDismissRequest = {showImportModal = false}
+        )
     }
 
     // Modale d'exportation
