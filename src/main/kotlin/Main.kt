@@ -92,54 +92,56 @@ fun main() = application {
 
                 // Volet arrière
                 if (isExpandedMenuItem != null) {
-                    Box(Modifier.fillMaxHeight().fillMaxWidth(0.8f).padding(20.dp)) {
-                        when (isExpandedMenuItem) {
-                            "Général" -> DrawerContent(
-                                themeColors, pastedAPI, apiKey.toString(), isApolloValidationLoading,
-                                onApiKeyChange = {pastedAPI = it},
-                                onProcessApiKey = {
-                                    applicationScope.launch {
-                                        isApolloValidationLoading = true
-                                        apiKey = pastedAPI
-                                        statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
-                                        try {
-                                            // <--- Vérifier la validité de la clé ici
-                                            delay(500) // Simulation de la validation
-                                            statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(drawerWidth).padding(20.dp)) {
+//                        AnimatedVisibility(isExpandedMenuItem != null, Modifier, expandHorizontally() + fadeIn(), shrinkHorizontally() + fadeOut()) {
+                            when (isExpandedMenuItem) {
+                                "Général" -> DrawerContent(
+                                    themeColors, pastedAPI, apiKey.toString(), isApolloValidationLoading,
+                                    onApiKeyChange = {pastedAPI = it},
+                                    onProcessApiKey = {
+                                        applicationScope.launch {
+                                            isApolloValidationLoading = true
+                                            apiKey = pastedAPI
+                                            statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
+                                            try {
+                                                // <--- Vérifier la validité de la clé ici
+                                                delay(500) // Simulation de la validation
+                                                statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
+                                            }
+                                            catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
+                                            isApolloValidationLoading = false
                                         }
-                                        catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
-                                        isApolloValidationLoading = false
+                                    }
+                                )
+                                "Customisation" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                                    Text("Options de thème", color = lightGray, fontSize = 18.sp)
+                                    Spacer(Modifier.height(10.dp))
+                                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                                        Text("Thème sombre [Expérimental...]", color = lightGray)
+                                        Switch(
+                                            checked = isDarkTheme.value,
+                                            onCheckedChange = {isDarkTheme.value = it},
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = lightGray,
+                                                uncheckedThumbColor = darkGray,
+                                                checkedTrackColor = lightGray.copy(0.5f),
+                                                uncheckedTrackColor = darkGray.copy(0.5f)
+                                            )
+                                        )
                                     }
                                 }
-                            )
-                            "Customisation" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                                Text("Options de thème", color = lightGray, fontSize = 18.sp)
-                                Spacer(Modifier.height(10.dp))
-                                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                                    Text("Thème sombre [Expérimental...]", color = lightGray)
-                                    Switch(
-                                        checked = isDarkTheme.value,
-                                        onCheckedChange = {isDarkTheme.value = it},
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = lightGray,
-                                            uncheckedThumbColor = darkGray,
-                                            checkedTrackColor = lightGray.copy(0.5f),
-                                            uncheckedTrackColor = darkGray.copy(0.5f)
-                                        )
-                                    )
+                                "Aide" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                                    Text("Documentation", color = lightGray, fontSize = 18.sp)
+                                    Spacer(Modifier.height(10.dp))
+                                    Text("Pour utiliser cette application, copiez le contenu d'une page LinkedIn et collez-le dans la zone de texte à gauche.", color = lightGray)
+                                }
+                                "Contact" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                                    Text("Nous contacter", color = lightGray, fontSize = 18.sp)
+                                    Spacer(Modifier.height(10.dp))
+                                    Text("Email : pmbussy66@gmail.com", color = lightGray)
                                 }
                             }
-                            "Aide" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                                Text("Documentation", color = lightGray, fontSize = 18.sp)
-                                Spacer(Modifier.height(10.dp))
-                                Text("Pour utiliser cette application, copiez le contenu d'une page LinkedIn et collez-le dans la zone de texte à gauche.", color = lightGray)
-                            }
-                            "Contact" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                                Text("Nous contacter", color = lightGray, fontSize = 18.sp)
-                                Spacer(Modifier.height(10.dp))
-                                Text("Email : pmbussy66@gmail.com", color = lightGray)
-                            }
-                        }
+//                        }
                     }
                 }
             },

@@ -25,7 +25,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
-import utils.FileFormat
 import utils.ConsoleMessageType
 import java.awt.Desktop
 import java.awt.FileDialog
@@ -100,8 +99,9 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
     var newProspect by remember {mutableStateOf(ProspectData())}
     var isIncompleteProspectData by remember {mutableStateOf(false)}
 
-    var fileFormat by remember {mutableStateOf<FileFormat?>(null)}
     var filePath by remember {mutableStateOf<String?>("")}
+    var fileName by remember {mutableStateOf<String?>("")}
+    var fileFormat by remember {mutableStateOf<String?>("")}
 
     val (darkGray, middleGray, lightGray) = themeColors
 
@@ -122,25 +122,27 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
             onImportFile = {importFilePath, importFileFormat ->
                 if (importFilePath != null) {
                     applicationScope.launch {
-                        isImportationLoading = true
+                        val importFilePathString = importFilePath.toString()
+                        val importFileFullName = importFilePathString.split("/").last()
+                        val importFileFormatString = importFileFullName.split(".").last().lowercase()
+                        var numberOfColumns = 0
+
                         consoleMessage = ConsoleMessage("⏳ Importation du fichier $importFileFormat...", ConsoleMessageType.INFO)
+                        isImportationLoading = true
                         try {
-                            val importFilePathString = importFilePath.toString()
-                            val importFileFullName = importFilePathString.split("/").last()
-                            val importFileFormatString = importFileFullName.split(".").last()
-                            fileFormat =
-                                when (importFileFormatString.lowercase()) {
-                                    "csv" -> FileFormat.CSV
-                                    "xlsx" -> FileFormat.XLSX
-                                    else -> null
-                                }
-                            if (fileFormat == null) {consoleMessage = ConsoleMessage("❌ Le format du fichier est incorrect [Formats acceptés : XLSX, CSV]", ConsoleMessageType.ERROR)}
-                            else {
-                                fileManager.importFromFile(importFilePathString, fileFormat) {isIncompleteProspectData = it}
-                                consoleMessage =
-                                    if (isIncompleteProspectData) {ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)}
-                                    else {ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)}
+                            loadedFile = File(importFilePathString)
+                            filePath = importFilePathString
+                            fileName = importFileFullName
+                            fileManager.importFromFile(importFilePathString) {importedProspect, filledColumns ->
+                                currentProfile = importedProspect
+                                numberOfColumns = filledColumns
                             }
+                            consoleMessage =
+                                when (numberOfColumns) {
+                                    0 -> ConsoleMessage("❌ Le profil importé est vide", ConsoleMessageType.ERROR)
+                                    1,2,3,4,5,6,7,8 -> ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)
+                                    else -> ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)
+                                }
                         }
                         catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'importation du fichier $fileFormat : ${e.message}", ConsoleMessageType.ERROR)}
                         isImportationLoading = false
@@ -159,11 +161,10 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
             themeColors, selectedOptions,
             onExport = {exportFolderPath, exportFileName, selectedOptions ->
                 applicationScope.launch {
-
                     if (currentProfile != null){
                         isExportationLoading = true
 
-                        val exportFileFormats = if (selectedOptions[0]) {Pair(FileFormat.XLSX, null)} else if (selectedOptions[1]) {Pair(null, FileFormat.CSV)} else {Pair(FileFormat.XLSX, FileFormat.CSV)}
+                        val exportFileFormats = if (selectedOptions[0]) {Pair("XLSX", null)} else if (selectedOptions[1]) {Pair(null, "CSV")} else {Pair("XLSX", "CSV")}
                         val messageFileFormat = if (selectedOptions[0] &&  selectedOptions[1]) {"XLSX, CSV"} else {exportFileFormats.toString()}
                         consoleMessage = ConsoleMessage("⏳ Exportation du fichier au format [$messageFileFormat] en cours...", ConsoleMessageType.INFO)
 
@@ -220,7 +221,7 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
 
             // Section du profil et options
             ProfileAndOptionsSection(
-                currentProfile, isExtractionLoading, isImportationLoading, isExportationLoading, loadedFile, filePath, fileFormat, pastedURL, consoleMessage, themeColors, {pastedURL = it}, {showImportModal = true}, {showExportModal = true},
+                currentProfile, isExtractionLoading, isImportationLoading, isExportationLoading, fileName, filePath, fileFormat, pastedURL, consoleMessage, themeColors, {pastedURL = it}, {showImportModal = true}, {showExportModal = true},
                 {
                     if (pastedURL.isNotBlank()) {
                         try {
@@ -258,7 +259,7 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
 @Composable
 fun RowScope.InputSection(applicationScope: CoroutineScope, pastedInput: String, isLoading: Boolean, themeColors: List<Color>, onInputChange: (String) -> Unit, onProcessInput: (String) -> Unit) {
     val (darkGray, middleGray, lightGray) = themeColors
-    Column(Modifier.weight(2.5f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
+    Column(Modifier.weight(1.5f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
         OutlinedTextField(
             value = pastedInput,
             onValueChange = {
@@ -282,13 +283,13 @@ fun RowScope.InputSection(applicationScope: CoroutineScope, pastedInput: String,
 }
 
 @Composable
-fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractionLoading: Boolean, isImportationLoading: Boolean, isExportationLoading: Boolean, loadedFile: File?, filePath: String?, fileFormat: FileFormat?, pastedURL: String, consoleMessage: ConsoleMessage, themeColors: List<Color>, onUrlChange: (String) -> Unit, onImportButtonClick: () -> Unit, onExportButtonClick: () -> Unit, onOpenUrl: (String) -> Unit) {
+fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractionLoading: Boolean, isImportationLoading: Boolean, isExportationLoading: Boolean, importedFileName: String?, importedFilePath: String?, importedFileFormat: String?, pastedURL: String, consoleMessage: ConsoleMessage, themeColors: List<Color>, onUrlChange: (String) -> Unit, onImportButtonClick: () -> Unit, onExportButtonClick: () -> Unit, onOpenUrl: (String) -> Unit) {
     var (darkGray, middleGray, lightGray) = themeColors
 
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
         // Fiche contact
-        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {currentProfile?.let {ProspectCard(it, themeColors, isImportationLoading, isExtractionLoading)} ?: EmptyProspectCard(themeColors, isImportationLoading, isExtractionLoading)}
+        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {currentProfile?.let {ProspectCard(it, themeColors, isImportationLoading, isExtractionLoading)}}
 
         // Diviseur espacé
         SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)
@@ -322,16 +323,16 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
 
         // Options
         Column(Modifier.fillMaxWidth(), Arrangement.Bottom, Alignment.CenterHorizontally) {
-            var isFileLoaded = (loadedFile != null)
-            var loadedFileName = "${loadedFile.toString()}.${fileFormat.toString()}"
-
-            val file = if (isFileLoaded) {loadedFileName} else {"Aucun fichier chargé"}
+            print("$importedFilePath | $importedFileName | $importedFileFormat")
+            val isFileImported = (importedFileName!= "" && importedFilePath != "")
+            val importedFileName = if (isFileImported) {"$importedFileName.$importedFileFormat"} else {"Aucun fichier chargé"}
+            print("importedFileName = $importedFileName")
             val text = "Fichier chargé : "
 
             // Afficheur de nom de fichier
             Row(Modifier.border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp).fillMaxWidth(), Arrangement.SpaceBetween) {
                 Text(text, Modifier, lightGray)
-                Text(file, Modifier, color = if (isFileLoaded) {Color.Green.copy(0.5f)} else {lightGray})
+                Text(importedFileName, Modifier, color = if (isFileImported) {Color.Green.copy(0.5f)} else {lightGray})
             }
 
             // Spacer

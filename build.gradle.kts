@@ -69,8 +69,8 @@ compose.desktop {
             }
 
             fromFiles(
-                "src/main/resources/extra/LICENSE.txt",
-                "src/main/resources/extra/icon.ico"
+                "src/main/resources/LICENSE.txt",
+                "src/main/resources/icon.ico"
             )
 
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))

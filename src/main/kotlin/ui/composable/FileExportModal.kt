@@ -41,14 +41,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
-import utils.FileFormat
 import java.awt.FileDialog
 import java.awt.Frame
 
@@ -57,7 +60,7 @@ import java.awt.Frame
 fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boolean>, onExport: (String, String, MutableList<Boolean>) -> Unit, onDialogWindowDismissRequest: () -> Unit) {
     var exportFolderPath by remember {mutableStateOf<String?>(null)}
     var exportFileName by remember {mutableStateOf("")}
-    var exportFileFormat by remember {mutableStateOf<FileFormat?>(null)}
+    var exportFileFormat by remember {mutableStateOf("")}
     val (darkGray, middleGray, lightGray) = themeColors
     val dialogState = rememberDialogState(size = DpSize(640.dp, 500.dp))
     val fullPath = if (exportFolderPath != null && exportFolderPath != "Sélection en cours...") {"$exportFolderPath/$exportFileName"} else {null}
@@ -128,10 +131,12 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                         Icon(Icons.Filled.Search, "Rechercher")
                                     }
                                 },
-//                                visualTransformation = VisualTransformation {text ->
-//                                    val trimmedText = if (text.text.length > 40) {"..." + text.text.takeLast(40)} else {text.text}
-//                                    TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
-//                                }
+                                visualTransformation = VisualTransformation {text ->
+                                    val visibleLength = 9
+                                    val trimmedText = if (text.text.length > visibleLength) {"..." + text.text.takeLast((text.length - 3))} else {text.text}
+                                    print("text.length = ${text.length}\n trimmedText = $trimmedText\n")
+                                    TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
+                                }
                             )
                         }
 
@@ -195,14 +200,7 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                     // Boutons
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         // Bouton d'annulation
-                        Button(
-                            onClick = onDialogWindowDismissRequest,
-                            modifier = Modifier.weight(1f),
-                            enabled = true,
-                            elevation = ButtonDefaults.elevation(10.dp),
-                            shape = RoundedCornerShape(100),
-                            colors = getButtonColors(middleGray, darkGray, lightGray)
-                        ) {
+                        Button(onDialogWindowDismissRequest, Modifier.weight(1f), enabled = true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(middleGray, darkGray, lightGray)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Close, "")
                                 Spacer(Modifier.width(10.dp))

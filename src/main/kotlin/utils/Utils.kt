@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.Color
 
 data class ConsoleMessage(val message: String, val type: ConsoleMessageType)
 enum class ConsoleMessageType {INFO, SUCCESS, ERROR, WARNING}
-enum class FileFormat {XLSX, CSV}
 class Colors {
     fun get(isDarkTheme: MutableState<Boolean>): List<Color> {
         var themeColors =

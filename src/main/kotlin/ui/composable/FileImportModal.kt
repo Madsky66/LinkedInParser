@@ -17,17 +17,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
-import utils.FileFormat
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, format: FileFormat) -> Unit, onDismissRequest: () -> Unit) {
+fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, format: String?) -> Unit, onDismissRequest: () -> Unit) {
     var importFilePath by remember {mutableStateOf<String?>(null)}
     var importFileFormat by remember {mutableStateOf("")}
     val (darkGray, middleGray, lightGray) = themeColors
@@ -106,10 +109,12 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                                         Icon(Icons.Filled.Search, "Rechercher")
                                     }
                                 },
-//                                visualTransformation = VisualTransformation {text ->
-//                                    val trimmedText = if (text.text.length > 40) {"..." + text.text.takeLast(40)} else {text.text}
-//                                    TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
-//                                }
+                                visualTransformation = VisualTransformation {text ->
+                                    val visibleLength = 9
+                                    val trimmedText = if (text.text.length > visibleLength) {"..." + text.text.takeLast((text.length - 3))} else {text.text}
+                                    print("text.length = ${text.length}\n trimmedText = $trimmedText\n")
+                                    TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
+                                }
                             )
                         }
                     }
@@ -120,14 +125,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                     // Boutons
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         // Bouton d'annulation
-                        Button(
-                            onClick = onDismissRequest,
-                            modifier = Modifier.weight(1f),
-                            enabled = true,
-                            elevation = ButtonDefaults.elevation(10.dp),
-                            shape = RoundedCornerShape(100),
-                            colors = getButtonColors(middleGray, darkGray, lightGray)
-                        ) {
+                        Button(onDismissRequest, Modifier.weight(1f), enabled = true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(middleGray, darkGray, lightGray)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Close, "")
                                 Spacer(Modifier.width(10.dp))
@@ -142,7 +140,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                         val isEnabled = if (importFilePath  != null && importFilePath != "Sélection en cours...") {if (importFileFormat != "") {importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv"} else false} else false
                         Button(
                             onClick = {
-                                onImportFile(importFilePath, (if (importFileFormat.lowercase() == "xlsx") {FileFormat.XLSX} else {FileFormat.CSV}))
+                                onImportFile(importFilePath, (if (importFileFormat.lowercase() == "xlsx") {"XLSX"} else {"CSV"}))
                                 onDismissRequest()
                             },
                             modifier = Modifier.weight(1f),

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
@@ -77,7 +78,7 @@ fun DrawerContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, i
                 shape = RoundedCornerShape(0, 100, 100, 0),
                 colors = getButtonColors(middleGray, darkGray, lightGray)
             ) {
-                if (!isApolloValidationLoading) {Icon(Icons.Filled.Send, "")} else {CustomProgressIndicator(themeColors)}
+                if (!isApolloValidationLoading) {Icon(Icons.Filled.Send, "")} else {CircularProgressIndicator(Modifier.align(Alignment.CenterVertically), lightGray, strokeWidth = 5.dp)}
             }
         }
         Spacer(Modifier.height(10.dp))

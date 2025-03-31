@@ -1,38 +1,27 @@
 import data.ProspectData
-import utils.FileFormat
 import java.io.File
 
 class FileManager {
 
-    fun importFromFile(filePath: String, importFileFormat: FileFormat?, onIncompleteProspectData: (Boolean) -> Unit) {
+    fun importFromFile(filePath: String, onImportedProspectData: (ProspectData, Int) -> Unit) {
         val fileToImport = File(filePath)
         if (!fileToImport.exists()) {throw IllegalArgumentException("Le fichier spécifié n'existe pas : $filePath")}
-        when (importFileFormat) {
-            FileFormat.CSV -> {
-                File(filePath).readLines().drop(1).mapNotNull {line ->
-                    val columns = line.split(",")
-                    if (columns.size >= 9) {
-                        ProspectData(
-                            linkedinURL = "${columns[2].takeIf {it.isNotBlank()}}",
-                            fullName = "${columns[0].takeIf {it.isNotBlank()}} ${columns[1].takeIf {it.isNotBlank()}} ${columns[2].takeIf {it.isNotBlank()}}",
-                            firstName = "${columns[0].takeIf {it.isNotBlank()}}",
-                            middleName = "${columns[1].takeIf {it.isNotBlank()}}",
-                            lastName = "${columns[2].takeIf {it.isNotBlank()}}",
-                            email = "${columns[4].takeIf {it.isNotBlank()}}",
-                            generatedEmails = columns[5].split(";").map {it.trim()}.filter {it.isNotEmpty()},
-                            company = "${columns[6].takeIf {it.isNotBlank()}}",
-                            jobTitle = "${columns[3].takeIf {it.isNotBlank()}}",
-                        )
-                        onIncompleteProspectData(false)
-                    }
-                    else {
-                        onIncompleteProspectData(true)
-                        null
-                    }
-                }
-            }
-            FileFormat.XLSX -> {}
-            else -> {print("Le format du fichier est incorrect")}
+        File(filePath).readLines().drop(1).map {line ->
+            val columns = line.split(",")
+            onImportedProspectData(
+                ProspectData(
+                    linkedinURL = "${columns[2].takeIf {it.isNotBlank()}}",
+                    fullName = "${columns[0].takeIf {it.isNotBlank()}} ${columns[1].takeIf {it.isNotBlank()}} ${columns[2].takeIf {it.isNotBlank()}}",
+                    firstName = "${columns[0].takeIf {it.isNotBlank()}}",
+                    middleName = "${columns[1].takeIf {it.isNotBlank()}}",
+                    lastName = "${columns[2].takeIf {it.isNotBlank()}}",
+                    email = "${columns[4].takeIf {it.isNotBlank()}}",
+                    generatedEmails = columns[5].split(";").map {it.trim()}.filter {it.isNotEmpty()},
+                    company = "${columns[6].takeIf {it.isNotBlank()}}",
+                    jobTitle = "${columns[3].takeIf {it.isNotBlank()}}"
+                ),
+                columns.size
+            )
         }
     }
 
