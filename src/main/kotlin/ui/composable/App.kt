@@ -143,7 +143,7 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                             consoleMessage =
                                 when (numberOfColumns) {
                                     0 -> ConsoleMessage("❌ Le profil importé est vide", ConsoleMessageType.ERROR)
-                                    1,2,3,4,5,6,7,8 -> ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)
+                                    1,2,3,4,5,6,7 -> ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)
                                     else -> ConsoleMessage("✅ Importation du fichier $fileFormat réussie", ConsoleMessageType.SUCCESS)
                                 }
                         }

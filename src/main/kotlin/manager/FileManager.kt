@@ -33,15 +33,15 @@ class FileManager {
         when (extension) {
             "csv" -> {
                 fileToExport.printWriter().use {out ->
-                    out.println("LinkedIn URL, First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
-                    out.println("${prospectData.linkedinURL},${prospectData.firstName},${prospectData.middleName},${prospectData.lastName},${prospectData.jobTitle},${prospectData.email},${prospectData.generatedEmails.joinToString(";")},${prospectData.company}")
+                    out.println("LinkedIn URL, First Name, Middle Name, Last Name, Email, Generated Emails, Company, Job Title")
+                    out.println("${prospectData.linkedinURL}, ${prospectData.firstName}, ${prospectData.middleName}, ${prospectData.lastName}, ${prospectData.email}, ${prospectData.generatedEmails.joinToString(";")}, ${prospectData.company}, ${prospectData.jobTitle}")
                 }
             }
             "xlsx" -> {
                 val tempCsvFile = File("${exportFilePath}.temp.csv")
-                tempCsvFile.printWriter().use { out ->
-                    out.println("LinkedIn URL, First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
-                    out.println("${prospectData.linkedinURL},${prospectData.firstName},${prospectData.middleName},${prospectData.lastName},${prospectData.jobTitle},${prospectData.email},${prospectData.generatedEmails.joinToString(";")},${prospectData.company}")
+                tempCsvFile.printWriter().use {out ->
+                    out.println("LinkedIn URL, First Name, Middle Name, Last Name, Email, Generated Emails, Company, Job Title")
+                    out.println("${prospectData.linkedinURL}, ${prospectData.firstName}, ${prospectData.middleName}, ${prospectData.lastName}, ${prospectData.email}, ${prospectData.generatedEmails.joinToString(";")}, ${prospectData.company}, ${prospectData.jobTitle}")
                 }
                 tempCsvFile.copyTo(fileToExport, overwrite = true)
                 tempCsvFile.delete()
