@@ -1,6 +1,6 @@
 package ui.composable
 
-import FileManager
+import manager.FileManager
 import androidx.compose.foundation.BorderStroke
 import utils.ConsoleMessage
 import androidx.compose.foundation.background
@@ -29,6 +29,10 @@ import utils.ConsoleMessageType
 import java.awt.Desktop
 import java.awt.FileDialog
 import java.awt.Frame
+import java.awt.Robot
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
+import java.awt.event.KeyEvent
 import java.io.File
 import java.net.URI
 
@@ -97,7 +101,6 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
     val fileManager = remember {FileManager()}
     val prospectList = remember {mutableStateListOf<ProspectData>()}
     var newProspect by remember {mutableStateOf(ProspectData())}
-    var isIncompleteProspectData by remember {mutableStateOf(false)}
 
     var filePath by remember {mutableStateOf<String?>("")}
     var fileName by remember {mutableStateOf<String?>("")}
@@ -231,18 +234,27 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                                 consoleMessage = ConsoleMessage("⏳ Ouverture de la page LinkedIn, veuillez attendre le chargement complet...", ConsoleMessageType.INFO)
                                 applicationScope.launch {
                                     delay(5000)
-                                    consoleMessage = ConsoleMessage("⏳ Page chargée, veuillez copier tout le contenu (Ctrl+A puis Ctrl+C) et revenir à l'application", ConsoleMessageType.INFO)
+                                    consoleMessage = ConsoleMessage("⏳ Vérification du chargement de la page...", ConsoleMessageType.INFO)
 
-//                                    // Pour une future implémentation automatique:
-//                                     val clipboardContent = getClipboardContent()
-//                                     if (clipboardContent.isNotBlank()) {
-//                                         pastedInput = clipboardContent
-//                                         processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(),
-//                                             setStatus = {consoleMessage = it},
-//                                             setProfile = {currentProfile = it},
-//                                             setLoading = {isExtractionLoading = it}
-//                                         )
-//                                     }
+                                    val robot = Robot()
+                                    robot.keyPress(KeyEvent.VK_CONTROL)
+                                    robot.keyPress(KeyEvent.VK_A)
+                                    robot.keyRelease(KeyEvent.VK_A)
+                                    robot.keyRelease(KeyEvent.VK_CONTROL)
+                                    delay(500)
+                                    robot.keyPress(KeyEvent.VK_CONTROL)
+                                    robot.keyPress(KeyEvent.VK_C)
+                                    robot.keyRelease(KeyEvent.VK_C)
+                                    robot.keyRelease(KeyEvent.VK_CONTROL)
+                                    delay(1000)
+
+                                    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                                    val clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
+
+                                    if (clipboardContent.isNotBlank()) {
+                                        pastedInput = clipboardContent
+                                        processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})
+                                    }
                                 }
                             }
                         }
@@ -324,15 +336,20 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
         // Options
         Column(Modifier.fillMaxWidth(), Arrangement.Bottom, Alignment.CenterHorizontally) {
             print("$importedFilePath | $importedFileName | $importedFileFormat")
-            val isFileImported = (importedFileName!= "" && importedFilePath != "")
-            val importedFileName = if (isFileImported) {"$importedFileName.$importedFileFormat"} else {"Aucun fichier chargé"}
-            print("importedFileName = $importedFileName")
+            val isFileImported = (importedFileName != "" && importedFilePath != "")
+            val displayFileName = if (isFileImported) {
+                val fileName = importedFileName.toString()
+                val fileExtension = importedFileFormat.toString()
+                val fileNameOnly = fileName.split("/").last().split("\\").last()
+                "$fileNameOnly.$fileExtension"
+            }
+            else {"Aucun fichier chargé"}
             val text = "Fichier chargé : "
 
             // Afficheur de nom de fichier
             Row(Modifier.border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp).fillMaxWidth(), Arrangement.SpaceBetween) {
                 Text(text, Modifier, lightGray)
-                Text(importedFileName, Modifier, color = if (isFileImported) {Color.Green.copy(0.5f)} else {lightGray})
+                Text(displayFileName, Modifier, color = if (isFileImported) {Color.Green.copy(0.5f)} else {lightGray})
             }
 
             // Spacer

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,12 +59,21 @@ import java.awt.Frame
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boolean>, onExport: (String, String, MutableList<Boolean>) -> Unit, onDialogWindowDismissRequest: () -> Unit) {
-    var exportFolderPath by remember {mutableStateOf<String?>(null)}
-    var exportFileName by remember {mutableStateOf("")}
-    var exportFileFormat by remember {mutableStateOf("")}
     val (darkGray, middleGray, lightGray) = themeColors
     val dialogState = rememberDialogState(size = DpSize(640.dp, 500.dp))
-    val fullPath = if (exportFolderPath != null && exportFolderPath != "Sélection en cours...") {"$exportFolderPath/$exportFileName"} else {null}
+
+    var exportFolderPath by remember {mutableStateOf("")}
+    var exportFileName by remember {mutableStateOf("")}
+    var exportFileFormat by remember {mutableStateOf("")}
+
+    LaunchedEffect(exportFolderPath, exportFileName, selectedOptions) {
+        exportFileFormat = when {
+            selectedOptions[0] && !selectedOptions[1] -> "xlsx"
+            !selectedOptions[0] && selectedOptions[1] -> "csv"
+            selectedOptions[0] && selectedOptions[1] -> "xlsx et csv"
+            else -> ""
+        }
+    }
 
     DialogWindow(onDialogWindowDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
@@ -101,7 +111,7 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
 
                             // Zone du chemin d'exportation
                             OutlinedTextField(
-                                value = exportFolderPath ?: "",
+                                value = exportFolderPath,
                                 onValueChange = {exportFolderPath = it},
                                 label = {Text("Sélectionner un dossier...")},
                                 singleLine = true,
@@ -116,14 +126,13 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                 trailingIcon = {
                                     IconButton(
                                         onClick = {
-                                            exportFolderPath = "Sélection en cours..."
                                             val fileDialog = FileDialog(Frame(), "Sélectionner un dossier d'exportation", FileDialog.LOAD)
                                             fileDialog.file = null
                                             fileDialog.directory = null
                                             System.setProperty("apple.awt.fileDialogForDirectories", "true")
                                             fileDialog.isVisible = true
                                             System.setProperty("apple.awt.fileDialogForDirectories", "false")
-                                            exportFolderPath = if (fileDialog.directory != null) {fileDialog.directory} else {null}
+                                            exportFolderPath = if (fileDialog.directory != null) {fileDialog.directory.toString()} else {""}
                                         },
                                         modifier = Modifier.size(25.dp).align(Alignment.CenterVertically)
                                     ) {
@@ -134,7 +143,7 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                 visualTransformation = VisualTransformation {text ->
                                     val visibleLength = 9
                                     val trimmedText = if (text.text.length > visibleLength) {"..." + text.text.takeLast((text.length - 3))} else {text.text}
-                                    print("text.length = ${text.length}\n trimmedText = $trimmedText\n")
+                                    print("text.length = ${text.length} trimmedText = $trimmedText\n")
                                     TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
                                 }
                             )
@@ -143,8 +152,14 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Spacer(Modifier.height(10.dp))
 
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                            // Texte
-                            Text("Nom du fichier :", Modifier.width(200.dp), lightGray, fontSize = 20.sp)
+                            Row(Modifier, Arrangement.Center, Alignment.CenterVertically) {
+                                // Infobulle
+                                TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, darkGray) {
+                                    Text("Choisissez un nom de fichier conforme", Modifier.padding(5.dp), color = lightGray)
+                                }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), lightGray.copy(0.5f))}
+                                // Titre
+                                Text("Nom du fichier :", Modifier.padding(5.dp), lightGray, fontSize = 20.sp)
+                            }
                             // Spacer
                             Spacer(Modifier.height(5.dp))
                             //  Zone du nom d'exportation
@@ -186,11 +201,24 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         // Spacer
                         Spacer(Modifier.height(10.dp))
 
+                        // Texte d'affichage
                         Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
-                            val messageFolderPath = exportFolderPath ?: ""
-                            val messageFileName = exportFileName
-                            val messageFileFormat = (exportFileFormat ?: "").toString().lowercase()
-                            Text("Le fichier sera exporté sous : \"$messageFolderPath\\$messageFileName.$messageFileFormat\"", style = TextStyle(lightGray, textAlign = TextAlign.Center))
+                            val selectedFormats = mutableListOf<String>().apply {
+                                if (selectedOptions[0]) add("xlsx")
+                                if (selectedOptions[1]) add("csv")
+                            }
+                            val textExtension = if (selectedFormats.isNotEmpty()) {selectedFormats.joinToString(" et ") {"$exportFolderPath\\$exportFileName.$it"}} else {""}
+                            val formattedPath = when {
+                                exportFolderPath.isEmpty() && exportFileName.isEmpty() && selectedFormats.isEmpty() -> "Aucun emplacement, nom ou type de fichier sélectionné"
+                                exportFolderPath.isEmpty() && exportFileName.isEmpty() -> "Aucun emplacement ou nom de fichier sélectionné"
+                                exportFolderPath.isEmpty() && selectedFormats.isEmpty() -> "Aucun emplacement ou type de fichier sélectionné"
+                                exportFileName.isEmpty() && selectedFormats.isEmpty() -> "Aucun nom ou type de fichier sélectionné"
+                                exportFolderPath.isEmpty() -> "Aucun emplacement sélectionné"
+                                exportFileName.isEmpty() -> "Aucun nom de fichier sélectionné"
+                                selectedFormats.isEmpty() -> "Aucun type de fichier sélectionné"
+                                else -> "Le fichier sera exporté sous : $textExtension"
+                            }
+                            Text(formattedPath, style = TextStyle(lightGray, textAlign = TextAlign.Center))
                         }
                     }
 
@@ -214,7 +242,7 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Button(
                             onClick = {onExport(exportFolderPath.toString(), exportFileName, selectedOptions)},
                             modifier = Modifier.weight(1f),
-                            enabled = exportFolderPath != null && exportFolderPath != "Sélection en cours..." && exportFileName.isNotBlank() && (selectedOptions[0] || selectedOptions[1]),
+                            enabled = exportFolderPath != "" && exportFileName.isNotBlank() && (selectedOptions[0] || selectedOptions[1]),
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = getButtonColors(middleGray, darkGray, lightGray)

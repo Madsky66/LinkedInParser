@@ -1,3 +1,5 @@
+package manager
+
 import data.ProspectData
 import java.io.File
 
@@ -10,60 +12,41 @@ class FileManager {
             val columns = line.split(",")
             onImportedProspectData(
                 ProspectData(
-                    linkedinURL = "${columns[2].takeIf {it.isNotBlank()}}",
-                    fullName = "${columns[0].takeIf {it.isNotBlank()}} ${columns[1].takeIf {it.isNotBlank()}} ${columns[2].takeIf {it.isNotBlank()}}",
-                    firstName = "${columns[0].takeIf {it.isNotBlank()}}",
-                    middleName = "${columns[1].takeIf {it.isNotBlank()}}",
-                    lastName = "${columns[2].takeIf {it.isNotBlank()}}",
+                    linkedinURL = "${columns[0].takeIf {it.isNotBlank()}}",
+                    firstName = "${columns[1].takeIf {it.isNotBlank()}}",
+                    middleName = "${columns[2].takeIf {it.isNotBlank()}}",
+                    lastName = "${columns[3].takeIf {it.isNotBlank()}}",
                     email = "${columns[4].takeIf {it.isNotBlank()}}",
                     generatedEmails = columns[5].split(";").map {it.trim()}.filter {it.isNotEmpty()},
                     company = "${columns[6].takeIf {it.isNotBlank()}}",
-                    jobTitle = "${columns[3].takeIf {it.isNotBlank()}}"
+                    jobTitle = "${columns[7].takeIf {it.isNotBlank()}}"
                 ),
                 columns.size
             )
         }
     }
 
-   /*suspend*/ fun exportToFile(/*spreadsheetId: String, */prospectData: ProspectData, exportFilePath: String) {
+    fun exportToFile(prospectData: ProspectData, exportFilePath: String) {
         val fileToExport = File(exportFilePath)
-        fileToExport.printWriter().use {out ->
-            out.println("First name,Middle Name,Last name,LinkedIn URL,Email,Generated Emails,Company,Job Title")
-            out.println(
-                "${prospectData.linkedinURL}," +
-                        "${prospectData.firstName}," +
-                        "${prospectData.middleName}," +
-                        "${prospectData.lastName}," +
-                        "${prospectData.email}," +
-                        "${prospectData.generatedEmails.joinToString(";")}," +
-                        "${prospectData.company}," +
-                        prospectData.jobTitle
-            )
+        val extension = exportFilePath.substringAfterLast('.', "").lowercase()
+
+        when (extension) {
+            "csv" -> {
+                fileToExport.printWriter().use {out ->
+                    out.println("LinkedIn URL, First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
+                    out.println("${prospectData.linkedinURL},${prospectData.firstName},${prospectData.middleName},${prospectData.lastName},${prospectData.jobTitle},${prospectData.email},${prospectData.generatedEmails.joinToString(";")},${prospectData.company}")
+                }
+            }
+            "xlsx" -> {
+                val tempCsvFile = File("${exportFilePath}.temp.csv")
+                tempCsvFile.printWriter().use { out ->
+                    out.println("LinkedIn URL, First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
+                    out.println("${prospectData.linkedinURL},${prospectData.firstName},${prospectData.middleName},${prospectData.lastName},${prospectData.jobTitle},${prospectData.email},${prospectData.generatedEmails.joinToString(";")},${prospectData.company}")
+                }
+                tempCsvFile.copyTo(fileToExport, overwrite = true)
+                tempCsvFile.delete()
+            }
+            else -> throw IllegalArgumentException("Format de fichier non supporté: $extension")
         }
-//        withContext(Dispatchers.IO) {
-//            try {
-//                val range = "Prospects!A:G"
-//                val valueRange = ValueRange()
-//                val values = listOf(
-//                    listOf(
-//                        prospectData.fullName,
-//                        prospectData.firstName,
-//                        prospectData.lastName,
-//                        prospectData.company,
-//                        prospectData.jobTitle,
-//                        prospectData.linkedinURL,
-//                    )
-//                )
-//                valueRange.setValues(values)
-//                val appendRequest = service!!.values().append(spreadsheetId, range, valueRange)
-//                appendRequest.valueInputOption = "USER_ENTERED"
-//                logger.info("✅ Prospect saved to Google Sheets: ${prospectData.fullName}")
-//
-//            }
-//            catch (e: Exception) {
-//                logger.error("❌ Erreur lors de la sauvegarde dans Google Sheets: ${e.message}", e)
-//                e.printStackTrace()
-//            }
-//        }
-   }
+    }
 }

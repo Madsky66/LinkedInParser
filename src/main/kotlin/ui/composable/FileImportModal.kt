@@ -36,7 +36,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
     val (darkGray, middleGray, lightGray) = themeColors
     val dialogState = rememberDialogState(WindowPosition.PlatformDefault, DpSize(640.dp, 360.dp))
 
-    LaunchedEffect(importFilePath) {importFileFormat = if (importFilePath != null && importFilePath != "Sélection en cours...") {importFilePath!!.substringAfterLast('.', "").lowercase()} else {""}}
+    LaunchedEffect(importFilePath) {importFileFormat = if (importFilePath != null) {importFilePath!!.substringAfterLast('.', "").lowercase()} else {""}}
 
     val formatColor = when (importFileFormat) {
         "" -> lightGray
@@ -98,14 +98,8 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                                     placeholderColor = lightGray.copy(0.25f)
                                 ),
                                 trailingIcon = {
-                                    IconButton(
-                                        onClick = {
-                                            importFilePath = "Sélection en cours..."
-                                            importFilePath = openDialog("Sélectionner un fichier à importer...")
-                                        },
-                                        modifier = Modifier.size(25.dp).align(Alignment.CenterHorizontally)
-                                    ) {
-                                        // Icone de loupe
+                                    // Icone de loupe
+                                    IconButton({importFilePath = openDialog("Sélectionner un fichier à importer...")}, Modifier.size(25.dp).align(Alignment.CenterHorizontally)) {
                                         Icon(Icons.Filled.Search, "Rechercher")
                                     }
                                 },
@@ -137,11 +131,13 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                         Spacer(Modifier.weight(0.1f))
 
                         // Bouton d'importation
-                        val isEnabled = if (importFilePath  != null && importFilePath != "Sélection en cours...") {if (importFileFormat != "") {importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv"} else false} else false
+                        val isEnabled = if (importFilePath  != null) {if (importFileFormat != "") {importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv"} else false} else false
                         Button(
                             onClick = {
-                                onImportFile(importFilePath, (if (importFileFormat.lowercase() == "xlsx") {"XLSX"} else {"CSV"}))
-                                onDismissRequest()
+                                if (importFilePath != null && (importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv")) {
+                                    onImportFile(importFilePath, importFileFormat.uppercase())
+                                    onDismissRequest()
+                                }
                             },
                             modifier = Modifier.weight(1f),
                             enabled = isEnabled,
