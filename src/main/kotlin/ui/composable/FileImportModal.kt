@@ -1,12 +1,15 @@
 package ui.composable
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,12 +25,21 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
 import utils.FileFormat
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, format: FileFormat) -> Unit, onDismissRequest: () -> Unit) {
     var importFilePath by remember {mutableStateOf<String?>(null)}
-    var importFileFormat by remember {mutableStateOf(FileFormat.CSV)}
+    var importFileFormat by remember {mutableStateOf("")}
     val (darkGray, middleGray, lightGray) = themeColors
     val dialogState = rememberDialogState(WindowPosition.PlatformDefault, DpSize(640.dp, 360.dp))
+
+    LaunchedEffect(importFilePath) {importFileFormat = if (importFilePath != null && importFilePath != "Sélection en cours...") {importFilePath!!.substringAfterLast('.', "").lowercase()} else {""}}
+
+    val formatColor = when (importFileFormat) {
+        "" -> lightGray
+        "csv", "xlsx" -> Color.Green.copy(0.5f)
+        else -> Color.Red.copy(0.5f)
+    }
 
     DialogWindow(onDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
@@ -50,15 +62,28 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
 
                     // Contenu
                     Row(Modifier.weight(1f, true).fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        // Zone de texte
-                        Column(Modifier.weight(0.525f), Arrangement.Center, Alignment.CenterHorizontally) {
-                            Column(Modifier.padding(10.dp, 0.dp).fillMaxWidth(), Arrangement.Center, Alignment.Start) {
-                                Text("Fichier à importer :", color = lightGray, fontSize = 20.sp)
+                        Column(Modifier.fillMaxSize().padding(20.dp), Arrangement.Center, Alignment.CenterHorizontally) {
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                                Row(Modifier, Arrangement.Center, Alignment.CenterVertically) {
+                                    // Infobulle
+                                    TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, darkGray) {
+                                        Text("Cliquez sur l'icone en forme de loupe pour sélectionner un fichier à importer", Modifier.padding(5.dp), color = lightGray)
+                                    }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), lightGray.copy(0.5f))}
+                                    // Titre
+                                    Text("Fichier à importer :", Modifier.padding(5.dp), lightGray, fontSize = 20.sp)
+                                }
+                                // Afficheur de format
+                                Box(Modifier.widthIn(min = 50.dp).background(darkGray, RoundedCornerShape(50)).padding(10.dp, 5.dp), Alignment.Center) {Text(importFileFormat, color = formatColor, fontSize = 17.sp)}
                             }
+
+                            // Spacer
                             Spacer(Modifier.height(5.dp))
+
+                            // Zone du chemin d 'importation
                             OutlinedTextField(
                                 value = importFilePath ?: "",
                                 onValueChange = {importFilePath = it},
+                                modifier = Modifier.fillMaxWidth(),
                                 label = {Text("Sélectionner un fichier...")},
                                 singleLine = true,
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -77,9 +102,14 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                                         },
                                         modifier = Modifier.size(25.dp).align(Alignment.CenterHorizontally)
                                     ) {
+                                        // Icone de loupe
                                         Icon(Icons.Filled.Search, "Rechercher")
                                     }
-                                }
+                                },
+//                                visualTransformation = VisualTransformation {text ->
+//                                    val trimmedText = if (text.text.length > 40) {"..." + text.text.takeLast(40)} else {text.text}
+//                                    TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
+//                                }
                             )
                         }
                     }
@@ -109,13 +139,14 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                         Spacer(Modifier.weight(0.1f))
 
                         // Bouton d'importation
+                        val isEnabled = if (importFilePath  != null && importFilePath != "Sélection en cours...") {if (importFileFormat != "") {importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv"} else false} else false
                         Button(
                             onClick = {
-                                onImportFile(importFilePath, importFileFormat)
+                                onImportFile(importFilePath, (if (importFileFormat.lowercase() == "xlsx") {FileFormat.XLSX} else {FileFormat.CSV}))
                                 onDismissRequest()
                             },
                             modifier = Modifier.weight(1f),
-                            enabled = importFilePath != null && importFilePath != "Sélection en cours...",
+                            enabled = isEnabled,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = getButtonColors(middleGray, darkGray, lightGray)

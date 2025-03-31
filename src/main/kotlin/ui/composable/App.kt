@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
 import utils.FileFormat
@@ -152,18 +154,44 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
 
     // Modale d'exportation
     if (showExportModal) {
+        val selectedOptions = rememberSaveable {mutableStateListOf(false, false)}
         FileExportModal(
-            themeColors = themeColors,
-            onExport = {exportFilePath, exportFileFormat ->
+            themeColors, selectedOptions,
+            onExport = {exportFolderPath, exportFileName, selectedOptions ->
                 applicationScope.launch {
-                    isExportationLoading = true
-                    consoleMessage = ConsoleMessage("⏳ Exportation du fichier $exportFileFormat en cours...", ConsoleMessageType.INFO)
-                    try {
-                        fileManager.exportToFile(currentProfile!!, exportFilePath.toString(), exportFileFormat)
-                        consoleMessage = ConsoleMessage("✅ Exportation du fichier $exportFileFormat réussie", ConsoleMessageType.SUCCESS)
+
+                    if (currentProfile != null){
+                        isExportationLoading = true
+
+                        val exportFileFormats = if (selectedOptions[0]) {Pair(FileFormat.XLSX, null)} else if (selectedOptions[1]) {Pair(null, FileFormat.CSV)} else {Pair(FileFormat.XLSX, FileFormat.CSV)}
+                        val messageFileFormat = if (selectedOptions[0] &&  selectedOptions[1]) {"XLSX, CSV"} else {exportFileFormats.toString()}
+                        consoleMessage = ConsoleMessage("⏳ Exportation du fichier au format [$messageFileFormat] en cours...", ConsoleMessageType.INFO)
+
+                        try {
+                            val fullExportFolderPathXLSX = "$exportFolderPath\\$exportFileName.xlsx"
+                            val fullExportFolderPathCSV = "$exportFolderPath\\$exportFileName.csv"
+                            val fullExportFolderPathBoth = exportFolderPath + "\\" + exportFileName + "." + exportFileFormats.toString().lowercase()
+
+                            if (!selectedOptions[0] || !selectedOptions[1]) {fileManager.exportToFile(currentProfile!!, fullExportFolderPathBoth)}
+                            else {
+                                fileManager.exportToFile(currentProfile!!, fullExportFolderPathXLSX)
+                                fileManager.exportToFile(currentProfile!!, fullExportFolderPathCSV)
+                            }
+
+                            consoleMessage = ConsoleMessage("✅ Exportation du fichier $exportFileFormats réussie", ConsoleMessageType.SUCCESS)
+                            try {
+                                val sheetsUrl = "https://docs.google.com/spreadsheets/u/0/create"
+                                val uri = URI(sheetsUrl)
+                                if (Desktop.isDesktopSupported()) {
+                                    Desktop.getDesktop().browse(uri)
+                                    consoleMessage = ConsoleMessage("✅ Google Sheets ouvert. Vous pouvez maintenant importer votre fichier.", ConsoleMessageType.SUCCESS)
+                                }
+                            }
+                            catch (e: Exception) {consoleMessage = ConsoleMessage("⚠️ Exportation réussie mais impossible d'ouvrir Google Sheets : ${e.message}", ConsoleMessageType.WARNING)}
+                        }
+                        catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'exportation du fichier $exportFileFormats : ${e.message}", ConsoleMessageType.ERROR)}
+                        isExportationLoading = false
                     }
-                    catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'exportation du fichier $exportFileFormat : ${e.message}", ConsoleMessageType.ERROR)}
-                    isExportationLoading = false
                 }
                 showExportModal = false
             },
@@ -190,14 +218,32 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
             // Spacer
             Spacer(Modifier.width(15.dp))
 
-            // Section du profil et  options
+            // Section du profil et options
             ProfileAndOptionsSection(
                 currentProfile, isExtractionLoading, isImportationLoading, isExportationLoading, loadedFile, filePath, fileFormat, pastedURL, consoleMessage, themeColors, {pastedURL = it}, {showImportModal = true}, {showExportModal = true},
                 {
                     if (pastedURL.isNotBlank()) {
                         try {
                             val uri = URI(pastedURL)
-                            if (Desktop.isDesktopSupported()) {Desktop.getDesktop().browse(uri)}
+                            if (Desktop.isDesktopSupported()) {
+                                Desktop.getDesktop().browse(uri)
+                                consoleMessage = ConsoleMessage("⏳ Ouverture de la page LinkedIn, veuillez attendre le chargement complet...", ConsoleMessageType.INFO)
+                                applicationScope.launch {
+                                    delay(5000)
+                                    consoleMessage = ConsoleMessage("⏳ Page chargée, veuillez copier tout le contenu (Ctrl+A puis Ctrl+C) et revenir à l'application", ConsoleMessageType.INFO)
+
+//                                    // Pour une future implémentation automatique:
+//                                     val clipboardContent = getClipboardContent()
+//                                     if (clipboardContent.isNotBlank()) {
+//                                         pastedInput = clipboardContent
+//                                         processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(),
+//                                             setStatus = {consoleMessage = it},
+//                                             setProfile = {currentProfile = it},
+//                                             setLoading = {isExtractionLoading = it}
+//                                         )
+//                                     }
+                                }
+                            }
                         }
                         catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
                     }

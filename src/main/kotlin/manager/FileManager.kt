@@ -36,26 +36,20 @@ class FileManager {
         }
     }
 
-   /*suspend*/ fun exportToFile(/*spreadsheetId: String, */prospectData: ProspectData, filePath: String, exportFileFormat: FileFormat) {
-        when (exportFileFormat) {
-            FileFormat.CSV -> {
-                val fileToExport = File(filePath)
-                fileToExport.printWriter().use {out ->
-                    out.println("First name,Middle Name,Last name,LinkedIn URL,Email,Generated Emails,Company,Job Title")
-                    out.println(
+   /*suspend*/ fun exportToFile(/*spreadsheetId: String, */prospectData: ProspectData, exportFilePath: String) {
+        val fileToExport = File(exportFilePath)
+        fileToExport.printWriter().use {out ->
+            out.println("First name,Middle Name,Last name,LinkedIn URL,Email,Generated Emails,Company,Job Title")
+            out.println(
+                "${prospectData.linkedinURL}," +
                         "${prospectData.firstName}," +
-                                "${prospectData.middleName}," +
-                                "${prospectData.lastName}," +
-                                "${prospectData.linkedinURL}," +
-                                "${prospectData.email}," +
-                                "${prospectData.generatedEmails.joinToString(";")}," +
-                                "${prospectData.company}," +
-                                prospectData.jobTitle
-                    )
-                }
-            }
-            FileFormat.XLSX -> {val fileToExport = File(filePath)}
-            else -> {}
+                        "${prospectData.middleName}," +
+                        "${prospectData.lastName}," +
+                        "${prospectData.email}," +
+                        "${prospectData.generatedEmails.joinToString(";")}," +
+                        "${prospectData.company}," +
+                        prospectData.jobTitle
+            )
         }
 //        withContext(Dispatchers.IO) {
 //            try {

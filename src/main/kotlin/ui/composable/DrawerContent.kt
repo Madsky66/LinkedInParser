@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
@@ -41,7 +40,7 @@ fun DrawerContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, i
 
     // Modale de confirmation
     if (showConfirmModal) {
-        CustomConfirmModal(
+        ConfirmModal(
             themeColors, pastedAPI, confirmMessage,
             firstButtonText = "Annuler",
             secondButtonText = "Confirmer",

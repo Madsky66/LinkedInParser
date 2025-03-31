@@ -68,12 +68,13 @@ fun main() = application {
     var isMaximized by remember {mutableStateOf(false)}
 
     Window({exitApplication()}, windowState, visible = true, "LinkedIn Parser", undecorated = true) {
-        var expandedMenuItem by remember {mutableStateOf<String?>(null)}
-        val drawerWidth = if (expandedMenuItem != null) 0.8f else 0.3f
+        var isExpandedMenuItem by remember {mutableStateOf<String?>(null)}
+        val drawerWidth = if (isExpandedMenuItem != null) 0.8f else 0.2f
 
         ModalDrawer(
             drawerContent = {
-                Card(Modifier.fillMaxHeight().fillMaxWidth(drawerWidth), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = middleGray, border = BorderStroke(1.dp, darkGray), elevation = 5.dp) {
+                // Volet avant
+                Card(Modifier.fillMaxHeight().fillMaxWidth(0.2f), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = middleGray, border = BorderStroke(1.dp, darkGray), elevation = 5.dp) {
                     Column(Modifier.fillMaxSize()) {
                         // Titre du menu
                         Column(Modifier.fillMaxWidth().padding(20.dp, 10.dp)) {
@@ -82,8 +83,18 @@ fun main() = application {
                         }
 
                         // Éléments du menu
-                        DrawerMenuItem("Général", Icons.Filled.Settings, themeColors, isExpanded = expandedMenuItem == "Général", onClick = {expandedMenuItem = if (expandedMenuItem == "Général") null else "Général"}) {
-                            DrawerContent(
+                        DrawerMenuItem("Général", Icons.Filled.Settings, themeColors, isExpandedMenuItem == "Général", {isExpandedMenuItem = if (isExpandedMenuItem == "Général") null else "Général"}) {}
+                        DrawerMenuItem("Customisation", Icons.Filled.Palette, themeColors, isExpandedMenuItem == "Customisation", {isExpandedMenuItem = if (isExpandedMenuItem == "Customisation") null else "Customisation"}) {}
+                        DrawerMenuItem("Aide", Icons.Filled.Help, themeColors, isExpandedMenuItem == "Aide", {isExpandedMenuItem = if (isExpandedMenuItem == "Aide") null else "Aide"}) {}
+                        DrawerMenuItem("Contact", Icons.Filled.Email, themeColors, isExpandedMenuItem == "Contact", {isExpandedMenuItem = if (isExpandedMenuItem == "Contact") null else "Contact"}) {}
+                    }
+                }
+
+                // Volet arrière
+                if (isExpandedMenuItem != null) {
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(0.8f).padding(20.dp)) {
+                        when (isExpandedMenuItem) {
+                            "Général" -> DrawerContent(
                                 themeColors, pastedAPI, apiKey.toString(), isApolloValidationLoading,
                                 onApiKeyChange = {pastedAPI = it},
                                 onProcessApiKey = {
@@ -101,10 +112,7 @@ fun main() = application {
                                     }
                                 }
                             )
-                        }
-
-                        DrawerMenuItem("Customisation", Icons.Filled.Palette, themeColors, isExpanded = expandedMenuItem == "Customisation", onClick = {expandedMenuItem = if (expandedMenuItem == "Customisation") null else "Customisation"}) {
-                            Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                            "Customisation" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
                                 Text("Options de thème", color = lightGray, fontSize = 18.sp)
                                 Spacer(Modifier.height(10.dp))
                                 Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
@@ -121,18 +129,12 @@ fun main() = application {
                                     )
                                 }
                             }
-                        }
-
-                        DrawerMenuItem("Aide", Icons.Filled.Help, themeColors, isExpanded = expandedMenuItem == "Aide", onClick = {expandedMenuItem = if (expandedMenuItem == "Aide") null else "Aide"}) {
-                            Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                            "Aide" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
                                 Text("Documentation", color = lightGray, fontSize = 18.sp)
                                 Spacer(Modifier.height(10.dp))
                                 Text("Pour utiliser cette application, copiez le contenu d'une page LinkedIn et collez-le dans la zone de texte à gauche.", color = lightGray)
                             }
-                        }
-
-                        DrawerMenuItem("Contact", Icons.Filled.Email, themeColors, isExpanded = expandedMenuItem == "Contact", onClick = {expandedMenuItem = if (expandedMenuItem == "Contact") null else "Contact"}) {
-                            Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                            "Contact" -> Column(Modifier.fillMaxWidth().padding(20.dp)) {
                                 Text("Nous contacter", color = lightGray, fontSize = 18.sp)
                                 Spacer(Modifier.height(10.dp))
                                 Text("Email : pmbussy66@gmail.com", color = lightGray)
@@ -141,7 +143,7 @@ fun main() = application {
                     }
                 }
             },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxHeight(),
             drawerState = drawerState,
             gesturesEnabled = true,
             drawerShape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),

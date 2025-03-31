@@ -40,7 +40,7 @@ import androidx.compose.ui.window.rememberDialogState
 
 
 @Composable
-fun CustomConfirmModal(themeColors: List<Color>, string: String = "", modalMessage: String, firstButtonText: String, secondButtonText: String, thirdButtonText: String = "", onSecondButtonClick: (String) -> Unit, onDismissRequest: () -> Unit) {
+fun ConfirmModal(themeColors: List<Color>, string: String = "", modalMessage: String, firstButtonText: String, secondButtonText: String, thirdButtonText: String = "", onSecondButtonClick: (String) -> Unit, onDismissRequest: () -> Unit) {
     val (darkGray, middleGray, lightGray) = themeColors
     val dialogState = rememberDialogState(position = WindowPosition.PlatformDefault, size = DpSize(640.dp, 360.dp))
 
