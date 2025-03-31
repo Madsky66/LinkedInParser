@@ -124,27 +124,31 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                     placeholderColor = lightGray.copy(0.25f)
                                 ),
                                 trailingIcon = {
+                                    // Icone de loupe
                                     IconButton(
                                         onClick = {
                                             val fileDialog = FileDialog(Frame(), "Sélectionner un dossier d'exportation", FileDialog.LOAD)
                                             fileDialog.file = null
-                                            fileDialog.directory = null
+                                            fileDialog.setFilenameFilter {_, _ -> false}
                                             System.setProperty("apple.awt.fileDialogForDirectories", "true")
                                             fileDialog.isVisible = true
                                             System.setProperty("apple.awt.fileDialogForDirectories", "false")
-                                            exportFolderPath = if (fileDialog.directory != null) {fileDialog.directory.toString()} else {""}
+                                            if (fileDialog.directory != null) {exportFolderPath = fileDialog.directory.toString()}
                                         },
                                         modifier = Modifier.size(25.dp).align(Alignment.CenterVertically)
                                     ) {
-                                        // Icone de loupe
                                         Icon(Icons.Filled.Search, "Rechercher")
                                     }
                                 },
                                 visualTransformation = VisualTransformation {text ->
-                                    val visibleLength = 9
-                                    val trimmedText = if (text.text.length > visibleLength) {"..." + text.text.takeLast((text.length - 3))} else {text.text}
-                                    print("text.length = ${text.length} trimmedText = $trimmedText\n")
-                                    TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
+                                    if (text.text.length > 30) {
+                                        val displayText = "..." + text.text.takeLast(27)
+                                        TransformedText(AnnotatedString(displayText), object : OffsetMapping {
+                                            override fun originalToTransformed(offset: Int): Int {return if (offset <= text.text.length - 27) 3 else offset - (text.text.length - 27) + 3}
+                                            override fun transformedToOriginal(offset: Int): Int {return if (offset <= 3) 0 else offset - 3 + (text.text.length - 27)}
+                                        })
+                                    }
+                                    else {TransformedText(AnnotatedString(text.text), OffsetMapping.Identity)}
                                 }
                             )
                         }
@@ -239,10 +243,12 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Spacer(Modifier.weight(0.1f))
 
                         // Bouton d'exportation
+                        val isValidFolderPath = exportFolderPath.matches(Regex("[A-Za-z]:\\\\.*"))
+                        val hasSelectedFormat = selectedOptions[0] || selectedOptions[1]
                         Button(
                             onClick = {onExport(exportFolderPath.toString(), exportFileName, selectedOptions)},
                             modifier = Modifier.weight(1f),
-                            enabled = exportFolderPath != "" && exportFileName.isNotBlank() && (selectedOptions[0] || selectedOptions[1]),
+                            enabled = exportFolderPath.isNotBlank() && isValidFolderPath && exportFileName.isNotBlank() && hasSelectedFormat,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = getButtonColors(middleGray, darkGray, lightGray)

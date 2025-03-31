@@ -301,7 +301,7 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
         // Fiche contact
-        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {currentProfile?.let {ProspectCard(it, themeColors, isImportationLoading, isExtractionLoading)}}
+        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {ProspectCard(currentProfile, themeColors, isImportationLoading, isExtractionLoading)}
 
         // Diviseur espacé
         SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)

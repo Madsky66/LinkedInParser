@@ -34,7 +34,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DrawerContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, isApolloValidationLoading: Boolean, onApiKeyChange: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
+fun DrawerSubMenuContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, isApolloValidationLoading: Boolean, onApiKeyModified: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
     var showConfirmModal by remember {mutableStateOf(false)}
     val (darkGray, middleGray, lightGray) = themeColors
     val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $pastedAPI -----"
@@ -58,7 +58,7 @@ fun DrawerContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, i
             // Zone de texte
             OutlinedTextField(
                 value = pastedAPI,
-                onValueChange = onApiKeyChange,
+                onValueChange = onApiKeyModified,
                 modifier = Modifier.clip(RectangleShape).weight(2f),
                 textStyle = TextStyle.Default,
                 label = {Text("Clé API Apollo...")},

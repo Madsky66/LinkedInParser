@@ -10,16 +10,26 @@ class FileManager {
         if (!fileToImport.exists()) {throw IllegalArgumentException("Le fichier spécifié n'existe pas : $filePath")}
         File(filePath).readLines().drop(1).map {line ->
             val columns = line.split(",")
+
+            val linkedinURL = columns.getOrNull(0)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
+            val firstName = columns.getOrNull(1)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
+            val middleName = columns.getOrNull(2)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
+            val lastName = columns.getOrNull(3)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
+            val email = columns.getOrNull(4)?.trim()?.takeIf {it.isNotBlank() && it != "null" }?: ""
+            val generatedEmails = columns.getOrNull(5)?.split(";")?.map {it.trim()}?.filter {it.isNotEmpty() && it != "null"} ?: emptyList()
+            val company = columns.getOrNull(6)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
+            val jobTitle = columns.getOrNull(7)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
+
             onImportedProspectData(
                 ProspectData(
-                    linkedinURL = "${columns[0].takeIf {it.isNotBlank()}}",
-                    firstName = "${columns[1].takeIf {it.isNotBlank()}}",
-                    middleName = "${columns[2].takeIf {it.isNotBlank()}}",
-                    lastName = "${columns[3].takeIf {it.isNotBlank()}}",
-                    email = "${columns[4].takeIf {it.isNotBlank()}}",
-                    generatedEmails = columns[5].split(";").map {it.trim()}.filter {it.isNotEmpty()},
-                    company = "${columns[6].takeIf {it.isNotBlank()}}",
-                    jobTitle = "${columns[7].takeIf {it.isNotBlank()}}"
+                    linkedinURL = linkedinURL,
+                    firstName = firstName,
+                    middleName = middleName,
+                    lastName = lastName,
+                    email = email,
+                    generatedEmails = generatedEmails,
+                    company = company,
+                    jobTitle = jobTitle
                 ),
                 columns.size
             )

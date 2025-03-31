@@ -104,10 +104,14 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                                     }
                                 },
                                 visualTransformation = VisualTransformation {text ->
-                                    val visibleLength = 9
-                                    val trimmedText = if (text.text.length > visibleLength) {"..." + text.text.takeLast((text.length - 3))} else {text.text}
-                                    print("text.length = ${text.length}\n trimmedText = $trimmedText\n")
-                                    TransformedText(AnnotatedString(trimmedText), OffsetMapping.Identity)
+                                    if (text.text.length > 30) {
+                                        val displayText = "..." + text.text.takeLast(27)
+                                        TransformedText(AnnotatedString(displayText), object : OffsetMapping {
+                                            override fun originalToTransformed(offset: Int): Int {return if (offset <= text.text.length - 27) 3 else offset - (text.text.length - 27) + 3}
+                                            override fun transformedToOriginal(offset: Int): Int {return if (offset <= 3) 0 else offset - 3 + (text.text.length - 27)}
+                                        })
+                                    }
+                                    else {TransformedText(AnnotatedString(text.text), OffsetMapping.Identity)}
                                 }
                             )
                         }
@@ -131,10 +135,12 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                         Spacer(Modifier.weight(0.1f))
 
                         // Bouton d'importation
-                        val isEnabled = if (importFilePath  != null) {if (importFileFormat != "") {importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv"} else false} else false
+                        val isValidFilePath = importFilePath?.matches(Regex("[A-Za-z]:\\\\.*")) ?: false
+                        val isValidFileFormat = importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv"
+                        val isEnabled = importFilePath != null && isValidFilePath && isValidFileFormat
                         Button(
                             onClick = {
-                                if (importFilePath != null && (importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv")) {
+                                if (importFilePath != null && isValidFilePath && isValidFileFormat) {
                                     onImportFile(importFilePath, importFileFormat.uppercase())
                                     onDismissRequest()
                                 }

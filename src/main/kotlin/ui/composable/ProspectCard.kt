@@ -23,15 +23,44 @@ fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportatio
                 Icon(Icons.Default.Person, "Contact", Modifier.size(50.dp), lightGray)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier, Arrangement.Center, Alignment.Start) {
-                    Text(prospect?.fullName ?: "Aucun profil sélectionné ou nom inconnu", color = lightGray, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
+                    val displayName = when {
+                        prospect == null -> "Aucun profil sélectionné"
+                        prospect.fullName.isBlank() -> {
+                            val firstName = if (prospect.firstName.isBlank() || prospect.firstName == "null") "Prénom inconnu" else prospect.firstName
+                            val lastName = if (prospect.lastName.isBlank() || prospect.lastName == "null") "Nom inconnu" else prospect.lastName
+                            "$firstName $lastName"
+                        }
+                        else -> prospect.fullName
+                    }
+
+                    Text(displayName, color = lightGray, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(5.dp))
-                    Text(prospect?.email ?: "Aucun email", color = lightGray, style = MaterialTheme.typography.body1)
+
+                    val displayEmail = when {
+                        prospect == null -> "Aucun email"
+                        prospect.email.isBlank() || prospect.email == "null" -> "Email inconnu"
+                        else -> prospect.email
+                    }
+                    Text(displayEmail, color = lightGray, style = MaterialTheme.typography.body1)
                 }
             }
             Spacer(Modifier.height(20.dp))
-            Text(prospect?.company ?:"Aucune entreprise", color = lightGray, style = MaterialTheme.typography.h6, fontWeight = FontWeight.SemiBold)
+
+            val displayCompany = when {
+                prospect == null -> "Aucune entreprise"
+                prospect.company.isBlank() || prospect.company == "null" -> "Entreprise inconnue"
+                else -> prospect.company
+            }
+            Text(displayCompany, color = lightGray, style = MaterialTheme.typography.h6, fontWeight = FontWeight.SemiBold)
+
             Spacer(Modifier.height(5.dp))
-            Text(prospect?.jobTitle ?: "Aucun poste", color = lightGray, style = MaterialTheme.typography.body2)
+
+            val displayJobTitle = when {
+                prospect == null -> "Aucun poste"
+                prospect.jobTitle.isBlank() || prospect.jobTitle == "null" -> "Poste inconnu"
+                else -> prospect.jobTitle
+            }
+            Text(displayJobTitle, color = lightGray, style = MaterialTheme.typography.body2)
         }
     }
 }
