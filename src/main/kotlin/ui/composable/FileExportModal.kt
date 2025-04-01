@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
+import utils.getButtonColors
 import java.awt.FileDialog
 import java.awt.Frame
 
@@ -222,7 +223,8 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                 selectedFormats.isEmpty() -> "Aucun type de fichier sélectionné"
                                 else -> "Le fichier sera exporté sous : $textExtension"
                             }
-                            Text(formattedPath, style = TextStyle(lightGray, textAlign = TextAlign.Center))
+                            val textColor = if (!formattedPath.contains("Aucun")) {Color.Green.copy(0.5f)} else {Color.Red}
+                            Text(formattedPath, color = textColor, fontSize = 15.sp, style = TextStyle(lightGray, textAlign = TextAlign.Center))
                         }
                     }
 
@@ -248,7 +250,7 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Button(
                             onClick = {onExport(exportFolderPath.toString(), exportFileName, selectedOptions)},
                             modifier = Modifier.weight(1f),
-                            enabled = exportFolderPath.isNotBlank() && isValidFolderPath && exportFileName.isNotBlank() && hasSelectedFormat,
+                            enabled = exportFolderPath.isNotBlank() && !java.io.File(exportFolderPath).exists() && isValidFolderPath && exportFileName.isNotBlank() && hasSelectedFormat,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = getButtonColors(middleGray, darkGray, lightGray)

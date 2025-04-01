@@ -17,12 +17,20 @@ import data.ProspectData
 fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportationLoading: Boolean, isExportationLoading: Boolean) {
     val (darkGray, middleGray, lightGray) = themeColors
     Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = darkGray) {
-        if (isImportationLoading || isExportationLoading) {Box(Modifier.fillMaxWidth().padding(20.dp).size(50.dp)) {CircularProgressIndicator(Modifier.align(Alignment.TopEnd), lightGray, strokeWidth = 5.dp)}}
-        Column(Modifier.padding(25.dp, 40.dp).fillMaxWidth(), Arrangement.Center, Alignment.Start) {
-            Row(Modifier, Arrangement.Start, Alignment.CenterVertically) {
-                Icon(Icons.Default.Person, "Contact", Modifier.size(50.dp), lightGray)
+        if (isImportationLoading || isExportationLoading) {Box(Modifier.fillMaxWidth().padding(15.dp)) {CircularProgressIndicator(Modifier.size(25.dp).align(Alignment.TopEnd), lightGray, strokeWidth = 5.dp)}}
+
+        Column(Modifier.fillMaxWidth()) {
+            // Partie principale
+            Row(Modifier.padding(10.dp, 10.dp, 0.dp, 0.dp), Arrangement.Start, Alignment.CenterVertically) {
+
+                // Icone du profil
+                Icon(Icons.Default.Person, "Contact", Modifier.size(100.dp), lightGray)
+
+                // Spacer
                 Spacer(Modifier.width(10.dp))
-                Column(Modifier, Arrangement.Center, Alignment.Start) {
+
+                Column(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.Start) {
+                    // Nom et prénom
                     val displayName = when {
                         prospect == null -> "Aucun profil sélectionné"
                         prospect.fullName.isBlank() -> {
@@ -32,10 +40,10 @@ fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportatio
                         }
                         else -> prospect.fullName
                     }
-
                     Text(displayName, color = lightGray, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
+                    //Spacer
                     Spacer(Modifier.height(5.dp))
-
+                    // Mail
                     val displayEmail = when {
                         prospect == null -> "Aucun email"
                         prospect.email.isBlank() || prospect.email == "null" -> "Email inconnu"
@@ -44,23 +52,34 @@ fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportatio
                     Text(displayEmail, color = lightGray, style = MaterialTheme.typography.body1)
                 }
             }
-            Spacer(Modifier.height(20.dp))
 
-            val displayCompany = when {
-                prospect == null -> "Aucune entreprise"
-                prospect.company.isBlank() || prospect.company == "null" -> "Entreprise inconnue"
-                else -> prospect.company
+            // Spacer
+            Spacer(Modifier.height(10.dp))
+
+            // Partie secondaire
+            Column(Modifier.fillMaxWidth().padding(25.dp, 0.dp, 0.dp, 25.dp), Arrangement.Center, Alignment.Start) {
+                // Entreprise
+                val displayCompany = when {
+                    prospect == null -> "Aucune entreprise"
+                    prospect.company.isBlank() || prospect.company == "null" -> "Entreprise inconnue"
+                    else -> prospect.company
+                }
+                Text(
+                    displayCompany,
+                    color = lightGray,
+                    style = MaterialTheme.typography.h6,
+                    fontWeight = FontWeight.SemiBold
+                )
+                // Spacer
+                Spacer(Modifier.height(5.dp))
+                // Poste
+                val displayJobTitle = when {
+                    prospect == null -> "Aucun poste"
+                    prospect.jobTitle.isBlank() || prospect.jobTitle == "null" -> "Poste inconnu"
+                    else -> prospect.jobTitle
+                }
+                Text(displayJobTitle, color = lightGray, style = MaterialTheme.typography.body2)
             }
-            Text(displayCompany, color = lightGray, style = MaterialTheme.typography.h6, fontWeight = FontWeight.SemiBold)
-
-            Spacer(Modifier.height(5.dp))
-
-            val displayJobTitle = when {
-                prospect == null -> "Aucun poste"
-                prospect.jobTitle.isBlank() || prospect.jobTitle == "null" -> "Poste inconnu"
-                else -> prospect.jobTitle
-            }
-            Text(displayJobTitle, color = lightGray, style = MaterialTheme.typography.body2)
         }
     }
 }

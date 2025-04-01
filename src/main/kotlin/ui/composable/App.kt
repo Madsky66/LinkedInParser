@@ -26,13 +26,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
 import utils.ConsoleMessageType
+import utils.copyUrlContent
+import utils.getButtonColors
+import utils.getTextFieldColors
 import java.awt.Desktop
 import java.awt.FileDialog
 import java.awt.Frame
 import java.awt.Robot
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
-import java.awt.event.KeyEvent
 import java.io.File
 import java.net.URI
 
@@ -44,7 +46,7 @@ fun processInput(input: String, applicationScope: CoroutineScope, linkedInManage
             setProfile(null)
         }
         else if (input.length < 5000) {
-            setStatus(ConsoleMessage("⚠\uFE0F Trop peu de texte, veuillez vérifier la copie et l'URL de la page (\"http(s)://(www.)linkedin.com/in/...\")", ConsoleMessageType.WARNING))
+            setStatus(ConsoleMessage("⚠️ Trop peu de texte, veuillez vérifier la copie et l'URL de la page (\"http(s)://(www.)linkedin.com/in/...\")", ConsoleMessageType.WARNING))
             setProfile(null)
         }
         else {
@@ -52,9 +54,8 @@ fun processInput(input: String, applicationScope: CoroutineScope, linkedInManage
             setStatus(ConsoleMessage("⏳ Extraction des informations en cours...", ConsoleMessageType.INFO))
             setProfile(linkedInManager.extractProfileData(input, apiKey))
             val newProfile = linkedInManager.extractProfileData(input, apiKey)
-            print(newProfile)
             setStatus(
-                if (newProfile.fullName.isBlank() || newProfile.fullName == "Prénom inconnu Nom de famille inconnu") {ConsoleMessage("❌ Aucune information traitable ou format du texte copié incorrect", ConsoleMessageType.ERROR)}
+                if (newProfile.fullName.isBlank() || (newProfile.firstName == "Prénom inconnu" && newProfile.lastName == "Nom de famille inconnu")) {ConsoleMessage("❌ Aucune information traitable ou format du texte copié incorrect", ConsoleMessageType.ERROR)}
                 else if (newProfile.firstName == "Prénom inconnu" || newProfile.lastName == "Nom de famille inconnu") {ConsoleMessage("⚠️ Extraction des données incomplète", ConsoleMessageType.WARNING)}
                 else {ConsoleMessage("✅ Extraction des informations réussie", ConsoleMessageType.SUCCESS)}
             )
@@ -69,20 +70,6 @@ fun openDialog(dialogTitle: String, isVisible: Boolean = true): String? {
     fileDialog.isVisible = isVisible
     return if (fileDialog.file != null) {fileDialog.directory + fileDialog.file} else {null}
 }
-
-@Composable
-fun getTextFieldColors(colorSecondary: Color) = TextFieldDefaults.outlinedTextFieldColors(
-    textColor = colorSecondary,
-    focusedBorderColor = colorSecondary.copy(0.25f),
-    unfocusedBorderColor = colorSecondary.copy(0.15f),
-    focusedLabelColor = colorSecondary.copy(0.5f),
-    unfocusedLabelColor = colorSecondary.copy(0.5f),
-    placeholderColor = colorSecondary.copy(0.25f)
-)
-
-@Composable
-fun getButtonColors(backgroundColor: Color, disabledBackgroundColor: Color, contentColor: Color) =
-    ButtonDefaults.buttonColors(backgroundColor, contentColor, disabledBackgroundColor, disabledContentColor = contentColor.copy(0.5f))
 
 @Composable
 fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: String?) {
@@ -109,9 +96,9 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
     val (darkGray, middleGray, lightGray) = themeColors
 
     val statusColor = when (consoleMessage.type) {
-        ConsoleMessageType.SUCCESS -> Color.Green
-        ConsoleMessageType.ERROR -> Color.Red
-        ConsoleMessageType.WARNING -> Color.Yellow
+        ConsoleMessageType.SUCCESS -> Color.Green.copy(0.9f)
+        ConsoleMessageType.ERROR -> Color.Red.copy(0.9f)
+        ConsoleMessageType.WARNING -> Color.Yellow.copy(0.9f)
         else -> lightGray
     }
 
@@ -205,6 +192,51 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
 
     Column(Modifier.fillMaxSize().background(middleGray).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
         Row(Modifier.weight(0.9f).fillMaxWidth()) {
+            // Section du profil et options
+            ProfileAndOptionsSection(
+                currentProfile, isExtractionLoading, isImportationLoading, isExportationLoading, fileName, filePath, fileFormat, pastedURL, consoleMessage, themeColors, {pastedURL = it}, {showImportModal = true}, {showExportModal = true},
+                {
+                    if (pastedURL.isNotBlank()) {
+                        try {
+                            val uri = URI(pastedURL)
+                            if (Desktop.isDesktopSupported()) {
+                                consoleMessage = ConsoleMessage("⏳ Ouverture de la page LinkedIn en cours...", ConsoleMessageType.INFO)
+                                Desktop.getDesktop().browse(uri)
+                                applicationScope.launch {
+                                    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                                    var copyUrlContentIndex = 0
+                                    val robot = Robot()
+                                    delay(3000)
+
+                                    consoleMessage = ConsoleMessage("⏳ Extraction en cours...", ConsoleMessageType.INFO)
+
+                                    copyUrlContent(robot)
+                                    var clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
+                                    while (clipboardContent.length < 5000 && copyUrlContentIndex < 100) {
+                                        consoleMessage = ConsoleMessage("⏳ Extraction toujours en cours, nouvelle tentative... [Tentatives échouées : $copyUrlContentIndex/100]", ConsoleMessageType.INFO)
+                                        delay(100)
+                                        copyUrlContent(robot)
+                                        clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
+                                        copyUrlContentIndex += 1
+                                    }
+
+                                    if (clipboardContent.length > 5000) {
+                                        pastedInput = clipboardContent
+                                        processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})
+                                    }
+                                    else {consoleMessage = ConsoleMessage("⚠️ Impossible de récupérer le contenu complet de la page. Veuillez vérifier que la page est bien chargée.", ConsoleMessageType.WARNING)}
+                                }
+                            }
+                        }
+                        catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
+                    }
+                }
+            )
+
+            // Spacer
+            Spacer(Modifier.width(25.dp))
+
+
             // Zone de texte
             InputSection(
                 applicationScope, pastedInput, isExtractionLoading, themeColors,
@@ -218,50 +250,6 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                     )
                 }
             )
-
-            // Spacer
-            Spacer(Modifier.width(15.dp))
-
-            // Section du profil et options
-            ProfileAndOptionsSection(
-                currentProfile, isExtractionLoading, isImportationLoading, isExportationLoading, fileName, filePath, fileFormat, pastedURL, consoleMessage, themeColors, {pastedURL = it}, {showImportModal = true}, {showExportModal = true},
-                {
-                    if (pastedURL.isNotBlank()) {
-                        try {
-                            val uri = URI(pastedURL)
-                            if (Desktop.isDesktopSupported()) {
-                                Desktop.getDesktop().browse(uri)
-                                consoleMessage = ConsoleMessage("⏳ Ouverture de la page LinkedIn, veuillez attendre le chargement complet...", ConsoleMessageType.INFO)
-                                applicationScope.launch {
-                                    delay(5000)
-                                    consoleMessage = ConsoleMessage("⏳ Vérification du chargement de la page...", ConsoleMessageType.INFO)
-
-                                    val robot = Robot()
-                                    robot.keyPress(KeyEvent.VK_CONTROL)
-                                    robot.keyPress(KeyEvent.VK_A)
-                                    robot.keyRelease(KeyEvent.VK_A)
-                                    robot.keyRelease(KeyEvent.VK_CONTROL)
-                                    delay(500)
-                                    robot.keyPress(KeyEvent.VK_CONTROL)
-                                    robot.keyPress(KeyEvent.VK_C)
-                                    robot.keyRelease(KeyEvent.VK_C)
-                                    robot.keyRelease(KeyEvent.VK_CONTROL)
-                                    delay(1000)
-
-                                    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-                                    val clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-
-                                    if (clipboardContent.isNotBlank()) {
-                                        pastedInput = clipboardContent
-                                        processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})
-                                    }
-                                }
-                            }
-                        }
-                        catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
-                    }
-                }
-            )
         }
         Spacer(Modifier.height(10.dp))
         StatusBar(consoleMessage, statusColor)
@@ -271,7 +259,7 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
 @Composable
 fun RowScope.InputSection(applicationScope: CoroutineScope, pastedInput: String, isLoading: Boolean, themeColors: List<Color>, onInputChange: (String) -> Unit, onProcessInput: (String) -> Unit) {
     val (darkGray, middleGray, lightGray) = themeColors
-    Column(Modifier.weight(1.5f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
+    Column(Modifier.weight(1.75f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
         OutlinedTextField(
             value = pastedInput,
             onValueChange = {
@@ -302,33 +290,6 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
         // Fiche contact
         Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {ProspectCard(currentProfile, themeColors, isImportationLoading, isExtractionLoading)}
-
-        // Diviseur espacé
-        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)
-
-        // Profil LinkedIn
-        Column(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterHorizontally) {
-            // Saisie de l'URL
-            OutlinedTextField(
-                value = pastedURL,
-                onValueChange = onUrlChange,
-                label = {Text("Coller l'URL de la page LinkedIn ici...")},
-                modifier = Modifier.fillMaxWidth().clip(RectangleShape),
-                colors = getTextFieldColors(lightGray)
-            )
-
-            // Bouton de validation
-            Button(
-                onClick = {onOpenUrl(pastedURL)},
-                modifier = Modifier.fillMaxWidth(),
-                enabled = pastedURL.matches(Regex("https?://(www\\.)?linkedin\\.com/in/.*")),
-                elevation = ButtonDefaults.elevation(10.dp),
-                shape = RoundedCornerShape(0, 0, 50, 50),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
-            ) {
-                Text("Ouvrir le profil")
-            }
-        }
 
         // Diviseur espacé
         SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 15.dp)
@@ -384,6 +345,33 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
                     Spacer(Modifier.width(10.dp))
                     Text("Exporter [CSV / XLSX]")
                 }
+            }
+        }
+
+        // Diviseur espacé
+        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)
+
+        // Profil LinkedIn
+        Column(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterHorizontally) {
+            // Saisie de l'URL
+            OutlinedTextField(
+                value = pastedURL,
+                onValueChange = onUrlChange,
+                label = {Text("Coller l'URL de la page LinkedIn ici...")},
+                modifier = Modifier.fillMaxWidth().clip(RectangleShape),
+                colors = getTextFieldColors(lightGray)
+            )
+
+            // Bouton de validation
+            Button(
+                onClick = {onOpenUrl(pastedURL)},
+                modifier = Modifier.fillMaxWidth(),
+                enabled = pastedURL.matches(Regex("https?://(www\\.)?linkedin\\.com/in/.*")),
+                elevation = ButtonDefaults.elevation(10.dp),
+                shape = RoundedCornerShape(0, 0, 50, 50),
+                colors = getButtonColors(middleGray, darkGray, lightGray)
+            ) {
+                Text("Ouvrir le profil")
             }
         }
     }

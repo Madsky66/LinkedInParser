@@ -27,22 +27,25 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
+import utils.getButtonColors
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, format: String?) -> Unit, onDismissRequest: () -> Unit) {
+    val dialogState = rememberDialogState(WindowPosition.PlatformDefault, DpSize(640.dp, 360.dp))
+    val (darkGray, middleGray, lightGray) = themeColors
+
     var importFilePath by remember {mutableStateOf<String?>(null)}
     var importFileFormat by remember {mutableStateOf("")}
-    val (darkGray, middleGray, lightGray) = themeColors
-    val dialogState = rememberDialogState(WindowPosition.PlatformDefault, DpSize(640.dp, 360.dp))
 
-    LaunchedEffect(importFilePath) {importFileFormat = if (importFilePath != null) {importFilePath!!.substringAfterLast('.', "").lowercase()} else {""}}
-
+    val isPathCorrect = (importFilePath?.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv")
     val formatColor = when (importFileFormat) {
         "" -> lightGray
         "csv", "xlsx" -> Color.Green.copy(0.5f)
         else -> Color.Red.copy(0.5f)
     }
+
+    LaunchedEffect(importFilePath) {importFileFormat = if (importFilePath != null) {importFilePath!!.substringAfterLast('.', "").lowercase()} else {""}}
 
     DialogWindow(onDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
@@ -90,17 +93,16 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                                 label = {Text("Sélectionner un fichier...")},
                                 singleLine = true,
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    textColor = lightGray,
+                                    textColor = lightGray.copy(0.5f),
                                     focusedBorderColor = lightGray.copy(0.25f),
                                     unfocusedBorderColor = lightGray.copy(0.15f),
                                     focusedLabelColor = lightGray.copy(0.5f),
-                                    unfocusedLabelColor = lightGray.copy(0.5f),
-                                    placeholderColor = lightGray.copy(0.25f)
+                                    unfocusedLabelColor = lightGray.copy(0.5f)
                                 ),
                                 trailingIcon = {
                                     // Icone de loupe
                                     IconButton({importFilePath = openDialog("Sélectionner un fichier à importer...")}, Modifier.size(25.dp).align(Alignment.CenterHorizontally)) {
-                                        Icon(Icons.Filled.Search, "Rechercher")
+                                        Icon(Icons.Filled.Search, "Rechercher", tint = lightGray)
                                     }
                                 },
                                 visualTransformation = VisualTransformation {text ->
@@ -135,18 +137,13 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                         Spacer(Modifier.weight(0.1f))
 
                         // Bouton d'importation
-                        val isValidFilePath = importFilePath?.matches(Regex("[A-Za-z]:\\\\.*")) ?: false
-                        val isValidFileFormat = importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv"
-                        val isEnabled = importFilePath != null && isValidFilePath && isValidFileFormat
                         Button(
                             onClick = {
-                                if (importFilePath != null && isValidFilePath && isValidFileFormat) {
-                                    onImportFile(importFilePath, importFileFormat.uppercase())
-                                    onDismissRequest()
-                                }
+                                onImportFile(importFilePath, importFileFormat.uppercase())
+                                onDismissRequest()
                             },
                             modifier = Modifier.weight(1f),
-                            enabled = isEnabled,
+                            enabled = isPathCorrect,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = getButtonColors(middleGray, darkGray, lightGray)

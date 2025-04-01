@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import ui.composable.App
@@ -77,7 +78,7 @@ fun main() = application {
         ) {
             Column(Modifier.fillMaxSize().background(darkGray)) {
                 // Barre de titre
-                WindowDraggableArea(Modifier.fillMaxWidth().height(45.dp).background(darkGray)) {
+                WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(darkGray)) {
                     Row(Modifier.fillMaxSize().padding(15.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         AppTitleBar(themeColors, applicationScope, drawerState, windowState, isWindowMaximized,
                             onMinimize = {windowState.isMinimized = true},
@@ -104,23 +105,23 @@ fun AppTitleBar(themeColors: List<Color>, applicationScope: CoroutineScope, draw
     // Titre
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Icone de menu
-        IconButton({applicationScope.launch {if (drawerState.isOpen) drawerState.close() else drawerState.open()}}, Modifier.size(15.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Menu, "Menu", tint = lightGray)}
+        IconButton({applicationScope.launch {if (drawerState.isOpen) drawerState.close() else drawerState.open()}}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Menu, "Menu", tint = lightGray)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Texte
-        Text("LinkedIn Parser", Modifier.height(15.dp), color = lightGray)
+        Text("LinkedIn Parser", fontSize = 15.sp, color = lightGray)
     }
     // Boutons
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Minimiser
-        IconButton({onMinimize()}, Modifier.size(15.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = lightGray)}
+        IconButton({onMinimize()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = lightGray)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Maximiser / Restaurer
-        IconButton({onMaximizeOrRestore()}, Modifier.size(15.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = lightGray)}
+        IconButton({onMaximizeOrRestore()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = lightGray)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Quitter
-        IconButton({onExit()}, Modifier.size(15.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Close, "Quitter", tint = lightGray)}
+        IconButton({onExit()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Close, "Quitter", tint = lightGray)}
     }
 }

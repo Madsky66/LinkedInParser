@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import utils.getButtonColors
+import utils.getTextFieldColors
 
 @Composable
 fun DrawerSubMenuContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, isApolloValidationLoading: Boolean, onApiKeyModified: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
