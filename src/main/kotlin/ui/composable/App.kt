@@ -27,8 +27,10 @@ import kotlinx.coroutines.launch
 import manager.LinkedInManager
 import utils.ConsoleMessageType
 import utils.copyUrlContent
+import utils.detectLinkedinProfile
 import utils.getButtonColors
 import utils.getTextFieldColors
+import utils.openInfosModale
 import java.awt.Desktop
 import java.awt.FileDialog
 import java.awt.Frame
@@ -201,22 +203,37 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                                 Desktop.getDesktop().browse(uri)
                                 applicationScope.launch {
                                     val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-                                    var copyUrlContentIndex = 0
                                     val robot = Robot()
                                     delay(3000)
-
-                                    consoleMessage = ConsoleMessage("⏳ Extraction en cours...", ConsoleMessageType.INFO)
-
                                     copyUrlContent(robot)
                                     var clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-                                    while (clipboardContent.length < 5000 && copyUrlContentIndex < 100) {
-                                        consoleMessage = ConsoleMessage("⏳ Extraction toujours en cours, nouvelle tentative... [Tentatives échouées : $copyUrlContentIndex/100]", ConsoleMessageType.INFO)
-                                        delay(100)
-                                        copyUrlContent(robot)
-                                        clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-                                        copyUrlContentIndex += 1
+                                    if (!clipboardContent.contains("Coordonnées")) {
+                                        consoleMessage = ConsoleMessage("⏳ Détection de la page de profil en cours...", ConsoleMessageType.INFO)
+                                        var copyUrlContentIndex = 0
+                                        do {
+                                            consoleMessage = ConsoleMessage("⏳ Détection toujours en cours, nouvelle tentative... [Tentatives échouées : $copyUrlContentIndex/100]", ConsoleMessageType.INFO)
+                                            delay(100)
+                                            detectLinkedinProfile(robot)
+                                            clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
+                                            copyUrlContentIndex += 1
+                                        }
+                                        while (!clipboardContent.contains("Coordonnées") && copyUrlContentIndex < 100)
+                                        if (copyUrlContentIndex >= 100) {consoleMessage = ConsoleMessage("❌ Détection de la page de profil impossible après 100 tentatives", ConsoleMessageType.ERROR)}
                                     }
-
+                                    openInfosModale(robot)
+                                    if (clipboardContent.contains("Coordonnées") && clipboardContent.length < 5000) {
+                                        consoleMessage = ConsoleMessage("⏳ Extraction des données en cours...", ConsoleMessageType.INFO)
+                                        var copyUrlContentIndex = 0
+                                        do {
+                                            consoleMessage = ConsoleMessage("⏳ Extraction toujours en cours, nouvelle tentative... [Tentatives échouées : $copyUrlContentIndex/100]", ConsoleMessageType.INFO)
+                                            delay(100)
+                                            copyUrlContent(robot)
+                                            clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
+                                            copyUrlContentIndex += 1
+                                        }
+                                        while (clipboardContent.length < 5000 && copyUrlContentIndex < 100)
+                                        if (copyUrlContentIndex >= 100) {consoleMessage = ConsoleMessage("❌ Extraction des données impossible après 100 tentatives", ConsoleMessageType.ERROR)}
+                                    }
                                     if (clipboardContent.length > 5000) {
                                         pastedInput = clipboardContent
                                         processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})

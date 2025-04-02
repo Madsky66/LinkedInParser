@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ProspectData(
-    val linkedinURL: String = "",
+    val linkedinUrl: String = "",
     val fullName: String = "",
     val firstName: String = "",
     val middleName: String = "",

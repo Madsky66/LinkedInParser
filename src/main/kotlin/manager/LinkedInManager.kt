@@ -22,65 +22,68 @@ class LinkedInManager {
         }
 
         return try {
+            // Filtrage des données
             val lines = text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}
-                .filterNot {it.contains("Pour les entreprises")
-                            || it.contains("Premium")
-                            || it.contains("Image")
-                            || it.contains("Le statut est accessible")
-                            || it.contains("echerche")
-                            || it.contains("otification")
-                            || it.contains("accourcis")
-                            || it.contains("clavier")
-                            || it.contains("Fermer le menu de navigation")
-                            || it.contains("nouvelles")
-                            || it.contains("actualité")
-                            || it.contains("Accueil")
-                            || it.contains("Réseau")
-                            || it.contains("contenu")
-                            || it.contains("Emplois")
-                            || it.contains("Messagerie")
-                            || it.contains("Vous")
-                            || it.contains("test")
-                            || it.contains("relation")
+                .filterNot {it.contains("otification")
+                        || it.contains("contenu")
+                        || it.contains("Profil")
+                        || it.contains("echerche")
+                        || it.contains("accourcis")
+                        || it.contains("menu")
+                        || it.contains("Accueil")
+                        || it.contains("Réseau")
+                        || it.contains("Emplois")
+                        || it.contains("Messagerie")
+                        || it.contains("Vous")
+                        || it.contains("Pour les entreprises")
+                        || it.contains("Premium")
+                        || it.contains("Image")
+                        || it.contains("relation")
+
+                        || it.contains("Le statut est accessible")
+                        || it.contains("clavier")
+                        || it.contains("nouvelles")
+                        || it.contains("actualité")
+                        || it.contains("test")
+                        || it.contains("Coordonnées")
                 }
 
-            // Extraction robuste du nom
-            val fullName = lines.getOrNull(2)?.split(" ")?.filter {it.isNotEmpty()} ?: emptyList()
+            // Extraction des données
+            var linkedinUrl  = lines.getOrNull(1) ?: "Url inconnu"
+            val fullName = lines.getOrNull(0)?.split(" ")?.filter {it.isNotEmpty()} ?: emptyList()
             val firstName = fullName.firstOrNull() ?: "Prénom inconnu"
             val middleName = if (fullName.size > 2) fullName.subList(1, fullName.size - 1).joinToString(" ") else ""
             val lastName = fullName.lastOrNull() ?: "Nom de famille inconnu"
+            val emailIndex = lines.indexOf("E-mail")
+            var email = if (emailIndex != -1 && emailIndex + 1 < lines.size) {lines.getOrNull(emailIndex + 1) ?: "Email inconnu"} else "Email inconnu"
+            val jobTitleIndex = lines.indexOf("ExpérienceExpérience")
+            var jobTitle = if (jobTitleIndex != -1 && jobTitleIndex + 1 < lines.size) {lines.getOrNull(jobTitleIndex + 1) ?: "Poste inconnu"} else {"Poste inconnu"}
+            val companyIndex = lines.indexOf("$fullName\n$fullName\n$jobTitle")
+            var company = if (companyIndex != -1 && companyIndex + 4 < lines.size) {lines.getOrNull(companyIndex + 4) ?: "Entreprise inconnue"} else {"Entreprise inconnue"}
 
-            // Récupération de l'entreprise
-            var company = (lines.getOrNull(5) ?: "Entreprise inconnue").toString()
-            var jobTitle = (lines.getOrNull(4) ?: "Poste inconnu").toString()
-
-            // Récupération des données Apollo
+            // Enrichissement Apollo
             val apolloData = fetchApolloData(firstName, lastName, company, apiKey)
             delay(500)
             val personData = apolloData?.optJSONObject("person")
-            val linkedInURL = personData?.optString("linkedin_url", "URL introuvable").toString()
-
-            // Récupération de l'entreprise et du poste
+            if (linkedinUrl == "Url inconnu") {linkedinUrl = personData?.optString("linkedin_url", "URL inconnu") ?: "Url inconnu"}
             if (company == "Entreprise inconnue") {
                 val lastJobHistory = personData?.optJSONArray("employment_history")?.optJSONObject(0)
-                val apolloCompany = lastJobHistory?.optString("organization_name", "Entreprise inconnue")?.takeIf {it.isNotBlank()}
-                company = if (apolloCompany != "") {"Entreprise inconnue"} else {apolloCompany.toString()}
+                company = lastJobHistory?.optString("organization_name", "Entreprise inconnue") ?: "Entreprise inconnue"
             }
             val domain = extractDomain(company)
             if (jobTitle == "Poste inconnu") {
                 val lastJobHistory = personData?.optJSONArray("employment_history")?.optJSONObject(0)
-                val apolloJobTitle = lastJobHistory?.optString("title", "Poste inconnu")?.takeIf {it.isNotBlank()}
-                jobTitle = if (apolloJobTitle != "") {"Poste inconnu"} else {apolloJobTitle.toString()}
+                jobTitle = lastJobHistory?.optString("title", "Poste inconnu") ?: "Poste inconnu"
             }
+            if (email == "Email inconnu") {email = personData?.optString("email")?.takeIf {it.isNotBlank()}.toString()}
 
             // Génération des emails
-            val email = personData?.optString("email")?.takeIf {it.isNotBlank()}.toString()
             var generatedEmails = mutableListOf<String>()
             generatedEmails.add(email)
             generateEmailVariations(firstName, lastName, domain).toMutableList().forEach {email -> generatedEmails.add(email)}
 
             return ProspectData(
-                linkedinURL = linkedInURL,
+                linkedinUrl = linkedinUrl,
                 fullName = "$firstName $lastName",
                 firstName = firstName,
                 middleName = middleName,

@@ -7,6 +7,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 import java.awt.Robot
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
 import java.awt.event.KeyEvent
 
 
@@ -29,19 +31,68 @@ class Colors {
     }
 }
 
+suspend fun detectLinkedinProfile(robot: Robot) {
+    // Ctrl + A
+    robot.keyPress(KeyEvent.VK_CONTROL)
+    robot.keyPress(KeyEvent.VK_A)
+    robot.keyRelease(KeyEvent.VK_A)
+    robot.keyRelease(KeyEvent.VK_CONTROL)
+    delay(100)
+
+    // Ctrl + C
+    robot.keyPress(KeyEvent.VK_CONTROL)
+    robot.keyPress(KeyEvent.VK_C)
+    robot.keyRelease(KeyEvent.VK_C)
+    robot.keyRelease(KeyEvent.VK_CONTROL)
+    delay(100)
+}
+
+suspend fun openInfosModale(robot: Robot) {
+    delay(100)
+    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+    val text = StringSelection("Coordonnées")
+    clipboard.setContents(text, null)
+    delay(100)
+
+    // Ctrl + F
+    robot.keyPress(KeyEvent.VK_CONTROL)
+    robot.keyPress(KeyEvent.VK_F)
+    robot.keyRelease(KeyEvent.VK_F)
+    robot.keyRelease(KeyEvent.VK_CONTROL)
+    delay(100)
+
+    // Ctrl + V
+    robot.keyPress(KeyEvent.VK_CONTROL)
+    robot.keyPress(KeyEvent.VK_V)
+    robot.keyRelease(KeyEvent.VK_V)
+    robot.keyRelease(KeyEvent.VK_CONTROL)
+    delay(100)
+
+    // Escape
+    robot.keyPress(KeyEvent.VK_ESCAPE)
+    robot.keyRelease(KeyEvent.VK_ESCAPE)
+    delay(100)
+
+    // Enter
+    robot.keyPress(KeyEvent.VK_ENTER)
+    robot.keyRelease(KeyEvent.VK_ENTER)
+    delay(100)
+}
+
 suspend fun copyUrlContent(robot: Robot) {
     // Ctrl + A
     robot.keyPress(KeyEvent.VK_CONTROL)
     robot.keyPress(KeyEvent.VK_A)
     robot.keyRelease(KeyEvent.VK_A)
     robot.keyRelease(KeyEvent.VK_CONTROL)
-    delay(500)
+    delay(100)
+
     // Ctrl + C
     robot.keyPress(KeyEvent.VK_CONTROL)
     robot.keyPress(KeyEvent.VK_C)
     robot.keyRelease(KeyEvent.VK_C)
     robot.keyRelease(KeyEvent.VK_CONTROL)
-    delay(1000)
+    delay(100)
 }
 
 @Composable
