@@ -250,7 +250,7 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Button(
                             onClick = {onExport(exportFolderPath.toString(), exportFileName, selectedOptions)},
                             modifier = Modifier.weight(1f),
-                            enabled = exportFolderPath.isNotBlank() && !java.io.File(exportFolderPath).exists() && isValidFolderPath && exportFileName.isNotBlank() && hasSelectedFormat,
+                            enabled = exportFolderPath.isNotBlank() /*&& !java.io.File(exportFolderPath).exists()*/ && isValidFolderPath && exportFileName.isNotBlank() && hasSelectedFormat,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
                             colors = getButtonColors(middleGray, darkGray, lightGray)

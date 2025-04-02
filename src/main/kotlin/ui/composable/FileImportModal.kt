@@ -31,21 +31,22 @@ import utils.getButtonColors
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, format: String?) -> Unit, onDismissRequest: () -> Unit) {
+fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: String) -> Unit, onDismissRequest: () -> Unit) {
     val dialogState = rememberDialogState(WindowPosition.PlatformDefault, DpSize(640.dp, 360.dp))
     val (darkGray, middleGray, lightGray) = themeColors
 
-    var importFilePath by remember {mutableStateOf<String?>(null)}
+    var importFilePath by remember {mutableStateOf("")}
+    var importFileName by remember {mutableStateOf("")}
     var importFileFormat by remember {mutableStateOf("")}
 
-    val isPathCorrect = (importFilePath?.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv")
+    val isPathCorrect = (importFilePath.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv")
     val formatColor = when (importFileFormat) {
         "" -> lightGray
         "csv", "xlsx" -> Color.Green.copy(0.5f)
         else -> Color.Red.copy(0.5f)
     }
 
-    LaunchedEffect(importFilePath) {importFileFormat = if (importFilePath != null) {importFilePath!!.substringAfterLast('.', "").lowercase()} else {""}}
+    LaunchedEffect(importFilePath) {importFileFormat = if (importFilePath != "") {importFilePath.substringAfterLast('.', "").lowercase()} else {""}}
 
     DialogWindow(onDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
@@ -87,7 +88,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
 
                             // Zone du chemin d 'importation
                             OutlinedTextField(
-                                value = importFilePath ?: "",
+                                value = importFilePath,
                                 onValueChange = {importFilePath = it},
                                 modifier = Modifier.fillMaxWidth(),
                                 label = {Text("Sélectionner un fichier...")},
@@ -101,7 +102,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                                 ),
                                 trailingIcon = {
                                     // Icone de loupe
-                                    IconButton({importFilePath = openDialog("Sélectionner un fichier à importer...")}, Modifier.size(25.dp).align(Alignment.CenterHorizontally)) {
+                                    IconButton({importFilePath = openDialog("Sélectionner un fichier à importer...").toString()}, Modifier.size(25.dp).align(Alignment.CenterHorizontally)) {
                                         Icon(Icons.Filled.Search, "Rechercher", tint = lightGray)
                                     }
                                 },
@@ -139,7 +140,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (filePath: String?, 
                         // Bouton d'importation
                         Button(
                             onClick = {
-                                onImportFile(importFilePath, importFileFormat.uppercase())
+                                onImportFile(importFilePath)
                                 onDismissRequest()
                             },
                             modifier = Modifier.weight(1f),

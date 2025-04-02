@@ -43,7 +43,7 @@ import kotlin.collections.component2
 import kotlin.collections.component3
 
 @Composable
-fun DrawerMenuContent(applicationScope: CoroutineScope, themeColors: List<Color>, isDarkTheme: MutableState<Boolean>, drawerWidth: Float, isExpandedMenuItem: String, apiKey: String?, onApiKeyModified: (String) -> Unit, onMenuItemTap: (String?) -> Unit) {
+fun DrawerMenuContent(applicationScope: CoroutineScope, themeColors: List<Color>, isDarkTheme: MutableState<Boolean>, drawerWidth: Float, isExpandedMenuItem: String, apiKey: String, onApiKeyModified: (String) -> Unit, onMenuItemTap: (String) -> Unit) {
     val (darkGray, middleGray, lightGray) = themeColors
     var isApolloValidationLoading by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf(ConsoleMessage("", ConsoleMessageType.INFO))}
@@ -92,7 +92,7 @@ fun DrawerMenuContent(applicationScope: CoroutineScope, themeColors: List<Color>
 }
 
 @Composable
-fun GeneralTab(themeColors: List<Color>, apiKey: String?, pastedApiKey: String?, isApolloValidationLoading: Boolean, onApiKeyModified: (String) -> Unit, onProcessApiKey: @Composable (() -> Unit)) {
+fun GeneralTab(themeColors: List<Color>, apiKey: String, pastedApiKey: String, isApolloValidationLoading: Boolean, onApiKeyModified: (String) -> Unit, onProcessApiKey: @Composable (() -> Unit)) {
     DrawerSubMenuContent(themeColors, pastedApiKey.toString(), apiKey.toString(), isApolloValidationLoading, onApiKeyModified = {onApiKeyModified}, onProcessApiKey = {onProcessApiKey})
 }
 
