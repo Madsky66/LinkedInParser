@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 import manager.LinkedInManager
 import utils.ConsoleMessageType
 import utils.copyUrlContent
-import utils.detectLinkedinProfile
 import utils.getButtonColors
 import utils.getTextFieldColors
 import java.awt.Desktop
@@ -196,51 +195,59 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                 {
                     if (pastedURL.isNotBlank()) {
                         try {
-                            val uri = URI(pastedURL)
+                            val uri = URI("$pastedURL/overlay/contact-info/")
                             if (Desktop.isDesktopSupported()) {
                                 consoleMessage = ConsoleMessage("⏳ Ouverture de la page LinkedIn en cours...", ConsoleMessageType.INFO)
                                 Desktop.getDesktop().browse(uri)
+
                                 applicationScope.launch {
                                     val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                                    val maxAttempts = 100
                                     val robot = Robot()
-                                    delay(3000)
+                                    delay(5000)
+
+                                    consoleMessage = ConsoleMessage("⏳ Détection de la page de profil en cours...", ConsoleMessageType.INFO)
 
                                     copyUrlContent(robot)
                                     var clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
+                                    var checkModalLines = clipboardContent.lines().take(5)
+                                    var isModalOpen = checkModalLines.any {it.contains("dialogue")}
 
-                                    if (!clipboardContent.contains("linkedin.com/in/")) {
-                                        if (!clipboardContent.contains("Coordonnées"))  {
-                                            consoleMessage = ConsoleMessage("⏳ Détection de la page de profil en cours...", ConsoleMessageType.INFO)
-                                            var copyUrlContentIndex = 0
-                                            do {
-                                                delay(100)
-                                                detectLinkedinProfile(robot)
-                                                clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-                                                copyUrlContentIndex += 1
-                                                consoleMessage = ConsoleMessage("⏳ Détection toujours en cours, nouvelle tentative... [Tentatives échouées : $copyUrlContentIndex/100]", ConsoleMessageType.INFO)
-                                            }
-                                            while (!clipboardContent.contains("Coordonnées") && copyUrlContentIndex < 100)
-                                            if (copyUrlContentIndex >= 100) {consoleMessage = ConsoleMessage("❌ Détection de la page de profil impossible après 100 tentatives", ConsoleMessageType.ERROR)}
-                                        }
-                                        consoleMessage = ConsoleMessage("⏳ Extraction des données en cours...", ConsoleMessageType.INFO)
-                                        var copyUrlContentIndex = 0
-                                        do {
-                                            consoleMessage = ConsoleMessage("⏳ Extraction toujours en cours, nouvelle tentative... [Tentatives échouées : $copyUrlContentIndex/100]", ConsoleMessageType.INFO)
-                                            delay(100)
+                                    suspend fun waitForModalOpen(): Boolean {
+                                        var attempts = 0
+                                        while (!isModalOpen && attempts < maxAttempts) {
+                                            delay(250)
                                             copyUrlContent(robot)
                                             clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-                                            copyUrlContentIndex += 1
+                                            checkModalLines = clipboardContent.lines().take(5)
+                                            isModalOpen = checkModalLines.any {it.contains("dialogue")}
+                                            attempts++
+                                            consoleMessage = ConsoleMessage("⏳ Détection de la page de profil toujours en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)
                                         }
-                                        while (clipboardContent.length < 5000 && copyUrlContentIndex < 100)
-                                        if (copyUrlContentIndex >= 100) {consoleMessage = ConsoleMessage("❌ Extraction des données impossible après 100 tentatives", ConsoleMessageType.ERROR)}
+                                        if (attempts >= maxAttempts) {consoleMessage = ConsoleMessage("❌ Détection de la page de profil impossible après $maxAttempts tentatives", ConsoleMessageType.ERROR); return false}
+                                        return true
                                     }
-                                    pastedInput = clipboardContent
-                                    processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})
-//                                    when {
-//                                        !clipboardContent.contains("Coordonnées") && clipboardContent.length < 5000 -> {
-//                                            consoleMessage = ConsoleMessage("⚠️ Impossible de récupérer le contenu complet de la page. Veuillez vérifier que la page est bien chargée.", ConsoleMessageType.WARNING)
-//                                        }
-//                                    }
+
+                                    suspend fun waitForUrlContentFullyLoaded(): Boolean {
+                                        var attempts = 0
+                                        while (clipboardContent.length <= 5000) {
+                                            delay(250)
+                                            copyUrlContent(robot)
+                                            clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
+                                            attempts++
+                                            consoleMessage = ConsoleMessage("⏳ Détection de la page de profil toujours en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)
+                                        }
+                                        if (attempts >= maxAttempts) {consoleMessage = ConsoleMessage("❌ Détection de la page de profil impossible après $maxAttempts tentatives", ConsoleMessageType.ERROR); return false}
+                                        return true
+                                    }
+
+                                    if (!isModalOpen) {if (!waitForModalOpen()) {return@launch}}
+                                    if (isModalOpen && clipboardContent.length <= 5000) {if (!waitForUrlContentFullyLoaded()) {return@launch}}
+                                    if (isModalOpen && clipboardContent.length > 5000) {
+                                        consoleMessage = ConsoleMessage("⏳ Analyse des données en cours...", ConsoleMessageType.INFO)
+                                        pastedInput = clipboardContent
+                                        processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})
+                                    }
                                 }
                             }
                         }
