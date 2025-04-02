@@ -13,24 +13,21 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import manager.LinkedInManager
+import ui.composable.app.InputSection
+import ui.composable.app.ProfileAndOptionsSection
+import ui.composable.app.StatusBar
 import utils.ConsoleMessageType
 import utils.copyUrlContent
 import utils.modalDetectionStep
-import utils.getButtonColors
 import utils.getClipboardContent
-import utils.getTextFieldColors
 import java.awt.Desktop
 import java.awt.FileDialog
 import java.awt.Frame
@@ -227,144 +224,18 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
             // Spacer
             Spacer(Modifier.width(25.dp))
 
-
             // Zone de texte
             InputSection(
                 applicationScope, pastedInput, isExtractionLoading, themeColors,
                 onInputChange = {pastedInput = it},
-                onProcessInput = {input ->
-                    processInput(
-                        input, applicationScope, linkedInManager, apiKey.toString(),
-                        setStatus = {consoleMessage = it},
-                        setProfile = {currentProfile = it},
-                        setLoading = {isExtractionLoading = it}
-                    )
-                }
+                onProcessInput = {input -> processInput(input, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})}
             )
         }
+
+        // Spacer
         Spacer(Modifier.height(10.dp))
+
+        // Barre de status
         StatusBar(consoleMessage, statusColor)
-    }
-}
-
-@Composable
-fun RowScope.InputSection(applicationScope: CoroutineScope, pastedInput: String, isLoading: Boolean, themeColors: List<Color>, onInputChange: (String) -> Unit, onProcessInput: (String) -> Unit) {
-    val (darkGray, middleGray, lightGray) = themeColors
-    Column(Modifier.weight(1.75f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
-        OutlinedTextField(
-            value = pastedInput,
-            onValueChange = {
-                applicationScope.launch {
-                    onInputChange(it)
-                    if (!isLoading) onProcessInput(it)
-                }
-            },
-            label = {Text("Coller le texte de la page LinkedIn ici...")},
-            modifier = Modifier.weight(0.9f).fillMaxWidth().clip(RectangleShape),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = lightGray,
-                focusedBorderColor = lightGray.copy(0.25f),
-                unfocusedBorderColor = lightGray.copy(0.15f),
-                focusedLabelColor = lightGray.copy(0.5f),
-                unfocusedLabelColor = lightGray.copy(0.5f),
-                placeholderColor = lightGray.copy(0.25f)
-            )
-        )
-    }
-}
-
-@Composable
-fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractionLoading: Boolean, isImportationLoading: Boolean, isExportationLoading: Boolean, importedFilePath: String, importedFileName: String, importedFileFormat: String, pastedURL: String, consoleMessage: ConsoleMessage, themeColors: List<Color>, onUrlChange: (String) -> Unit, onImportButtonClick: () -> Unit, onExportButtonClick: () -> Unit, onOpenUrl: (String) -> Unit) {
-    var (darkGray, middleGray, lightGray) = themeColors
-
-    // Colonne de droite
-    Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
-        // Fiche contact
-        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {ProspectCard(currentProfile, themeColors, isImportationLoading, isExtractionLoading)}
-
-        // Diviseur espacé
-        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 15.dp)
-
-        // Options
-        Column(Modifier.fillMaxWidth(), Arrangement.Bottom, Alignment.CenterHorizontally) {
-            val isFileImported = (importedFileName != "" && importedFilePath != "")
-            val displayFileName = if (isFileImported) {"$importedFileName.$importedFileFormat"} else {"Aucun fichier chargé"}
-            val label = "Fichier chargé : "
-
-            // Afficheur de nom de fichier
-            Row(Modifier.border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp).fillMaxWidth(), Arrangement.SpaceBetween) {
-                Text(label, Modifier, lightGray)
-                Text(displayFileName, Modifier, color = if (isFileImported) {Color.Green.copy(0.5f)} else {lightGray})
-            }
-
-            // Spacer
-            Spacer(Modifier.height(10.dp))
-
-            // Bouton d'importation de fichier
-            Button(
-                onClick = onImportButtonClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isExtractionLoading && !isImportationLoading && !isExportationLoading,
-                elevation = ButtonDefaults.elevation(10.dp),
-                shape = RoundedCornerShape(100),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
-            ) {
-                Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
-                    Icon(Icons.Filled.SaveAlt, "")
-                    Spacer(Modifier.width(10.dp))
-                    Text("Importer [CSV / XLSX]")
-                }
-            }
-
-            Button(
-                onClick = onExportButtonClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = currentProfile != null && consoleMessage.type == ConsoleMessageType.SUCCESS,
-                elevation = ButtonDefaults.elevation(10.dp),
-                shape = RoundedCornerShape(100),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
-            ) {
-                Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
-                    Icon(Icons.Filled.IosShare, "")
-                    Spacer(Modifier.width(10.dp))
-                    Text("Exporter [CSV / XLSX]")
-                }
-            }
-        }
-
-        // Diviseur espacé
-        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)
-
-        // Profil LinkedIn
-        Column(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterHorizontally) {
-            // Saisie de l'URL
-            OutlinedTextField(
-                value = pastedURL,
-                onValueChange = onUrlChange,
-                label = {Text("Coller l'URL de la page LinkedIn ici...")},
-                modifier = Modifier.fillMaxWidth().clip(RectangleShape),
-                colors = getTextFieldColors(lightGray)
-            )
-
-            // Bouton de validation
-            Button(
-                onClick = {onOpenUrl(pastedURL)},
-                modifier = Modifier.fillMaxWidth(),
-                enabled = pastedURL.matches(Regex("https?://(www\\.)?linkedin\\.com/in/.*")),
-                elevation = ButtonDefaults.elevation(10.dp),
-                shape = RoundedCornerShape(0, 0, 50, 50),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
-            ) {
-                Text("Ouvrir le profil")
-            }
-        }
-    }
-}
-
-@Composable
-fun ColumnScope.StatusBar(consoleMessage: ConsoleMessage, statusColor: Color) {
-    // Console de statut
-    Column(Modifier.weight(0.1f).fillMaxWidth().background(Color.Black), Arrangement.Center) {
-        Text(consoleMessage.message, Modifier.padding(20.dp, 10.dp), fontSize = 15.sp, color = statusColor)
     }
 }
