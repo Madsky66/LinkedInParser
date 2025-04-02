@@ -7,6 +7,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 import java.awt.Robot
+import java.awt.datatransfer.Clipboard
+import java.awt.datatransfer.DataFlavor
 import java.awt.event.KeyEvent
 
 data class ConsoleMessage(val message: String, val type: ConsoleMessageType)
@@ -26,6 +28,26 @@ class Colors {
             )}
         return themeColors
     }
+}
+
+suspend fun modalDetectionStep(condition: () -> Boolean, robot: Robot, clipboard: Clipboard, errorActionType: String, onNewClipBoardContent: (String) -> Unit, onNewMessage: (ConsoleMessage) -> Unit): Boolean {
+    val maxAttempts = 100
+    var attempts = 0
+    while (!condition() && attempts < maxAttempts) {
+        delay(250)
+        copyUrlContent(robot)
+        val newClipboardContent = getClipboardContent(clipboard)
+        onNewClipBoardContent(newClipboardContent)
+        attempts++
+        onNewMessage(ConsoleMessage("⏳ Détection de la page en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO))
+    }
+    if (attempts >= maxAttempts) {onNewMessage(ConsoleMessage("❌ $errorActionType après $maxAttempts tentatives", ConsoleMessageType.ERROR)); return false}
+    return true
+}
+
+fun getClipboardContent(clipboard: Clipboard): String {
+    return try {clipboard.getData(DataFlavor.stringFlavor) as? String ?: ""}
+    catch (e: Exception) {""}
 }
 
 suspend fun copyUrlContent(robot: Robot) {

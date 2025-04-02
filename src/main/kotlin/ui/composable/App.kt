@@ -27,14 +27,15 @@ import kotlinx.coroutines.launch
 import manager.LinkedInManager
 import utils.ConsoleMessageType
 import utils.copyUrlContent
+import utils.modalDetectionStep
 import utils.getButtonColors
+import utils.getClipboardContent
 import utils.getTextFieldColors
 import java.awt.Desktop
 import java.awt.FileDialog
 import java.awt.Frame
 import java.awt.Robot
 import java.awt.Toolkit
-import java.awt.datatransfer.DataFlavor
 import java.io.File
 import java.net.URI
 
@@ -195,60 +196,27 @@ fun App(applicationScope: CoroutineScope, themeColors: List<Color>, apiKey: Stri
                 {
                     if (pastedURL.isNotBlank()) {
                         try {
+                            if (!Desktop.isDesktopSupported()) {consoleMessage = ConsoleMessage("❌ Votre système ne supporte pas Desktop browsing.", ConsoleMessageType.ERROR); return@ProfileAndOptionsSection}
                             val uri = URI("$pastedURL/overlay/contact-info/")
-                            if (Desktop.isDesktopSupported()) {
-                                consoleMessage = ConsoleMessage("⏳ Ouverture de la page LinkedIn en cours...", ConsoleMessageType.INFO)
-                                Desktop.getDesktop().browse(uri)
+                            consoleMessage = ConsoleMessage("⏳ Ouverture de la page LinkedIn en cours...", ConsoleMessageType.INFO)
+                            Desktop.getDesktop().browse(uri)
+                            applicationScope.launch {
+                                val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                                val robot = Robot()
+                                delay(5000) // <--- Rendre cette valeur dynamique
 
-                                applicationScope.launch {
-                                    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-                                    val maxAttempts = 100
-                                    val robot = Robot()
-                                    delay(5000)
+                                consoleMessage = ConsoleMessage("⏳ Détection de la page de profil en cours...", ConsoleMessageType.INFO)
 
-                                    consoleMessage = ConsoleMessage("⏳ Détection de la page de profil en cours...", ConsoleMessageType.INFO)
+                                copyUrlContent(robot)
+                                var clipboardContent = getClipboardContent(clipboard)
 
-                                    copyUrlContent(robot)
-                                    var clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-                                    var checkModalLines = clipboardContent.lines().take(5)
-                                    var isModalOpen = checkModalLines.any {it.contains("dialogue")}
+                                val isModalOpen = clipboardContent.lines().take(5).any {it.contains("dialogue")}
+                                if (!isModalOpen && !modalDetectionStep({clipboardContent.lines().take(5).any {it.contains("dialogue")}}, robot, clipboard, "Détection de la page de profil impossible", {clipboardContent = it}, {consoleMessage = it})) return@launch
+                                if (isModalOpen && clipboardContent.length <= 5000 && !modalDetectionStep({clipboardContent.length > 5000}, robot, clipboard, "Quantité de données insuffisante", {clipboardContent = it}, {consoleMessage = it})) return@launch
 
-                                    suspend fun waitForModalOpen(): Boolean {
-                                        var attempts = 0
-                                        while (!isModalOpen && attempts < maxAttempts) {
-                                            delay(250)
-                                            copyUrlContent(robot)
-                                            clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-                                            checkModalLines = clipboardContent.lines().take(5)
-                                            isModalOpen = checkModalLines.any {it.contains("dialogue")}
-                                            attempts++
-                                            consoleMessage = ConsoleMessage("⏳ Détection de la page de profil toujours en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)
-                                        }
-                                        if (attempts >= maxAttempts) {consoleMessage = ConsoleMessage("❌ Détection de la page de profil impossible après $maxAttempts tentatives", ConsoleMessageType.ERROR); return false}
-                                        return true
-                                    }
-
-                                    suspend fun waitForUrlContentFullyLoaded(): Boolean {
-                                        var attempts = 0
-                                        while (clipboardContent.length <= 5000) {
-                                            delay(250)
-                                            copyUrlContent(robot)
-                                            clipboardContent = clipboard.getData(DataFlavor.stringFlavor) as String
-                                            attempts++
-                                            consoleMessage = ConsoleMessage("⏳ Détection de la page de profil toujours en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)
-                                        }
-                                        if (attempts >= maxAttempts) {consoleMessage = ConsoleMessage("❌ Détection de la page de profil impossible après $maxAttempts tentatives", ConsoleMessageType.ERROR); return false}
-                                        return true
-                                    }
-
-                                    if (!isModalOpen) {if (!waitForModalOpen()) {return@launch}}
-                                    if (isModalOpen && clipboardContent.length <= 5000) {if (!waitForUrlContentFullyLoaded()) {return@launch}}
-                                    if (isModalOpen && clipboardContent.length > 5000) {
-                                        consoleMessage = ConsoleMessage("⏳ Analyse des données en cours...", ConsoleMessageType.INFO)
-                                        pastedInput = clipboardContent
-                                        processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})
-                                    }
-                                }
+                                consoleMessage = ConsoleMessage("⏳ Analyse des données en cours...", ConsoleMessageType.INFO)
+                                pastedInput = clipboardContent
+                                processInput(clipboardContent, applicationScope, linkedInManager, apiKey.toString(), setStatus = {consoleMessage = it}, setProfile = {currentProfile = it}, setLoading = {isExtractionLoading = it})
                             }
                         }
                         catch (e: Exception) {consoleMessage = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
