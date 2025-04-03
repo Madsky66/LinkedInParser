@@ -1,29 +1,55 @@
 package manager
 
 import config.GlobalConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import utils.ConsoleMessage
+import utils.ConsoleMessageType
+import java.awt.Desktop
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URI
 
 class FileExportManager {
-    fun exportToFile(gC: GlobalConfig, exportFilePath: String) {
-        val extension = exportFilePath.substringAfterLast('.', "").lowercase()
-        when (extension) {
-            "csv" -> exportToCSV(gC, exportFilePath)
-            "xlsx" -> exportToXLSX(gC, exportFilePath)
-            "json" -> exportToGoogleSheets(gC)
-            else -> throw IllegalArgumentException("Format de fichier non supporté: $extension")
+    fun exportToFile(applicationScope: CoroutineScope, gC: GlobalConfig) {
+        applicationScope.launch {
+            gC.isExportationLoading.value = true
+
+            gC.fileFormat.value = if (gC.selectedOptions[0] && gC.selectedOptions[1]) {"both"} else if (gC.selectedOptions[0]) {"xlsx"} else {"csv"}
+            val displayFileFormat = if (gC.fileFormat.value == "both") {"XLSX, CSV"} else {gC.fileFormat.value.capitalize()}
+            gC.consoleMessage.value = ConsoleMessage("⏳ Exportation du fichier au format [$displayFileFormat] en cours...", ConsoleMessageType.INFO)
+
+            try {
+                gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + gC.fileFormat.value
+
+                when (gC.fileFormat.value) {
+                    "xlsx" -> {exportToXLSX(gC)}
+                    "csv" -> {exportToCSV(gC)}
+                    "both" -> {exportToXLSX(gC); exportToCSV(gC)}
+                    "json" -> {exportToGoogleSheets(gC)}
+                }
+
+                gC.consoleMessage.value = ConsoleMessage("✅ Exportation du fichier au(x) format(s) [$displayFileFormat] réussie", ConsoleMessageType.SUCCESS)
+                gC.consoleMessage.value = ConsoleMessage("⏳ Ouverture de Google Sheets en cours...", ConsoleMessageType.SUCCESS)
+
+                try {
+                    val sheetsUrl = "https://docs.google.com/spreadsheets/u/0/create"
+                    val uri = URI(sheetsUrl)
+                    if (Desktop.isDesktopSupported()) {
+                        Desktop.getDesktop().browse(uri)
+                        gC.consoleMessage.value = ConsoleMessage("✅ Google Sheets ouvert. Vous pouvez maintenant importer votre fichier.", ConsoleMessageType.SUCCESS)
+                    }
+                }
+                catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("⚠️ Exportation réussie mais impossible d'ouvrir Google Sheets : ${e.message}", ConsoleMessageType.WARNING)}
+            }
+            catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'exportation du fichier ${gC.fileFormat.value} : ${e.message}", ConsoleMessageType.ERROR)}
+            gC.isExportationLoading.value = false
         }
     }
 
-    private fun exportToCSV(gC: GlobalConfig, exportFilePath: String) {
-        File(exportFilePath).printWriter().use {out ->
-            out.println("LinkedIn URL,First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
-            out.println("\"${gC.currentProfile.value?.linkedinUrl}\",\"${gC.currentProfile.value?.firstName}\",\"${gC.currentProfile.value?.middleName}\",\"${gC.currentProfile.value?.lastName}\",\"${gC.currentProfile.value?.email}\",\"${gC.currentProfile.value?.generatedEmails?.joinToString(";")}\",\"${gC.currentProfile.value?.company}\",\"${gC.currentProfile.value?.jobTitle}\"")
-        }
-    }
-
-    private fun exportToXLSX(gC: GlobalConfig, exportFilePath: String) {
+    fun exportToXLSX(gC: GlobalConfig) {
+        gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + ".xlsx"
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("Prospects")
         val headers = arrayOf("LinkedIn URL", "First Name", "Middle Name", "Last Name", "Email", "Generated Emails", "Company", "Job Title")
@@ -38,11 +64,21 @@ class FileExportManager {
         row.createCell(5).setCellValue(gC.currentProfile.value?.generatedEmails?.joinToString(";"))
         row.createCell(6).setCellValue(gC.currentProfile.value?.company)
         row.createCell(7).setCellValue(gC.currentProfile.value?.jobTitle)
-        FileOutputStream(exportFilePath).use {fos -> workbook.write(fos)}
+        FileOutputStream(gC.fileFullPath.value).use {fos -> workbook.write(fos)}
         workbook.close()
+        gC.fileInstance.value = File(gC.fileFullPath.value)
     }
 
-    private fun exportToGoogleSheets(gC: GlobalConfig) {
+    fun exportToCSV(gC: GlobalConfig) {
+        gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + ".csv"
+        File(gC.fileFullPath.value).printWriter().use {out ->
+            out.println("LinkedIn URL,First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
+            out.println("\"${gC.currentProfile.value?.linkedinUrl}\",\"${gC.currentProfile.value?.firstName}\",\"${gC.currentProfile.value?.middleName}\",\"${gC.currentProfile.value?.lastName}\",\"${gC.currentProfile.value?.email}\",\"${gC.currentProfile.value?.generatedEmails?.joinToString(";")}\",\"${gC.currentProfile.value?.company}\",\"${gC.currentProfile.value?.jobTitle}\"")
+        }
+        gC.fileInstance.value = File(gC.fileFullPath.value)
+    }
+
+    fun exportToGoogleSheets(gC: GlobalConfig) {
         val apiUrl = "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=RAW"
         val jsonData = """
         {

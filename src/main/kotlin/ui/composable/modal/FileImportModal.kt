@@ -35,33 +35,35 @@ import java.io.File
 fun onImportModalClose(gC: GlobalConfig) {
     gC.consoleMessage.value = ConsoleMessage("⚠️ Importation annulée", ConsoleMessageType.WARNING)
     gC.showImportModal.value = false
+    gC.isWaitingForSelection.value = false
 }
 fun onImportConfirm(applicationScope: CoroutineScope, gC: GlobalConfig) {
     gC.fileImportManager.importFromFile(applicationScope,gC)
     gC.showImportModal.value = false
+    gC.isWaitingForSelection.value = false
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileImportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
     gC.dialogState.value = DialogState(size = DpSize(640.dp, 360.dp))
-    val isWaitingForSelection = mutableStateOf(true)
+    gC.isWaitingForSelection.value = true
+
+    LaunchedEffect(gC.fileInstance.value) {
+        if (gC.fileInstance.value != null && gC.isWaitingForSelection.value) {
+            gC.fileFullPath.value = gC.fileInstance.value!!.path
+            gC.filePath.value = "${gC.fileFullPath.value.substringBeforeLast("\\")}\\"
+            gC.fileName.value = gC.fileFullPath.value.substringAfterLast("\\").split(".").first()
+            gC.fileFormat.value = gC.fileFullPath.value.substringAfterLast('.', "").lowercase()
+        }
+        print("\n---\n${gC.fileFullPath.value} | ${gC.filePath.value} | ${gC.fileName.value} | ${gC.fileFormat.value}")
+    }
 
     val isPathCorrect = (gC.filePath.value.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (gC.fileName.value != "") && (gC.fileFormat.value.lowercase() == "xlsx" || gC.fileFormat.value.lowercase() == "csv")
     val formatColor = when (gC.fileFormat.value) {
         "" -> gC.lightGray.value
         "csv", "xlsx" -> Color.Green.copy(0.5f)
         else -> Color.Red.copy(0.5f)
-    }
-
-    LaunchedEffect(gC.fileInstance.value) {
-        if (gC.fileInstance.value != null && isWaitingForSelection.value) {
-            gC.fileFullPath.value = gC.fileInstance.value!!.path
-            gC.filePath.value = gC.fileFullPath.value.substringBeforeLast("\\")
-            gC.fileName.value = gC.fileFullPath.value.substringAfterLast("\\").split(".").first()
-            gC.fileFormat.value = gC.fileFullPath.value.substringAfterLast('.', "").lowercase()
-        }
-        print("\n---\n${gC.fileFullPath.value} | ${gC.filePath.value} | ${gC.fileName.value} | ${gC.fileFormat.value}")
     }
 
     DialogWindow({onImportModalClose(gC)}, gC.dialogState.value, transparent = true, undecorated = true) {

@@ -59,16 +59,19 @@ import java.awt.Frame
 fun onExportModalClose(gC: GlobalConfig) {
     gC.consoleMessage.value = ConsoleMessage("⚠️ Exportation annulée", ConsoleMessageType.WARNING)
     gC.showExportModal.value = false
+    gC.isWaitingForSelection.value = false
 }
 fun onExportConfirm(applicationScope: CoroutineScope, gC: GlobalConfig) {
     gC.fileExportManager.exportToFile(applicationScope,gC)
     gC.showExportModal.value = false
+    gC.isWaitingForSelection.value = false
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
     gC.dialogState.value = DialogState(size = DpSize(640.dp, 500.dp))
+    gC.isWaitingForSelection.value = true
 
     LaunchedEffect(gC.fileFormat.value, gC.selectedOptions) {
         gC.fileFormat.value = when {

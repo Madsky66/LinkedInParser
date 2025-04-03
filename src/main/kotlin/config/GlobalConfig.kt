@@ -39,9 +39,10 @@ data class GlobalConfig(
     val fileImportManager: FileImportManager = FileImportManager(),
     val fileExportManager: FileExportManager = FileExportManager(),
 
+    var dialogState: MutableState<DialogState> = mutableStateOf(DialogState()),
     var showExportModal: MutableState<Boolean> = mutableStateOf(false),
     var showImportModal: MutableState<Boolean> = mutableStateOf(false),
-    var dialogState: MutableState<DialogState> = mutableStateOf(DialogState()),
+    var isWaitingForSelection: MutableState<Boolean> = mutableStateOf(false),
 
     var fileInstance: MutableState<File?> = mutableStateOf(null),
     var fileFullPath: MutableState<String> = mutableStateOf(""),
