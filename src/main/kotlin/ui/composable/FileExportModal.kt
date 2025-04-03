@@ -53,32 +53,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
+import config.GlobalConfig
 import utils.getButtonColors
 import java.awt.FileDialog
 import java.awt.Frame
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boolean>, onExport: (String, String, MutableList<Boolean>) -> Unit, onDialogWindowDismissRequest: () -> Unit) {
-    val (darkGray, middleGray, lightGray) = themeColors
+fun FileExportModal(gC: GlobalConfig, onExport: (String, String) -> Unit, onDialogWindowDismissRequest: () -> Unit) {
     val dialogState = rememberDialogState(size = DpSize(640.dp, 500.dp))
 
     var exportFolderPath by remember {mutableStateOf("")}
     var exportFileName by remember {mutableStateOf("")}
     var exportFileFormat by remember {mutableStateOf("")}
 
-    LaunchedEffect(exportFolderPath, exportFileName, selectedOptions) {
+    LaunchedEffect(exportFolderPath, exportFileName, gC.selectedOptions) {
         exportFileFormat = when {
-            selectedOptions[0] && !selectedOptions[1] -> "xlsx"
-            !selectedOptions[0] && selectedOptions[1] -> "csv"
-            selectedOptions[0] && selectedOptions[1] -> "xlsx et csv"
+            gC.selectedOptions[0] && !gC.selectedOptions[1] -> "xlsx"
+            !gC.selectedOptions[0] && gC.selectedOptions[1] -> "csv"
+            gC.selectedOptions[0] && gC.selectedOptions[1] -> "xlsx et csv"
             else -> ""
         }
     }
 
     DialogWindow(onDialogWindowDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
-            Card(Modifier, RectangleShape, backgroundColor = middleGray, contentColor = lightGray, BorderStroke(1.dp, darkGray), elevation = 5.dp) {
+            Card(Modifier, RectangleShape, backgroundColor = gC.middleGray.value, contentColor = gC.lightGray.value, BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                     // Barre de titre
                     Column(Modifier.fillMaxWidth()) {
@@ -92,7 +92,7 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                             // Bouton de fermeture
                             Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton(onDialogWindowDismissRequest) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
-                        SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                        SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }
 
                     // Contenu
@@ -100,11 +100,11 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                             Row(Modifier, Arrangement.Center, Alignment.CenterVertically) {
                                 // Infobulle
-                                TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, darkGray) {
-                                    Text("Cliquez sur l'icone en forme de loupe pour sélectionner un chemin d'exportation", Modifier.padding(5.dp), color = lightGray)
-                                }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), lightGray.copy(0.5f))}
+                                TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, gC.darkGray.value) {
+                                    Text("Cliquez sur l'icone en forme de loupe pour sélectionner un chemin d'exportation", Modifier.padding(5.dp), color = gC.lightGray.value)
+                                }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), gC.lightGray.value.copy(0.5f))}
                                 // Titre
-                                Text("Dossier d'exportation :", Modifier.padding(5.dp), lightGray, fontSize = 20.sp)
+                                Text("Dossier d'exportation :", Modifier.padding(5.dp), gC.lightGray.value, fontSize = 20.sp)
                             }
 
                             // Spacer
@@ -117,12 +117,12 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                 label = {Text("Sélectionner un dossier...")},
                                 singleLine = true,
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    textColor = lightGray,
-                                    focusedBorderColor = lightGray.copy(0.25f),
-                                    unfocusedBorderColor = lightGray.copy(0.15f),
-                                    focusedLabelColor = lightGray.copy(0.5f),
-                                    unfocusedLabelColor = lightGray.copy(0.5f),
-                                    placeholderColor = lightGray.copy(0.25f)
+                                    textColor = gC.lightGray.value,
+                                    focusedBorderColor = gC.lightGray.value.copy(0.25f),
+                                    unfocusedBorderColor = gC.lightGray.value.copy(0.15f),
+                                    focusedLabelColor = gC.lightGray.value.copy(0.5f),
+                                    unfocusedLabelColor = gC.lightGray.value.copy(0.5f),
+                                    placeholderColor = gC.lightGray.value.copy(0.25f)
                                 ),
                                 trailingIcon = {
                                     // Icone de loupe
@@ -159,11 +159,11 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                             Row(Modifier, Arrangement.Center, Alignment.CenterVertically) {
                                 // Infobulle
-                                TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, darkGray) {
-                                    Text("Choisissez un nom de fichier conforme", Modifier.padding(5.dp), color = lightGray)
-                                }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), lightGray.copy(0.5f))}
+                                TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, gC.darkGray.value) {
+                                    Text("Choisissez un nom de fichier conforme", Modifier.padding(5.dp), color = gC.lightGray.value)
+                                }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), gC.lightGray.value.copy(0.5f))}
                                 // Titre
-                                Text("Nom du fichier :", Modifier.padding(5.dp), lightGray, fontSize = 20.sp)
+                                Text("Nom du fichier :", Modifier.padding(5.dp), gC.lightGray.value, fontSize = 20.sp)
                             }
                             // Spacer
                             Spacer(Modifier.height(5.dp))
@@ -174,12 +174,12 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                 label = {Text("Nom du fichier d'exportation")},
                                 singleLine = true,
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    textColor = lightGray,
-                                    focusedBorderColor = lightGray.copy(0.25f),
-                                    unfocusedBorderColor = lightGray.copy(0.15f),
-                                    focusedLabelColor = lightGray.copy(0.5f),
-                                    unfocusedLabelColor = lightGray.copy(0.5f),
-                                    placeholderColor = lightGray.copy(0.25f)
+                                    textColor = gC.lightGray.value,
+                                    focusedBorderColor = gC.lightGray.value.copy(0.25f),
+                                    unfocusedBorderColor = gC.lightGray.value.copy(0.15f),
+                                    focusedLabelColor = gC.lightGray.value.copy(0.5f),
+                                    unfocusedLabelColor = gC.lightGray.value.copy(0.5f),
+                                    placeholderColor = gC.lightGray.value.copy(0.25f)
                                 )
                             )
                         }
@@ -191,16 +191,16 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                             Row(Modifier, Arrangement.Center, Alignment.CenterVertically) {
                                 // Infobulle
-                                TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, darkGray) {
-                                    Text("Vous pouvez sélectionner plusieurs formats", Modifier.padding(5.dp), color = lightGray)
-                                }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), lightGray.copy(0.5f))}
+                                TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, gC.darkGray.value) {
+                                    Text("Vous pouvez sélectionner plusieurs formats", Modifier.padding(5.dp), color = gC.lightGray.value)
+                                }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), gC.lightGray.value.copy(0.5f))}
                                 // Titre
-                                Text("Format(s) d'exportation :", Modifier.padding(5.dp), lightGray, fontSize = 20.sp)
+                                Text("Format(s) d'exportation :", Modifier.padding(5.dp), gC.lightGray.value, fontSize = 20.sp)
                             }
                             // Spacer
                             Spacer(Modifier.height(5.dp))
                             // Bouton segmenté
-                            MultiChoiceSegmentedButton(themeColors, selectedOptions, 0.5f)
+                            MultiChoiceSegmentedButton(gC, 0.5f)
                         }
 
                         // Spacer
@@ -209,8 +209,8 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                         // Texte d'affichage
                         Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                             val selectedFormats = mutableListOf<String>().apply {
-                                if (selectedOptions[0]) add("xlsx")
-                                if (selectedOptions[1]) add("csv")
+                                if (gC.selectedOptions[0]) add("xlsx")
+                                if (gC.selectedOptions[1]) add("csv")
                             }
                             val textExtension = if (selectedFormats.isNotEmpty()) {selectedFormats.joinToString(" et ") {"$exportFolderPath\\$exportFileName.$it"}} else {""}
                             val formattedPath = when {
@@ -224,17 +224,17 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
                                 else -> "Le fichier sera exporté sous : $textExtension"
                             }
                             val textColor = if (!formattedPath.contains("Aucun")) {Color.Green.copy(0.5f)} else {Color.Red}
-                            Text(formattedPath, color = textColor, fontSize = 15.sp, style = TextStyle(lightGray, textAlign = TextAlign.Center))
+                            Text(formattedPath, color = textColor, fontSize = 15.sp, style = TextStyle(gC.lightGray.value, textAlign = TextAlign.Center))
                         }
                     }
 
                     // Diviseur espacé
-                    SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                    SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
 
                     // Boutons
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         // Bouton d'annulation
-                        Button(onDialogWindowDismissRequest, Modifier.weight(1f), enabled = true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(middleGray, darkGray, lightGray)) {
+                        Button(onDialogWindowDismissRequest, Modifier.weight(1f), enabled = true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Close, "")
                                 Spacer(Modifier.width(10.dp))
@@ -246,14 +246,14 @@ fun FileExportModal(themeColors: List<Color>, selectedOptions: MutableList<Boole
 
                         // Bouton d'exportation
                         val isValidFolderPath = exportFolderPath.matches(Regex("[A-Za-z]:\\\\.*"))
-                        val hasSelectedFormat = selectedOptions[0] || selectedOptions[1]
+                        val hasSelectedFormat = gC.selectedOptions[0] || gC.selectedOptions[1]
                         Button(
-                            onClick = {onExport(exportFolderPath.toString(), exportFileName, selectedOptions)},
+                            onClick = {onExport(exportFolderPath.toString(), exportFileName)},
                             modifier = Modifier.weight(1f),
                             enabled = exportFolderPath.isNotBlank() /*&& !java.io.File(exportFolderPath).exists()*/ && isValidFolderPath && exportFileName.isNotBlank() && hasSelectedFormat,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
-                            colors = getButtonColors(middleGray, darkGray, lightGray)
+                            colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
                         ) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Check, "")

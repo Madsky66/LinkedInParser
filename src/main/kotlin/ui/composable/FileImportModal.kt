@@ -27,13 +27,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
+import config.GlobalConfig
 import utils.getButtonColors
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: String) -> Unit, onDismissRequest: () -> Unit) {
+fun FileImportModal(gC: GlobalConfig, onImportFile: (importFilePath: String) -> Unit, onDismissRequest: () -> Unit) {
     val dialogState = rememberDialogState(WindowPosition.PlatformDefault, DpSize(640.dp, 360.dp))
-    val (darkGray, middleGray, lightGray) = themeColors
 
     var importFilePath by remember {mutableStateOf("")}
     var importFileName by remember {mutableStateOf("")}
@@ -41,7 +41,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: Str
 
     val isPathCorrect = (importFilePath.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (importFileFormat.lowercase() == "xlsx" || importFileFormat.lowercase() == "csv")
     val formatColor = when (importFileFormat) {
-        "" -> lightGray
+        "" -> gC.lightGray.value
         "csv", "xlsx" -> Color.Green.copy(0.5f)
         else -> Color.Red.copy(0.5f)
     }
@@ -50,7 +50,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: Str
 
     DialogWindow(onDismissRequest, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
-            Card(Modifier, RectangleShape, backgroundColor = middleGray, contentColor = lightGray, BorderStroke(1.dp, darkGray), elevation = 5.dp) {
+            Card(Modifier, RectangleShape, backgroundColor = gC.middleGray.value, contentColor = gC.lightGray.value, BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                     // Barre de titre
                     Column(Modifier.fillMaxWidth()) {
@@ -64,7 +64,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: Str
                             // Bouton de fermeture
                             Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton(onDismissRequest) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
-                        SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                        SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }
 
                     // Contenu
@@ -73,14 +73,14 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: Str
                             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                                 Row(Modifier, Arrangement.Center, Alignment.CenterVertically) {
                                     // Infobulle
-                                    TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, darkGray) {
-                                        Text("Cliquez sur l'icone en forme de loupe pour sélectionner un fichier à importer", Modifier.padding(5.dp), color = lightGray)
-                                    }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), lightGray.copy(0.5f))}
+                                    TooltipArea({Surface(Modifier.shadow(5.dp), RectangleShape, gC.darkGray.value) {
+                                        Text("Cliquez sur l'icone en forme de loupe pour sélectionner un fichier à importer", Modifier.padding(5.dp), color = gC.lightGray.value)
+                                    }}) {Icon(Icons.AutoMirrored.Filled.Help, "Aide", Modifier.size(20.dp), gC.lightGray.value.copy(0.5f))}
                                     // Titre
-                                    Text("Fichier à importer :", Modifier.padding(5.dp), lightGray, fontSize = 20.sp)
+                                    Text("Fichier à importer :", Modifier.padding(5.dp), gC.lightGray.value, fontSize = 20.sp)
                                 }
                                 // Afficheur de format
-                                Box(Modifier.widthIn(min = 50.dp).background(darkGray, RoundedCornerShape(50)).padding(10.dp, 5.dp), Alignment.Center) {Text(importFileFormat, color = formatColor, fontSize = 17.sp)}
+                                Box(Modifier.widthIn(min = 50.dp).background(gC.darkGray.value, RoundedCornerShape(50)).padding(10.dp, 5.dp), Alignment.Center) {Text(importFileFormat, color = formatColor, fontSize = 17.sp)}
                             }
 
                             // Spacer
@@ -94,16 +94,17 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: Str
                                 label = {Text("Sélectionner un fichier...")},
                                 singleLine = true,
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    textColor = lightGray.copy(0.5f),
-                                    focusedBorderColor = lightGray.copy(0.25f),
-                                    unfocusedBorderColor = lightGray.copy(0.15f),
-                                    focusedLabelColor = lightGray.copy(0.5f),
-                                    unfocusedLabelColor = lightGray.copy(0.5f)
+                                    textColor = gC.lightGray.value.copy(0.5f),
+                                    focusedBorderColor = gC.lightGray.value.copy(0.25f),
+                                    unfocusedBorderColor = gC.lightGray.value.copy(0.15f),
+                                    focusedLabelColor = gC.lightGray.value.copy(0.5f),
+                                    unfocusedLabelColor = gC.lightGray.value.copy(0.5f)
                                 ),
                                 trailingIcon = {
                                     // Icone de loupe
                                     IconButton({importFilePath = openDialog("Sélectionner un fichier à importer...").toString()}, Modifier.size(25.dp).align(Alignment.CenterHorizontally)) {
-                                        Icon(Icons.Filled.Search, "Rechercher", tint = lightGray)
+                                        Icon(Icons.Filled.Search, "Rechercher", tint = gC.lightGray.value
+                                        )
                                     }
                                 },
                                 visualTransformation = VisualTransformation {text ->
@@ -121,12 +122,12 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: Str
                     }
 
                     // Diviseur espacé
-                    SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                    SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
 
                     // Boutons
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         // Bouton d'annulation
-                        Button(onDismissRequest, Modifier.weight(1f), enabled = true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(middleGray, darkGray, lightGray)) {
+                        Button(onDismissRequest, Modifier.weight(1f), enabled = true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Close, "")
                                 Spacer(Modifier.width(10.dp))
@@ -147,7 +148,7 @@ fun FileImportModal(themeColors: List<Color>, onImportFile: (importFilePath: Str
                             enabled = isPathCorrect,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
-                            colors = getButtonColors(middleGray, darkGray, lightGray)
+                            colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
                         ) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Check, "")

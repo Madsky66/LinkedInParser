@@ -29,25 +29,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import data.ProspectData
+import config.GlobalConfig
 import ui.composable.ProspectCard
 import ui.composable.SpacedDivider
-import utils.ConsoleMessage
 import utils.ConsoleMessageType
 import utils.getButtonColors
 import utils.getTextFieldColors
 
 @Composable
-fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractionLoading: Boolean, isImportationLoading: Boolean, isExportationLoading: Boolean, importedFilePath: String, importedFileName: String, importedFileFormat: String, pastedURL: String, consoleMessage: ConsoleMessage, themeColors: List<Color>, onUrlChange: (String) -> Unit, onImportButtonClick: () -> Unit, onExportButtonClick: () -> Unit, onOpenUrl: (String) -> Unit) {
-    var (darkGray, middleGray, lightGray) = themeColors
+fun RowScope.ProfileAndOptionsSection(gC: GlobalConfig, importedFilePath: String, importedFileName: String, importedFileFormat: String, onUrlChange: (String) -> Unit, onImportButtonClick: () -> Unit, onExportButtonClick: () -> Unit, onOpenUrl: (String) -> Unit) {
 
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
         // Fiche contact
-        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {ProspectCard(currentProfile, themeColors, isImportationLoading, isExtractionLoading)}
+        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {ProspectCard(gC)}
 
         // Diviseur espacé
-        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 15.dp)
+        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(gC.darkGray.value.copy(0.05f)), "horizontal", 1.dp, 15.dp, 15.dp)
 
         // Options
         Column(Modifier.fillMaxWidth(), Arrangement.Bottom, Alignment.CenterHorizontally) {
@@ -56,9 +54,9 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
             val label = "Fichier chargé : "
 
             // Afficheur de nom de fichier
-            Row(Modifier.border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp).fillMaxWidth(), Arrangement.SpaceBetween) {
-                Text(label, Modifier, lightGray)
-                Text(displayFileName, Modifier, color = if (isFileImported) {Color.Green.copy(0.5f)} else {lightGray})
+            Row(Modifier.border(BorderStroke(1.dp, gC.darkGray.value)).padding(20.dp, 10.dp).fillMaxWidth(), Arrangement.SpaceBetween) {
+                Text(label, Modifier, gC.lightGray.value)
+                Text(displayFileName, Modifier, color = if (isFileImported) {Color.Green.copy(0.5f)} else {gC.lightGray.value})
             }
 
             // Spacer
@@ -68,10 +66,10 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
             Button(
                 onClick = onImportButtonClick,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isExtractionLoading && !isImportationLoading && !isExportationLoading,
+                enabled = !gC.isExtractionLoading.value && !gC.isImportationLoading.value && !gC.isExportationLoading.value,
                 elevation = ButtonDefaults.elevation(10.dp),
                 shape = RoundedCornerShape(100),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
+                colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
             ) {
                 Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                     Icon(Icons.Filled.SaveAlt, "")
@@ -83,10 +81,10 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
             Button(
                 onClick = onExportButtonClick,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = currentProfile != null && consoleMessage.type == ConsoleMessageType.SUCCESS,
+                enabled = gC.currentProfile.value != null && gC.consoleMessage.value.type == ConsoleMessageType.SUCCESS,
                 elevation = ButtonDefaults.elevation(10.dp),
                 shape = RoundedCornerShape(100),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
+                colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
             ) {
                 Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                     Icon(Icons.Filled.IosShare, "")
@@ -97,27 +95,27 @@ fun RowScope.ProfileAndOptionsSection(currentProfile: ProspectData?, isExtractio
         }
 
         // Diviseur espacé
-        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(darkGray.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)
+        SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(gC.darkGray.value.copy(0.05f)), "horizontal", 1.dp, 15.dp, 10.dp)
 
         // Profil LinkedIn
         Column(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterHorizontally) {
             // Saisie de l'URL
             OutlinedTextField(
-                value = pastedURL,
+                value = gC.pastedUrl.value,
                 onValueChange = onUrlChange,
                 label = {Text("Coller l'URL de la page LinkedIn ici...")},
                 modifier = Modifier.fillMaxWidth().clip(RectangleShape),
-                colors = getTextFieldColors(lightGray)
+                colors = getTextFieldColors(gC.lightGray.value)
             )
 
             // Bouton de validation
             Button(
-                onClick = {onOpenUrl(pastedURL)},
+                onClick = {onOpenUrl(gC.pastedUrl.value)},
                 modifier = Modifier.fillMaxWidth(),
-                enabled = pastedURL.matches(Regex("https?://(www\\.)?linkedin\\.com/in/.*")),
+                enabled = gC.pastedUrl.value.matches(Regex("https?://(www\\.)?linkedin\\.com/in/.*")),
                 elevation = ButtonDefaults.elevation(10.dp),
                 shape = RoundedCornerShape(0, 0, 50, 50),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
+                colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
             ) {
                 Text("Ouvrir le profil")
             }

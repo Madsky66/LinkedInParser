@@ -32,19 +32,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import config.GlobalConfig
 import utils.getButtonColors
 import utils.getTextFieldColors
 
 @Composable
-fun DrawerSubMenuContent(themeColors: List<Color>, pastedAPI: String, apiKey: String, isApolloValidationLoading: Boolean, onApiKeyModified: (String) -> Unit, onProcessApiKey: (String) -> Unit) {
+fun DrawerSubMenuContent(gC: GlobalConfig, pastedAPI: String, onProcessApiKey: (String) -> Unit) {
     var showConfirmModal by remember {mutableStateOf(false)}
-    val (darkGray, middleGray, lightGray) = themeColors
     val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $pastedAPI -----"
 
     // Modale de confirmation
     if (showConfirmModal) {
         ConfirmModal(
-            themeColors, pastedAPI, confirmMessage,
+            gC, pastedAPI, confirmMessage,
             firstButtonText = "Annuler",
             secondButtonText = "Confirmer",
             onSecondButtonClick = {
@@ -60,12 +60,12 @@ fun DrawerSubMenuContent(themeColors: List<Color>, pastedAPI: String, apiKey: St
             // Zone de texte
             OutlinedTextField(
                 value = pastedAPI,
-                onValueChange = onApiKeyModified,
+                onValueChange = {gC.apiKey.value = pastedAPI},
                 modifier = Modifier.clip(RectangleShape).weight(2f),
                 textStyle = TextStyle.Default,
                 label = {Text("Clé API Apollo...")},
                 maxLines = 1,
-                colors = getTextFieldColors(lightGray)
+                colors = getTextFieldColors(gC.lightGray.value)
             )
 
             // Spacer
@@ -78,16 +78,16 @@ fun DrawerSubMenuContent(themeColors: List<Color>, pastedAPI: String, apiKey: St
                 enabled = pastedAPI.isNotBlank(),
                 elevation = ButtonDefaults.elevation(10.dp),
                 shape = RoundedCornerShape(0, 100, 100, 0),
-                colors = getButtonColors(middleGray, darkGray, lightGray)
+                colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
             ) {
-                if (!isApolloValidationLoading) {Icon(Icons.Filled.Send, "")} else {CircularProgressIndicator(Modifier.align(Alignment.CenterVertically), lightGray, strokeWidth = 5.dp)}
+                if (!gC.isApolloValidationLoading.value) {Icon(Icons.Filled.Send, "")} else {CircularProgressIndicator(Modifier.align(Alignment.CenterVertically), gC.lightGray.value, strokeWidth = 5.dp)}
             }
         }
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth().border(BorderStroke(1.dp, darkGray)).padding(20.dp, 10.dp), Arrangement.SpaceBetween) {
-            val text = if (apiKey.isBlank()) {"Aucune clé validée"} else {apiKey}
-            Text("Clé actuelle : ", color = lightGray)
-            Text(text, color = if (apiKey.isBlank()) {lightGray} else {Color.Green.copy(0.5f)})
+        Row(Modifier.fillMaxWidth().border(BorderStroke(1.dp, gC.darkGray.value)).padding(20.dp, 10.dp), Arrangement.SpaceBetween) {
+            val text = if (gC.apiKey.value.isBlank()) {"Aucune clé validée"} else {gC.apiKey.value}
+            Text("Clé actuelle : ", color = gC.lightGray.value)
+            Text(text, color = if (gC.apiKey.value.isBlank()) {gC.lightGray.value} else {Color.Green.copy(0.5f)})
         }
     }
 }

@@ -1,5 +1,6 @@
 package manager
 
+import config.GlobalInstance
 import data.ProspectData
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
@@ -12,8 +13,9 @@ import java.util.logging.Logger
 class LinkedInManager {
     private val client = OkHttpClient()
     private val logger = Logger.getLogger(LinkedInManager::class.java.name)
+    val gC = GlobalInstance.config
 
-    suspend fun extractProfileData(text: String, apiKey: String = ""): ProspectData {
+    suspend fun extractProfileData(text: String): ProspectData {
         logger.info("Début de l'extraction des données du profil")
 
         if (text.isBlank()) {
@@ -62,7 +64,7 @@ class LinkedInManager {
             var company = if (companyIndex != -1 && companyIndex + 4 < lines.size) {lines.getOrNull(companyIndex + 4) ?: "Entreprise inconnue"} else {"Entreprise inconnue"}
 
             // Enrichissement Apollo
-            val apolloData = fetchApolloData(firstName, lastName, company, apiKey)
+            val apolloData = fetchApolloData(firstName, lastName, company)
             delay(500)
             val personData = apolloData?.optJSONObject("person")
             if (linkedinUrl == "Url inconnu") {linkedinUrl = personData?.optString("linkedin_url", "URL inconnu") ?: "Url inconnu"}
@@ -121,7 +123,7 @@ class LinkedInManager {
         ).distinct()
     }
 
-    private fun fetchApolloData(firstName: String, lastName: String, company: String, apiKey: String): JSONObject? {
+    private fun fetchApolloData(firstName: String, lastName: String, company: String): JSONObject? {
         if (firstName.isBlank() || lastName.isBlank()) {
             logger.warning("Données incomplètes pour interroger Apollo")
             return null
@@ -140,7 +142,7 @@ class LinkedInManager {
                 .addHeader("accept", "application/json")
                 .addHeader("Cache-Control", "no-cache")
                 .addHeader("Content-Type", "application/json")
-                .addHeader("x-api-key", apiKey)
+                .addHeader("x-api-key", gC.apiKey.value)
                 .build()
             client.newCall(request).execute().use {response ->
                 if (!response.isSuccessful) {

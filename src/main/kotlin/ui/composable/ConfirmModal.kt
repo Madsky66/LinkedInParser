@@ -28,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -37,17 +36,17 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
+import config.GlobalConfig
 import utils.getButtonColors
 
 
 @Composable
-fun ConfirmModal(themeColors: List<Color>, string: String = "", modalMessage: String, firstButtonText: String, secondButtonText: String, thirdButtonText: String = "", onSecondButtonClick: (String) -> Unit, onDismissRequest: () -> Unit) {
-    val (darkGray, middleGray, lightGray) = themeColors
+fun ConfirmModal(gC: GlobalConfig, string: String = "", modalMessage: String, firstButtonText: String, secondButtonText: String, thirdButtonText: String = "", onSecondButtonClick: (String) -> Unit, onDismissRequest: () -> Unit) {
     val dialogState = rememberDialogState(position = WindowPosition.PlatformDefault, size = DpSize(640.dp, 360.dp))
 
     DialogWindow(onDismissRequest, state = dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
-            Card(Modifier, shape = RectangleShape, backgroundColor = middleGray, contentColor = lightGray, border = BorderStroke(1.dp, darkGray), elevation = 5.dp) {
+            Card(Modifier, shape = RectangleShape, backgroundColor = gC.middleGray.value, contentColor = gC.lightGray.value, border = BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                     // Barre de titre
                     Column(Modifier.fillMaxWidth()) {
@@ -61,14 +60,14 @@ fun ConfirmModal(themeColors: List<Color>, string: String = "", modalMessage: St
                             // Bouton de fermeture
                             Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton(onDismissRequest) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
-                        SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                        SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }
                     // Message
-                    Row(Modifier.weight(1f, true).fillMaxWidth().background(darkGray.copy(0.5f)).border(1.dp, darkGray), Arrangement.Center, Alignment.CenterVertically) {
+                    Row(Modifier.weight(1f, true).fillMaxWidth().background(gC.darkGray.value.copy(0.5f)).border(1.dp, gC.darkGray.value), Arrangement.Center, Alignment.CenterVertically) {
                         Text(modalMessage, fontSize = 15.sp, textAlign = TextAlign.Start)
                     }
                     // Diviseur espacé
-                    SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                    SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     // Boutons
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         Button(
@@ -77,7 +76,7 @@ fun ConfirmModal(themeColors: List<Color>, string: String = "", modalMessage: St
                             enabled = true,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
-                            colors = getButtonColors(middleGray, darkGray, lightGray)
+                            colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
                         ) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Close, "")
@@ -92,7 +91,7 @@ fun ConfirmModal(themeColors: List<Color>, string: String = "", modalMessage: St
                             enabled = true,
                             elevation = ButtonDefaults.elevation(10.dp),
                             shape = RoundedCornerShape(100),
-                            colors = getButtonColors(middleGray, darkGray, lightGray)
+                            colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
                         ) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Check, "")

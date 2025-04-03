@@ -10,36 +10,35 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import config.GlobalConfig
 import utils.getButtonColors
 
 
 @Composable
-fun MultiChoiceSegmentedButton(themeColors: List<Color>, selectedOptions: MutableList<Boolean>,  width: Float = 1f) {
-    val (darkGray, middleGray, lightGray) = themeColors
-    val switchXLSXBackgroundColor = if (selectedOptions[0]) {darkGray.copy(0.5f)} else {middleGray}
-    val switchCSVBackgroundColor = if (selectedOptions[1]) {darkGray.copy(0.5f)} else {middleGray}
+fun MultiChoiceSegmentedButton(gC: GlobalConfig, width: Float = 1f) {
+    val switchXLSXBackgroundColor = if (gC.selectedOptions[0]) {gC.darkGray.value.copy(0.5f)} else {gC.middleGray.value}
+    val switchCSVBackgroundColor = if (gC.selectedOptions[1]) {gC.darkGray.value.copy(0.5f)} else {gC.middleGray.value}
 
     // Boutons
     Row(Modifier.fillMaxWidth(width).clip(RoundedCornerShape(100))) {
         Button(
-            onClick = {selectedOptions[0] = !selectedOptions[0]},
+            onClick = {gC.selectedOptions[0] = !gC.selectedOptions[0]},
             modifier = Modifier.weight(1f),
             enabled = true,
             elevation = ButtonDefaults.elevation(10.dp),
             shape = RoundedCornerShape(100, 0, 0, 100),
-            border = BorderStroke(1.dp, darkGray),
-            colors = getButtonColors(switchXLSXBackgroundColor, darkGray, lightGray)
+            border = BorderStroke(1.dp, gC.darkGray.value),
+            colors = getButtonColors(switchXLSXBackgroundColor, gC.darkGray.value, gC.lightGray.value)
         ) {Text("XLSX")}
         Button(
-            onClick = {selectedOptions[1] = !selectedOptions[1]},
+            onClick = {gC.selectedOptions[1] = !gC.selectedOptions[1]},
             modifier = Modifier.weight(1f),
             enabled = true,
             elevation = ButtonDefaults.elevation(10.dp),
             shape = RoundedCornerShape(0, 100, 100, 0),
-            border = BorderStroke(1.dp, darkGray),
-            colors = getButtonColors(switchCSVBackgroundColor, darkGray, lightGray)
+            border = BorderStroke(1.dp, gC.darkGray.value),
+            colors = getButtonColors(switchCSVBackgroundColor, gC.darkGray.value, gC.lightGray.value)
         ) {Text("CSV")}
     }
 }

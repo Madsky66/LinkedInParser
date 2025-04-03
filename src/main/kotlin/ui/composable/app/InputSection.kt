@@ -13,33 +13,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import config.GlobalConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun RowScope.InputSection(applicationScope: CoroutineScope, pastedInput: String, isLoading: Boolean, themeColors: List<Color>, onInputChange: (String) -> Unit, onProcessInput: (String) -> Unit) {
-    val (darkGray, middleGray, lightGray) = themeColors
+fun RowScope.InputSection(applicationScope: CoroutineScope, globalConfig: GlobalConfig, onInputChange: (String) -> Unit, onProcessInput: (String) -> Unit) {
     Column(Modifier.weight(1.75f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
         OutlinedTextField(
-            value = pastedInput,
+            value = globalConfig.pastedInput.value,
             onValueChange = {
                 applicationScope.launch {
                     onInputChange(it)
-                    if (!isLoading) onProcessInput(it)
+                    if (!globalConfig.isExtractionLoading.value) onProcessInput(it)
                 }
             },
             label = {Text("Coller le texte de la page LinkedIn ici...")},
             modifier = Modifier.weight(0.9f).fillMaxWidth().clip(RectangleShape),
             colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = lightGray,
-                focusedBorderColor = lightGray.copy(0.25f),
-                unfocusedBorderColor = lightGray.copy(0.15f),
-                focusedLabelColor = lightGray.copy(0.5f),
-                unfocusedLabelColor = lightGray.copy(0.5f),
-                placeholderColor = lightGray.copy(0.25f)
+                textColor = globalConfig.lightGray.value,
+                focusedBorderColor = globalConfig.lightGray.value.copy(0.25f),
+                unfocusedBorderColor = globalConfig.lightGray.value.copy(0.15f),
+                focusedLabelColor = globalConfig.lightGray.value.copy(0.5f),
+                unfocusedLabelColor = globalConfig.lightGray.value.copy(0.5f),
+                placeholderColor = globalConfig.lightGray.value.copy(0.25f)
             )
         )
     }

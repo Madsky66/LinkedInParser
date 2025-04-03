@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
-import androidx.compose.material.DrawerState
-import androidx.compose.material.DrawerValue
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.ModalDrawer
@@ -24,43 +22,31 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Window
-import androidx.compose.material.rememberDrawerState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.sp
+import config.GlobalConfig
+import config.GlobalInstance
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import ui.composable.App
 import ui.composable.DrawerMenuContent
-import utils.Colors
 import kotlin.system.exitProcess
 
 fun main() = application {
     val applicationScope: CoroutineScope = rememberCoroutineScope()
-    val windowState = rememberWindowState(WindowPlacement.Floating, isMinimized = false, WindowPosition.PlatformDefault, DpSize(1280.dp, 720.dp))
-    var isWindowMaximized by remember {mutableStateOf(false)}
-    var isDarkTheme = remember {mutableStateOf(true)}
-    val themeColors = Colors().get(isDarkTheme)
-    val (darkGray, middleGray, lightGray) = themeColors
+    val gC = GlobalInstance.config
 
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    var isExpandedMenuItem by remember {mutableStateOf("")}
-    val drawerWidth = if (isExpandedMenuItem != "") 0.8f else 0.2f
-
-    var apiKey by remember {mutableStateOf("")}
-
-    Window({exitApplication()}, windowState, visible = true, "LinkedIn Parser", undecorated = true) {
+    Window({exitApplication()}, gC.windowState.value, visible = true, "LinkedIn Parser", undecorated = true) {
         ModalDrawer(
             drawerContent = {
-                DrawerMenuContent(applicationScope, themeColors, isDarkTheme, drawerWidth, isExpandedMenuItem, apiKey, {apiKey = it}) {
-                    isExpandedMenuItem =
-                        when (isExpandedMenuItem) {
+                DrawerMenuContent(applicationScope, gC) {
+                    gC.isExpandedMenuItem.value =
+                        when (gC.isExpandedMenuItem.value) {
                             "Général" -> if (it == "Général") {""} else it.toString()
                             "Customisation" -> if (it == "Customisation") {""} else it.toString()
                             "Aide" -> if (it == "Aide") {""} else it.toString()
@@ -70,21 +56,20 @@ fun main() = application {
                 }
             },
             modifier = Modifier.fillMaxHeight(),
-            drawerState = drawerState,
             gesturesEnabled = true,
             drawerShape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
             drawerElevation = 5.dp,
-            drawerBackgroundColor = darkGray
+            drawerBackgroundColor = gC.darkGray.value
         ) {
-            Column(Modifier.fillMaxSize().background(darkGray)) {
+            Column(Modifier.fillMaxSize().background(gC.darkGray.value)) {
                 // Barre de titre
-                WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(darkGray)) {
+                WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(gC.darkGray.value)) {
                     Row(Modifier.fillMaxSize().padding(15.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        AppTitleBar(themeColors, applicationScope, drawerState, windowState, isWindowMaximized,
-                            onMinimize = {windowState.isMinimized = true},
+                        AppTitleBar(applicationScope, gC,
+                            onMinimize = {gC.windowState.value.isMinimized = true},
                             onMaximizeOrRestore = {
-                                windowState.placement = if (isWindowMaximized) WindowPlacement.Maximized else WindowPlacement.Floating
-                                isWindowMaximized = !isWindowMaximized
+                                gC.windowState.value.placement = if (gC.isWindowMaximized.value) WindowPlacement.Maximized else WindowPlacement.Floating
+                                gC.isWindowMaximized.value = !gC.isWindowMaximized.value
                             },
                             onExit = {exitProcess(0)}
                         )
@@ -92,7 +77,7 @@ fun main() = application {
                 }
                 // Contenu principal
                 Box(Modifier.fillMaxSize()) {
-                    App(applicationScope, themeColors, apiKey)
+                    App(applicationScope, gC)
                 }
             }
         }
@@ -100,28 +85,27 @@ fun main() = application {
 }
 
 @Composable
-fun AppTitleBar(themeColors: List<Color>, applicationScope: CoroutineScope, drawerState: DrawerState, windowState: WindowState, isMaximized: Boolean, onMinimize: () -> Unit, onMaximizeOrRestore: () -> Unit, onExit: () -> Unit) {
-    val (darkGray, middleGray, lightGray) = themeColors
+fun AppTitleBar(applicationScope: CoroutineScope, gC: GlobalConfig, onMinimize: () -> Unit, onMaximizeOrRestore: () -> Unit, onExit: () -> Unit) {
     // Titre
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Icone de menu
-        IconButton({applicationScope.launch {if (drawerState.isOpen) drawerState.close() else drawerState.open()}}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Menu, "Menu", tint = lightGray)}
+        IconButton({applicationScope.launch {if (gC.drawerState.value.isOpen) gC.drawerState.value.close() else gC.drawerState.value.open()}}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Menu, "Menu", tint = gC.lightGray.value)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Texte
-        Text("LinkedIn Parser", fontSize = 15.sp, color = lightGray)
+        Text("LinkedIn Parser", fontSize = 15.sp, color = gC.lightGray.value)
     }
     // Boutons
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Minimiser
-        IconButton({onMinimize()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = lightGray)}
+        IconButton({onMinimize()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = gC.lightGray.value)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Maximiser / Restaurer
-        IconButton({onMaximizeOrRestore()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = lightGray)}
+        IconButton({onMaximizeOrRestore()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = gC.lightGray.value)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Quitter
-        IconButton({onExit()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Close, "Quitter", tint = lightGray)}
+        IconButton({onExit()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Close, "Quitter", tint = gC.lightGray.value)}
     }
 }

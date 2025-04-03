@@ -8,23 +8,22 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import data.ProspectData
+import config.GlobalConfig
 
 @Composable
-fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportationLoading: Boolean, isExportationLoading: Boolean) {
-    val (darkGray, middleGray, lightGray) = themeColors
-    Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = darkGray) {
-        if (isImportationLoading || isExportationLoading) {Box(Modifier.fillMaxWidth().padding(15.dp)) {CircularProgressIndicator(Modifier.size(25.dp).align(Alignment.TopEnd), lightGray, strokeWidth = 5.dp)}}
+fun ProspectCard(gC: GlobalConfig) {
+    val prospect = gC.currentProfile.value
+    Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = gC.darkGray.value) {
+        if (gC.isImportationLoading.value || gC.isExportationLoading.value) {Box(Modifier.fillMaxWidth().padding(15.dp)) {CircularProgressIndicator(Modifier.size(25.dp).align(Alignment.TopEnd), gC.lightGray.value, strokeWidth = 5.dp)}}
 
         Column(Modifier.fillMaxWidth()) {
             // Partie principale
             Row(Modifier.padding(10.dp, 10.dp, 0.dp, 0.dp), Arrangement.Start, Alignment.CenterVertically) {
 
                 // Icone du profil
-                Icon(Icons.Default.Person, "Contact", Modifier.size(100.dp), lightGray)
+                Icon(Icons.Default.Person, "Contact", Modifier.size(100.dp), gC.lightGray.value)
 
                 // Spacer
                 Spacer(Modifier.width(10.dp))
@@ -40,7 +39,7 @@ fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportatio
                         }
                         else -> prospect.fullName
                     }
-                    Text(displayName, color = lightGray, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
+                    Text(displayName, color = gC.lightGray.value, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
                     //Spacer
                     Spacer(Modifier.height(5.dp))
                     // Mail
@@ -49,7 +48,7 @@ fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportatio
                         prospect.email.isBlank() || prospect.email == "null" -> "Email inconnu"
                         else -> prospect.email
                     }
-                    Text(displayEmail, color = lightGray, style = MaterialTheme.typography.body1)
+                    Text(displayEmail, color = gC.lightGray.value, style = MaterialTheme.typography.body1)
                 }
             }
 
@@ -64,12 +63,7 @@ fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportatio
                     prospect.company.isBlank() || prospect.company == "null" -> "Entreprise inconnue"
                     else -> prospect.company
                 }
-                Text(
-                    displayCompany,
-                    color = lightGray,
-                    style = MaterialTheme.typography.h6,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text(displayCompany, color = gC.lightGray.value, style = MaterialTheme.typography.h6, fontWeight = FontWeight.SemiBold)
                 // Spacer
                 Spacer(Modifier.height(5.dp))
                 // Poste
@@ -78,7 +72,7 @@ fun ProspectCard(prospect: ProspectData?, themeColors: List<Color>, isImportatio
                     prospect.jobTitle.isBlank() || prospect.jobTitle == "null" -> "Poste inconnu"
                     else -> prospect.jobTitle
                 }
-                Text(displayJobTitle, color = lightGray, style = MaterialTheme.typography.body2)
+                Text(displayJobTitle, color = gC.lightGray.value, style = MaterialTheme.typography.body2)
             }
         }
     }
