@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import config.GlobalConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import ui.composable.effect.CustomOutlinedTextFieldColors
 import ui.composable.processInput
 
 @Composable
@@ -33,14 +34,7 @@ fun RowScope.InputSection(applicationScope: CoroutineScope, gC: GlobalConfig) {
             },
             label = {Text("Coller le texte de la page LinkedIn ici...")},
             modifier = Modifier.weight(0.9f).fillMaxWidth().clip(RectangleShape),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = gC.lightGray.value,
-                focusedBorderColor = gC.lightGray.value.copy(0.25f),
-                unfocusedBorderColor = gC.lightGray.value.copy(0.15f),
-                focusedLabelColor = gC.lightGray.value.copy(0.5f),
-                unfocusedLabelColor = gC.lightGray.value.copy(0.5f),
-                placeholderColor = gC.lightGray.value.copy(0.25f)
-            )
+            colors = CustomOutlinedTextFieldColors(gC)
         )
     }
 }

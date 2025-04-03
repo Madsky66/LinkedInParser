@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogState
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
@@ -18,6 +19,7 @@ import manager.UrlManager
 import utils.Colors
 import utils.ConsoleMessage
 import utils.ConsoleMessageType
+import java.io.File
 
 data class GlobalConfig(
     var windowState: MutableState<WindowState> = mutableStateOf(WindowState(WindowPlacement.Floating, isMinimized = false, WindowPosition.PlatformDefault, DpSize(1280.dp, 720.dp))),
@@ -39,7 +41,10 @@ data class GlobalConfig(
 
     var showExportModal: MutableState<Boolean> = mutableStateOf(false),
     var showImportModal: MutableState<Boolean> = mutableStateOf(false),
+    var dialogState: MutableState<DialogState> = mutableStateOf(DialogState()),
 
+    var fileInstance: MutableState<File?> = mutableStateOf(null),
+    var fileFullPath: MutableState<String> = mutableStateOf(""),
     var filePath: MutableState<String> = mutableStateOf(""),
     var fileName: MutableState<String> = mutableStateOf(""),
     var fileFormat: MutableState<String> = mutableStateOf(""),
@@ -49,7 +54,7 @@ data class GlobalConfig(
     var isImportationLoading: MutableState<Boolean> = mutableStateOf(false),
     var isExportationLoading: MutableState<Boolean> = mutableStateOf(false),
 
-    var currentProfile: MutableState<ProspectData?> = mutableStateOf<ProspectData?>(null),
+    var currentProfile: MutableState<ProspectData?> = mutableStateOf(null),
     var consoleMessage: MutableState<ConsoleMessage> = mutableStateOf(ConsoleMessage("En attente de données...", ConsoleMessageType.INFO)),
 
     var apiKey: MutableState<String> = mutableStateOf(""),

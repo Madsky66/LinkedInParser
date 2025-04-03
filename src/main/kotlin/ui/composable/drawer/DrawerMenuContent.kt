@@ -1,4 +1,4 @@
-package ui.composable
+package ui.composable.drawer
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -35,6 +35,7 @@ import config.GlobalConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import ui.composable.element.SpacedDivider
 import utils.ConsoleMessage
 import utils.ConsoleMessageType
 

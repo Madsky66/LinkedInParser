@@ -1,4 +1,4 @@
-package ui.composable
+package ui.composable.element
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Row

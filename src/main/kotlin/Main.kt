@@ -34,7 +34,7 @@ import config.GlobalInstance
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import ui.composable.App
-import ui.composable.DrawerMenuContent
+import ui.composable.drawer.DrawerMenuContent
 import kotlin.system.exitProcess
 
 fun main() = application {

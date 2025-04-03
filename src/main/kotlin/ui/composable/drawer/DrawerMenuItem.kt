@@ -1,4 +1,4 @@
-package ui.composable
+package ui.composable.drawer
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background

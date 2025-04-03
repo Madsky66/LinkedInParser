@@ -1,4 +1,4 @@
-package ui.composable
+package ui.composable.modal
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -37,6 +37,7 @@ import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
 import config.GlobalConfig
+import ui.composable.element.SpacedDivider
 import utils.getButtonColors
 
 

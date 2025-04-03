@@ -1,4 +1,4 @@
-package ui.composable
+package ui.composable.drawer
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -33,8 +33,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import config.GlobalConfig
+import ui.composable.effect.CustomOutlinedTextFieldColors
+import ui.composable.modal.ConfirmModal
 import utils.getButtonColors
-import utils.getTextFieldColors
 
 @Composable
 fun DrawerSubMenuContent(gC: GlobalConfig, pastedAPI: String, onProcessApiKey: (String) -> Unit) {
@@ -65,7 +66,7 @@ fun DrawerSubMenuContent(gC: GlobalConfig, pastedAPI: String, onProcessApiKey: (
                 textStyle = TextStyle.Default,
                 label = {Text("Clé API Apollo...")},
                 maxLines = 1,
-                colors = getTextFieldColors(gC.lightGray.value)
+                colors = CustomOutlinedTextFieldColors(gC)
             )
 
             // Spacer
