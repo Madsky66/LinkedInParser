@@ -12,6 +12,9 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import data.ProspectData
+import manager.FileExportManager
+import manager.FileImportManager
+import manager.UrlManager
 import utils.Colors
 import utils.ConsoleMessage
 import utils.ConsoleMessageType
@@ -30,8 +33,16 @@ data class GlobalConfig(
     var middleGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[1]),
     var lightGray: MutableState<Color> =mutableStateOf<Color>(themeColors.get(isDarkTheme)[2]),
 
+    val urlManager: UrlManager = UrlManager(),
+    val fileImportManager: FileImportManager = FileImportManager(),
+    val fileExportManager: FileExportManager = FileExportManager(),
+
     var showExportModal: MutableState<Boolean> = mutableStateOf(false),
     var showImportModal: MutableState<Boolean> = mutableStateOf(false),
+
+    var filePath: MutableState<String> = mutableStateOf(""),
+    var fileName: MutableState<String> = mutableStateOf(""),
+    var fileFormat: MutableState<String> = mutableStateOf(""),
 
     var isApolloValidationLoading: MutableState<Boolean> = mutableStateOf(false),
     var isExtractionLoading: MutableState<Boolean> = mutableStateOf(false),

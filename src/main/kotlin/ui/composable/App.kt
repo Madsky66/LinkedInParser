@@ -1,6 +1,5 @@
 package ui.composable
 
-import manager.FileImportManager
 import utils.ConsoleMessage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,13 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import config.GlobalConfig
-import config.GlobalInstance
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import manager.FileExportManager
 import manager.LinkedInManager
-import manager.UrlManager
 import ui.composable.app.InputSection
 import ui.composable.app.ProfileAndOptionsSection
 import ui.composable.app.StatusBar
@@ -65,16 +61,8 @@ fun openDialog(dialogTitle: String, isVisible: Boolean = true): String? {
 fun App(applicationScope: CoroutineScope, gC: GlobalConfig) {
     var loadedFile by remember {mutableStateOf<File?>(null)}
 
-    val urlManager = remember {UrlManager()}
-    val fileImportManager = remember {FileImportManager()}
-    val fileExportManager = remember {FileExportManager()}
-
     val prospectList = remember {mutableStateListOf<ProspectData>()}
     var newProspect by remember {mutableStateOf(ProspectData())}
-
-    var filePath by remember {mutableStateOf("")}
-    var fileName by remember {mutableStateOf("")}
-    var fileFormat by remember {mutableStateOf("")}
 
     val statusColor = when (gC.consoleMessage.value.type) {
         ConsoleMessageType.SUCCESS -> Color.Green.copy(0.9f)
@@ -88,17 +76,17 @@ fun App(applicationScope: CoroutineScope, gC: GlobalConfig) {
         FileImportModal(
             gC= gC,
             onImportFile = {importFilePath ->
-                filePath = importFilePath.substringBeforeLast("\\")
-                fileName = importFilePath.substringAfterLast("\\").split(".").first()
-                fileFormat = importFilePath.split("/").last().split(".").last().lowercase()
+                gC.filePath.value = importFilePath.substringBeforeLast("\\")
+                gC.fileName.value = importFilePath.substringAfterLast("\\").split(".").first()
+                gC.fileFormat.value = importFilePath.split("/").last().split(".").last().lowercase()
                 if (importFilePath != "") {
                     applicationScope.launch {
-                        gC.consoleMessage.value = ConsoleMessage("⏳ Importation du fichier $fileName.$fileFormat...", ConsoleMessageType.INFO)
+                        gC.consoleMessage.value = ConsoleMessage("⏳ Importation du fichier ${gC.fileName.value}.${gC.fileFormat.value}...", ConsoleMessageType.INFO)
                         gC.isImportationLoading.value = true
                         var numberOfColumns = 0
                         try {
                             loadedFile = File(importFilePath)
-                            fileImportManager.importFromFile(importFilePath) {importedProspect, filledColumns ->
+                            gC.fileImportManager.importFromFile(importFilePath) {importedProspect, filledColumns ->
                                 gC.currentProfile.value = importedProspect
                                 numberOfColumns = filledColumns
                             }
@@ -106,10 +94,10 @@ fun App(applicationScope: CoroutineScope, gC: GlobalConfig) {
                                 when (numberOfColumns) {
                                     0 -> ConsoleMessage("❌ Le profil importé est vide", ConsoleMessageType.ERROR)
                                     1,2,3,4,5,6,7 -> ConsoleMessage("⚠️ Le profil importé est incomplet", ConsoleMessageType.WARNING)
-                                    else -> ConsoleMessage("✅ Importation du fichier $fileName.$fileFormat réussie", ConsoleMessageType.SUCCESS)
+                                    else -> ConsoleMessage("✅ Importation du fichier ${gC.fileName.value}.${gC.fileFormat.value} réussie", ConsoleMessageType.SUCCESS)
                                 }
                         }
-                        catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'importation du fichier $fileFormat : ${e.message}", ConsoleMessageType.ERROR)}
+                        catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'importation du fichier ${gC.fileFormat.value} : ${e.message}", ConsoleMessageType.ERROR)}
                         gC.isImportationLoading.value = false
                     }
                 }
@@ -137,10 +125,10 @@ fun App(applicationScope: CoroutineScope, gC: GlobalConfig) {
                             val fullExportFolderPathCSV = "$exportFolderPath\\$exportFileName.csv"
                             val fullExportFolderPathBoth = exportFolderPath + "\\" + exportFileName + "." + exportFileFormats.toString().lowercase()
 
-                            if (!gC.selectedOptions[0] || !gC.selectedOptions[1]) {fileExportManager.exportToFile(gC, fullExportFolderPathBoth)}
+                            if (!gC.selectedOptions[0] || !gC.selectedOptions[1]) {gC.fileExportManager.exportToFile(gC, fullExportFolderPathBoth)}
                             else {
-                                fileExportManager.exportToFile(gC, fullExportFolderPathXLSX)
-                                fileExportManager.exportToFile(gC, fullExportFolderPathCSV)
+                                gC.fileExportManager.exportToFile(gC, fullExportFolderPathXLSX)
+                                gC.fileExportManager.exportToFile(gC, fullExportFolderPathCSV)
                             }
 
                             gC.consoleMessage.value = ConsoleMessage("✅ Exportation du fichier $exportFileFormats réussie", ConsoleMessageType.SUCCESS)
@@ -167,7 +155,7 @@ fun App(applicationScope: CoroutineScope, gC: GlobalConfig) {
     Column(Modifier.fillMaxSize().background(gC.middleGray.value).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
         Row(Modifier.weight(0.9f).fillMaxWidth()) {
             // Section du profil et options
-            ProfileAndOptionsSection(applicationScope, gC, urlManager, filePath, fileName, fileFormat)
+            ProfileAndOptionsSection(applicationScope, gC)
             // Spacer
             Spacer(Modifier.width(25.dp))
             // Zone de texte

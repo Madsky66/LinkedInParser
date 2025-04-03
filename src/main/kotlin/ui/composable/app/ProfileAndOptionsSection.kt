@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import config.GlobalConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import manager.UrlManager
 import ui.composable.ProspectCard
 import ui.composable.SpacedDivider
 import utils.ConsoleMessage
@@ -43,7 +42,7 @@ import java.awt.Desktop
 import java.net.URI
 
 @Composable
-fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: GlobalConfig, urlManager: UrlManager, importedFilePath: String, importedFileName: String, importedFileFormat: String) {
+fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: GlobalConfig) {
 
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
@@ -55,8 +54,8 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: Glob
 
         // Options
         Column(Modifier.fillMaxWidth(), Arrangement.Bottom, Alignment.CenterHorizontally) {
-            val isFileImported = (importedFileName != "" && importedFilePath != "")
-            val displayFileName = if (isFileImported) {"$importedFileName.$importedFileFormat"} else {"Aucun fichier chargé"}
+            val isFileImported = (gC.filePath.value != "" && gC.fileName.value != "" && gC.fileFormat.value != "")
+            val displayFileName = if (isFileImported) {"${gC.fileName.value}.${gC.fileFormat.value}"} else {"Aucun fichier chargé"}
             val label = "Fichier chargé : "
 
             // Afficheur de nom de fichier
@@ -124,7 +123,7 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: Glob
                                 val uri = URI("${gC.pastedUrl.value}/overlay/contact-info/")
                                 gC.consoleMessage.value = ConsoleMessage("⏳ Ouverture de la page LinkedIn en cours...", ConsoleMessageType.INFO)
                                 Desktop.getDesktop().browse(uri)
-                                urlManager.openPastedUrl(applicationScope)
+                                gC.urlManager.openPastedUrl(applicationScope)
                             }
                             catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
                         }
