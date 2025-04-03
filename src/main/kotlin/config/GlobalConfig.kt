@@ -5,7 +5,6 @@ import androidx.compose.material.DrawerValue
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -30,6 +29,9 @@ data class GlobalConfig(
     var darkGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[0]),
     var middleGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[1]),
     var lightGray: MutableState<Color> =mutableStateOf<Color>(themeColors.get(isDarkTheme)[2]),
+
+    var showExportModal: MutableState<Boolean> = mutableStateOf(false),
+    var showImportModal: MutableState<Boolean> = mutableStateOf(false),
 
     var isApolloValidationLoading: MutableState<Boolean> = mutableStateOf(false),
     var isExtractionLoading: MutableState<Boolean> = mutableStateOf(false),

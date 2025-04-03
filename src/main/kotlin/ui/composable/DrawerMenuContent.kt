@@ -38,8 +38,19 @@ import kotlinx.coroutines.launch
 import utils.ConsoleMessage
 import utils.ConsoleMessageType
 
+fun onMenuItemTap(gC: GlobalConfig, selectedTab: String) {
+    gC.isExpandedMenuItem.value =
+        when (gC.isExpandedMenuItem.value) {
+            "Général" -> if (selectedTab == "Général") {""} else selectedTab.toString()
+            "Customisation" -> if (selectedTab == "Customisation") {""} else selectedTab.toString()
+            "Aide" -> if (selectedTab == "Aide") {""} else selectedTab.toString()
+            "Contact" -> if (selectedTab == "Contact") {""} else selectedTab.toString()
+            else -> selectedTab.toString()
+        }
+}
+
 @Composable
-fun DrawerMenuContent(applicationScope: CoroutineScope, gC: GlobalConfig, onMenuItemTap: (String) -> Unit) {
+fun DrawerMenuContent(applicationScope: CoroutineScope, gC: GlobalConfig) {
     var isApolloValidationLoading by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf(ConsoleMessage("", ConsoleMessageType.INFO))}
     var pastedApiKey by remember {mutableStateOf("")}
@@ -53,10 +64,10 @@ fun DrawerMenuContent(applicationScope: CoroutineScope, gC: GlobalConfig, onMenu
                 SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 10.dp, 10.dp)
             }
             // Éléments du menu
-            DrawerMenuItem("Général", Icons.Filled.Settings, gC, gC.isExpandedMenuItem.value == "Général") {onMenuItemTap("Général")}
-            DrawerMenuItem("Customisation", Icons.Filled.Palette, gC, gC.isExpandedMenuItem.value == "Customisation") {onMenuItemTap("Customisation")}
-            DrawerMenuItem("Aide", Icons.Filled.Help, gC, gC.isExpandedMenuItem.value == "Aide") {onMenuItemTap("Aide")}
-            DrawerMenuItem("Contact", Icons.Filled.Email, gC, gC.isExpandedMenuItem.value == "Contact") {onMenuItemTap("Contact")}
+            DrawerMenuItem("Général", Icons.Filled.Settings, gC, gC.isExpandedMenuItem.value == "Général") {onMenuItemTap(gC, "Général")}
+            DrawerMenuItem("Customisation", Icons.Filled.Palette, gC, gC.isExpandedMenuItem.value == "Customisation") {onMenuItemTap(gC, "Customisation")}
+            DrawerMenuItem("Aide", Icons.Filled.Help, gC, gC.isExpandedMenuItem.value == "Aide") {onMenuItemTap(gC, "Aide")}
+            DrawerMenuItem("Contact", Icons.Filled.Email, gC, gC.isExpandedMenuItem.value == "Contact") {onMenuItemTap(gC, "Contact")}
         }
     }
 

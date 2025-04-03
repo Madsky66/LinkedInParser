@@ -13,24 +13,24 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.event.KeyEvent
 
 class UrlManager {
-    val globalConfig = GlobalInstance.config
+    val gC = GlobalInstance.config
     suspend fun openPastedUrl(applicationScope: CoroutineScope) {
         val clipboard = Toolkit.getDefaultToolkit().systemClipboard
         val robot = Robot()
         delay(5000) // <--- Rendre cette valeur dynamique
 
-        globalConfig.consoleMessage.value = ConsoleMessage("⏳ Détection de la page de profil en cours...", ConsoleMessageType.INFO)
+        gC.consoleMessage.value = ConsoleMessage("⏳ Détection de la page de profil en cours...", ConsoleMessageType.INFO)
 
         copyUrlContent(robot)
         var clipboardContent = getClipboardContent(clipboard)
 
         val isModalOpen = clipboardContent.lines().take(5).any {it.contains("dialogue")}
-        if (!isModalOpen && !modalDetectionStep({clipboardContent.lines().take(5).any {it.contains("dialogue")}}, robot, clipboard, "Détection de la page de profil impossible", {clipboardContent = it}, {globalConfig.consoleMessage.value = it})) return
-        if (isModalOpen && clipboardContent.length <= 5000 && !modalDetectionStep({clipboardContent.length > 5000}, robot, clipboard, "Quantité de données insuffisante", {clipboardContent = it}, {globalConfig.consoleMessage.value = it})) return
+        if (!isModalOpen && !modalDetectionStep({clipboardContent.lines().take(5).any {it.contains("dialogue")}}, robot, clipboard, "Détection de la page de profil impossible", {clipboardContent = it}, {gC.consoleMessage.value = it})) return
+        if (isModalOpen && clipboardContent.length <= 5000 && !modalDetectionStep({clipboardContent.length > 5000}, robot, clipboard, "Quantité de données insuffisante", {clipboardContent = it}, {gC.consoleMessage.value = it})) return
 
-        globalConfig.consoleMessage.value = ConsoleMessage("⏳ Analyse des données en cours...", ConsoleMessageType.INFO)
-        globalConfig.pastedInput.value = clipboardContent
-        processInput(applicationScope, clipboardContent, setStatus = {globalConfig.consoleMessage.value = it}, setProfile = {globalConfig.currentProfile.value = it}, setLoading = {globalConfig.isExtractionLoading.value = it})
+        gC.consoleMessage.value = ConsoleMessage("⏳ Analyse des données en cours...", ConsoleMessageType.INFO)
+        gC.pastedInput.value = clipboardContent
+        processInput(applicationScope, gC, clipboardContent)
     }
 
     suspend fun modalDetectionStep(condition: () -> Boolean, robot: Robot, clipboard: Clipboard, errorActionType: String, onNewClipBoardContent: (String) -> Unit, onNewMessage: (ConsoleMessage) -> Unit): Boolean {

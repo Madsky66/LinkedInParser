@@ -30,14 +30,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import config.GlobalConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import manager.UrlManager
 import ui.composable.ProspectCard
 import ui.composable.SpacedDivider
+import utils.ConsoleMessage
 import utils.ConsoleMessageType
 import utils.getButtonColors
 import utils.getTextFieldColors
+import java.awt.Desktop
+import java.net.URI
 
 @Composable
-fun RowScope.ProfileAndOptionsSection(gC: GlobalConfig, importedFilePath: String, importedFileName: String, importedFileFormat: String, onUrlChange: (String) -> Unit, onImportButtonClick: () -> Unit, onExportButtonClick: () -> Unit, onOpenUrl: (String) -> Unit) {
+fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: GlobalConfig, urlManager: UrlManager, importedFilePath: String, importedFileName: String, importedFileFormat: String) {
 
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
@@ -64,7 +70,7 @@ fun RowScope.ProfileAndOptionsSection(gC: GlobalConfig, importedFilePath: String
 
             // Bouton d'importation de fichier
             Button(
-                onClick = onImportButtonClick,
+                onClick = {gC.showImportModal.value = true},
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !gC.isExtractionLoading.value && !gC.isImportationLoading.value && !gC.isExportationLoading.value,
                 elevation = ButtonDefaults.elevation(10.dp),
@@ -79,7 +85,7 @@ fun RowScope.ProfileAndOptionsSection(gC: GlobalConfig, importedFilePath: String
             }
 
             Button(
-                onClick = onExportButtonClick,
+                onClick = {gC.showExportModal.value = true},
                 modifier = Modifier.fillMaxWidth(),
                 enabled = gC.currentProfile.value != null && gC.consoleMessage.value.type == ConsoleMessageType.SUCCESS,
                 elevation = ButtonDefaults.elevation(10.dp),
@@ -102,7 +108,7 @@ fun RowScope.ProfileAndOptionsSection(gC: GlobalConfig, importedFilePath: String
             // Saisie de l'URL
             OutlinedTextField(
                 value = gC.pastedUrl.value,
-                onValueChange = onUrlChange,
+                onValueChange = {gC.pastedUrl.value = it},
                 label = {Text("Coller l'URL de la page LinkedIn ici...")},
                 modifier = Modifier.fillMaxWidth().clip(RectangleShape),
                 colors = getTextFieldColors(gC.lightGray.value)
@@ -110,7 +116,20 @@ fun RowScope.ProfileAndOptionsSection(gC: GlobalConfig, importedFilePath: String
 
             // Bouton de validation
             Button(
-                onClick = {onOpenUrl(gC.pastedUrl.value)},
+                onClick = {
+                    applicationScope.launch {
+                        if (gC.pastedUrl.value.isNotBlank()) {
+                            try {
+                                if (!Desktop.isDesktopSupported()) {gC.consoleMessage.value = ConsoleMessage("❌ Votre système ne supporte pas Desktop browsing.", ConsoleMessageType.ERROR); return@launch}
+                                val uri = URI("${gC.pastedUrl.value}/overlay/contact-info/")
+                                gC.consoleMessage.value = ConsoleMessage("⏳ Ouverture de la page LinkedIn en cours...", ConsoleMessageType.INFO)
+                                Desktop.getDesktop().browse(uri)
+                                urlManager.openPastedUrl(applicationScope)
+                            }
+                            catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = gC.pastedUrl.value.matches(Regex("https?://(www\\.)?linkedin\\.com/in/.*")),
                 elevation = ButtonDefaults.elevation(10.dp),

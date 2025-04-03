@@ -18,27 +18,28 @@ import androidx.compose.ui.unit.dp
 import config.GlobalConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import ui.composable.processInput
 
 @Composable
-fun RowScope.InputSection(applicationScope: CoroutineScope, globalConfig: GlobalConfig, onInputChange: (String) -> Unit, onProcessInput: (String) -> Unit) {
+fun RowScope.InputSection(applicationScope: CoroutineScope, gC: GlobalConfig) {
     Column(Modifier.weight(1.75f).fillMaxHeight().padding(bottom = 5.dp), Arrangement.SpaceEvenly, Alignment.CenterHorizontally) {
         OutlinedTextField(
-            value = globalConfig.pastedInput.value,
+            value = gC.pastedInput.value,
             onValueChange = {
                 applicationScope.launch {
-                    onInputChange(it)
-                    if (!globalConfig.isExtractionLoading.value) onProcessInput(it)
+                    gC.pastedInput.value = it
+                    if (!gC.isExtractionLoading.value) processInput(applicationScope, gC, it)
                 }
             },
             label = {Text("Coller le texte de la page LinkedIn ici...")},
             modifier = Modifier.weight(0.9f).fillMaxWidth().clip(RectangleShape),
             colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = globalConfig.lightGray.value,
-                focusedBorderColor = globalConfig.lightGray.value.copy(0.25f),
-                unfocusedBorderColor = globalConfig.lightGray.value.copy(0.15f),
-                focusedLabelColor = globalConfig.lightGray.value.copy(0.5f),
-                unfocusedLabelColor = globalConfig.lightGray.value.copy(0.5f),
-                placeholderColor = globalConfig.lightGray.value.copy(0.25f)
+                textColor = gC.lightGray.value,
+                focusedBorderColor = gC.lightGray.value.copy(0.25f),
+                unfocusedBorderColor = gC.lightGray.value.copy(0.15f),
+                focusedLabelColor = gC.lightGray.value.copy(0.5f),
+                unfocusedLabelColor = gC.lightGray.value.copy(0.5f),
+                placeholderColor = gC.lightGray.value.copy(0.25f)
             )
         )
     }

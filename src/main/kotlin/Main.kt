@@ -43,18 +43,7 @@ fun main() = application {
 
     Window({exitApplication()}, gC.windowState.value, visible = true, "LinkedIn Parser", undecorated = true) {
         ModalDrawer(
-            drawerContent = {
-                DrawerMenuContent(applicationScope, gC) {
-                    gC.isExpandedMenuItem.value =
-                        when (gC.isExpandedMenuItem.value) {
-                            "Général" -> if (it == "Général") {""} else it.toString()
-                            "Customisation" -> if (it == "Customisation") {""} else it.toString()
-                            "Aide" -> if (it == "Aide") {""} else it.toString()
-                            "Contact" -> if (it == "Contact") {""} else it.toString()
-                            else -> it.toString()
-                        }
-                }
-            },
+            drawerContent = {DrawerMenuContent(applicationScope, gC)},
             modifier = Modifier.fillMaxHeight(),
             gesturesEnabled = true,
             drawerShape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
@@ -65,14 +54,7 @@ fun main() = application {
                 // Barre de titre
                 WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(gC.darkGray.value)) {
                     Row(Modifier.fillMaxSize().padding(15.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        AppTitleBar(applicationScope, gC,
-                            onMinimize = {gC.windowState.value.isMinimized = true},
-                            onMaximizeOrRestore = {
-                                gC.windowState.value.placement = if (gC.isWindowMaximized.value) WindowPlacement.Maximized else WindowPlacement.Floating
-                                gC.isWindowMaximized.value = !gC.isWindowMaximized.value
-                            },
-                            onExit = {exitProcess(0)}
-                        )
+                        AppTitleBar(applicationScope, gC)
                     }
                 }
                 // Contenu principal
@@ -85,7 +67,7 @@ fun main() = application {
 }
 
 @Composable
-fun AppTitleBar(applicationScope: CoroutineScope, gC: GlobalConfig, onMinimize: () -> Unit, onMaximizeOrRestore: () -> Unit, onExit: () -> Unit) {
+fun AppTitleBar(applicationScope: CoroutineScope, gC: GlobalConfig) {
     // Titre
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Icone de menu
@@ -98,14 +80,14 @@ fun AppTitleBar(applicationScope: CoroutineScope, gC: GlobalConfig, onMinimize: 
     // Boutons
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Minimiser
-        IconButton({onMinimize()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = gC.lightGray.value)}
+        IconButton({gC.windowState.value.isMinimized = true}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = gC.lightGray.value)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Maximiser / Restaurer
-        IconButton({onMaximizeOrRestore()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = gC.lightGray.value)}
+        IconButton({gC.windowState.value.placement = if (gC.isWindowMaximized.value) WindowPlacement.Maximized else WindowPlacement.Floating; gC.isWindowMaximized.value = !gC.isWindowMaximized.value}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = gC.lightGray.value)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Quitter
-        IconButton({onExit()}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Close, "Quitter", tint = gC.lightGray.value)}
+        IconButton({exitProcess(0)}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Close, "Quitter", tint = gC.lightGray.value)}
     }
 }
