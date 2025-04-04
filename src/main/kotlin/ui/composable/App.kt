@@ -1,6 +1,5 @@
 package ui.composable
 
-import utils.ConsoleMessage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -11,8 +10,6 @@ import androidx.compose.ui.unit.dp
 import config.GlobalConfig
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import manager.LinkedInManager
 import ui.composable.app.InputSection
 import ui.composable.app.ProfileAndOptionsSection
 import ui.composable.app.StatusBar
@@ -21,34 +18,6 @@ import ui.composable.modal.FileImportModal
 import utils.ConsoleMessageType
 import java.awt.FileDialog
 import java.awt.Frame
-
-fun processInput(applicationScope: CoroutineScope, gC: GlobalConfig, input: String) {
-    val linkedinManager = LinkedInManager()
-    applicationScope.launch {
-        gC.isExtractionLoading.value = true
-        if (input.isBlank()) {
-            gC.consoleMessage.value = ConsoleMessage("En attente de données...", ConsoleMessageType.INFO)
-            gC.currentProfile.value = null
-        }
-        else if (input.length < 5000) {
-            gC.consoleMessage.value = (ConsoleMessage("⚠️ Trop peu de texte, veuillez vérifier la copie et l'URL de la page (\"http(s)://(www.)linkedin.com/in/...\")", ConsoleMessageType.WARNING))
-            gC.currentProfile.value = null
-        }
-        else {
-            gC.isExtractionLoading.value = true
-            gC.consoleMessage.value = (ConsoleMessage("⏳ Extraction des informations en cours...", ConsoleMessageType.INFO))
-            gC.currentProfile.value = linkedinManager.extractProfileData(input)
-            val newProfile = linkedinManager.extractProfileData(input)
-            gC.consoleMessage.value = (
-                if (newProfile.fullName.isBlank() || (newProfile.firstName == "Prénom inconnu" && newProfile.lastName == "Nom de famille inconnu")) {ConsoleMessage("❌ Aucune information traitable ou format du texte copié incorrect", ConsoleMessageType.ERROR)}
-                else if (newProfile.firstName == "Prénom inconnu" || newProfile.lastName == "Nom de famille inconnu") {ConsoleMessage("⚠️ Extraction des données incomplète", ConsoleMessageType.WARNING)}
-                else {ConsoleMessage("✅ Extraction des informations réussie", ConsoleMessageType.SUCCESS)}
-            )
-            gC.isExtractionLoading.value = false
-        }
-        gC.isExtractionLoading.value = false
-    }
-}
 
 fun openDialog(dialogTitle: String, isVisible: Boolean = true): String? {
     val fileDialog = FileDialog(Frame(), dialogTitle, FileDialog.LOAD)

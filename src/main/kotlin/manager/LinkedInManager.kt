@@ -1,19 +1,49 @@
 package manager
 
+import config.GlobalConfig
 import config.GlobalInstance
 import data.ProspectData
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.json.JSONObject
+import utils.ConsoleMessage
+import utils.ConsoleMessageType
 import java.util.logging.Logger
 
 class LinkedInManager {
     private val client = OkHttpClient()
     private val logger = Logger.getLogger(LinkedInManager::class.java.name)
     val gC = GlobalInstance.config
+
+    fun processInput(applicationScope: CoroutineScope, gC: GlobalConfig, input: String) {
+        val linkedinManager = LinkedInManager()
+        applicationScope.launch {
+            gC.isExtractionLoading.value = true
+            when {
+                input.isBlank() -> gC.consoleMessage.value = ConsoleMessage("En attente de données...", ConsoleMessageType.INFO)
+                input.length < 5000 -> gC.consoleMessage.value = (ConsoleMessage("⚠️ Trop peu de texte, veuillez vérifier l'URL de la page (\"http(s)://(www.)linkedin.com/in/...\") ou le texte copié", ConsoleMessageType.WARNING))
+                else ->  {
+                    gC.isExtractionLoading.value = true
+                    gC.consoleMessage.value = (ConsoleMessage("⏳ Extraction des informations en cours...", ConsoleMessageType.INFO))
+                    gC.currentProfile.value = linkedinManager.extractProfileData(input)
+                    val newProfile = linkedinManager.extractProfileData(input)
+                    gC.consoleMessage.value =
+                        (when {
+                            newProfile.fullName.isBlank() || (newProfile.firstName == "Prénom inconnu" && newProfile.lastName == "Nom de famille inconnu") -> ConsoleMessage("❌ Aucune information traitable ou format du texte copié incorrect", ConsoleMessageType.ERROR)
+                            newProfile.firstName == "Prénom inconnu" || newProfile.lastName == "Nom de famille inconnu" -> ConsoleMessage("⚠️ Extraction des données incomplète", ConsoleMessageType.WARNING)
+                            else -> {ConsoleMessage("✅ Extraction des informations réussie", ConsoleMessageType.SUCCESS)}
+                        })
+                    gC.isExtractionLoading.value = false
+                }
+            }
+            gC.isExtractionLoading.value = false
+        }
+    }
 
     suspend fun extractProfileData(text: String): ProspectData {
         logger.info("Début de l'extraction des données du profil")

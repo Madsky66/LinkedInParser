@@ -15,6 +15,7 @@ import androidx.compose.ui.window.WindowState
 import data.ProspectData
 import manager.FileExportManager
 import manager.FileImportManager
+import manager.LinkedInManager
 import manager.UrlManager
 import utils.Colors
 import utils.ConsoleMessage
@@ -36,6 +37,7 @@ data class GlobalConfig(
     var lightGray: MutableState<Color> =mutableStateOf<Color>(themeColors.get(isDarkTheme)[2]),
 
     val urlManager: UrlManager = UrlManager(),
+    val linkedinManager: LinkedInManager = LinkedInManager(),
     val fileImportManager: FileImportManager = FileImportManager(),
     val fileExportManager: FileExportManager = FileExportManager(),
 

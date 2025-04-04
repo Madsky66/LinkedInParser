@@ -137,7 +137,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                                         },
                                         modifier = Modifier.size(25.dp).align(Alignment.CenterVertically)
                                     ) {
-                                        Icon(Icons.Filled.Search, "Rechercher")
+                                        Icon(Icons.Filled.Search, "Rechercher", tint = gC.lightGray.value)
                                     }
                                 },
                                 visualTransformation = EllipsisVisualTransformation()
