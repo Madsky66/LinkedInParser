@@ -31,10 +31,10 @@ class UrlManager {
                     delay(1000) // <--- Rendre cette valeur dynamique
 
                     // Copie du contenu de la page
-                    val clipboardContent = copyUrlContent(robot, clipboard)
+                    var clipboardContent = copyUrlContent(robot, clipboard)
 
                     // Boucles de détection de la page de profil
-                    if (!detect(gC, robot, clipboard)) {return@launch} else {gC.consoleMessage.value = ConsoleMessage("✅ Page de profil détectée et correctement chargée", ConsoleMessageType.SUCCESS)}
+                    if (!detect(gC, robot, clipboard) {clipboardContent = it.toString()}) {returnToApp(robot); return@launch} else {gC.consoleMessage.value = ConsoleMessage("✅ Page de profil détectée et correctement chargée", ConsoleMessageType.SUCCESS); returnToApp(robot)}
 
                     // Démarrage de l'analyse du texte
                     gC.consoleMessage.value = ConsoleMessage("⏳ Analyse des données en cours...", ConsoleMessageType.INFO)
@@ -46,21 +46,17 @@ class UrlManager {
         }
     }
 
-    suspend fun detect(gC: GlobalConfig, robot: Robot, clipboard: Clipboard): Boolean {
-        val maxAttempts = 6
+    suspend fun detect(gC: GlobalConfig, robot: Robot, clipboard: Clipboard, onNewClipboardContent: (String) -> Unit): Boolean {
+        val maxAttempts = 100
         var attempts = 1
 
         var clipboardContent = copyUrlContent(robot, clipboard)
         var isCoordModalOpen = clipboardContent.lines().take(5).any {it.contains("dialogue")}
         var isTextLengthValid = clipboardContent.length > 5000
 
-        println("-------------------------------------------------------------")
-        println("Modale détectée : " + (if (isCoordModalOpen) {"✅"} else {"❌"}))
-        println("Longueur du texte : " + (if (isTextLengthValid) {"✅"} else {"❌"}))
-        println("-------------------------------------------------------------")
-        println("-------------------------------------------------------------")
+        var loopConditions = (!isCoordModalOpen || !isTextLengthValid)
 
-        while (!isCoordModalOpen || !isTextLengthValid || attempts < maxAttempts) {
+        while (loopConditions) {
             attempts++
             delay(250)
 
@@ -68,26 +64,22 @@ class UrlManager {
             isCoordModalOpen = clipboardContent.lines().take(5).any {it.contains("dialogue")}
             isTextLengthValid = clipboardContent.length > 5000
 
-            println("Modale détectée : " + (if (isCoordModalOpen) {"✅"} else {"❌"}))
-            println("Longueur du texte : " + (if (isTextLengthValid) {"✅"} else {"❌"}))
-            println("-------------------------------------------------------------")
+            var isLoopRunning = (!isTextLengthValid && attempts < maxAttempts)
+            if (!isLoopRunning) {break}
 
-            if (!isCoordModalOpen) {gC.consoleMessage.value = ConsoleMessage("⏳  Détection de la page en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)}
-            else if (!isTextLengthValid) {gC.consoleMessage.value = ConsoleMessage("⏳ Vérification du chargement de la page en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)}
+            if (!isCoordModalOpen) {gC.consoleMessage.value = ConsoleMessage("⏳ Détection de la page en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)}
+            else {gC.consoleMessage.value = ConsoleMessage("⏳ Vérification du chargement de la page en cours... [Tentative $attempts/$maxAttempts]", ConsoleMessageType.INFO)}
         }
 
-        println("-------------------------------------------------------------")
-
-        if (attempts == maxAttempts) {
+        if (!isCoordModalOpen || !isTextLengthValid || attempts >= maxAttempts) {
             gC.consoleMessage.value =
                 if (!isCoordModalOpen) {ConsoleMessage("❌ La page de profil n'a pas été détectée après $maxAttempts tentatives", ConsoleMessageType.ERROR)}
                 else {ConsoleMessage("❌ Quantité de données insuffisante pour l'analyse après $maxAttempts tentatives", ConsoleMessageType.ERROR)}
-            returnToApp(robot)
             return false
         }
 
-        gC.consoleMessage.value = ConsoleMessage("✅ Page de profil détectée", ConsoleMessageType.SUCCESS)
-        returnToApp(robot)
+        onNewClipboardContent(clipboardContent)
+
         return true
     }
 

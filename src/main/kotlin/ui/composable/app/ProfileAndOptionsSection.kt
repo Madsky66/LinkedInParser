@@ -44,14 +44,8 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: Glob
     val isFileImported = (gC.fileInstance.value != null && gC.consoleMessage.value.message.contains("✅ Importation"))
     var fileDisplayText = "Aucun fichier chargé"
     var fileDisplayColor = gC.lightGray.value
-    if (isFileImported) {
-        fileDisplayText = "${gC.fileName.value}.${gC.fileFormat.value}"
-        fileDisplayColor = Color.Green.copy(0.5f)
-    }
-    else {
-        fileDisplayText = "Aucun fichier chargé"
-        fileDisplayColor = gC.lightGray.value
-    }
+    if (isFileImported) {fileDisplayText = "${gC.fileName.value}.${gC.fileFormat.value}"; fileDisplayColor = Color.Green.copy(0.5f)}
+    else {fileDisplayText = "Aucun fichier chargé"; fileDisplayColor = gC.lightGray.value}
 
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
