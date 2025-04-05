@@ -31,7 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -39,7 +39,7 @@ import ui.composable.element.SpacedDivider
 import utils.ConsoleMessage
 import utils.ConsoleMessageType
 
-fun onMenuItemTap(gC: GlobalConfig, selectedTab: String) {
+fun onMenuItemTap(selectedTab: String) {
     gC.isExpandedMenuItem.value =
         when (gC.isExpandedMenuItem.value) {
             "Général" -> if (selectedTab == "Général") {""} else selectedTab.toString()
@@ -51,7 +51,7 @@ fun onMenuItemTap(gC: GlobalConfig, selectedTab: String) {
 }
 
 @Composable
-fun DrawerMenuContent(applicationScope: CoroutineScope, gC: GlobalConfig) {
+fun DrawerMenuContent(applicationScope: CoroutineScope) {
     var isApolloValidationLoading by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf(ConsoleMessage("", ConsoleMessageType.INFO))}
     var pastedApiKey by remember {mutableStateOf("")}
@@ -65,10 +65,10 @@ fun DrawerMenuContent(applicationScope: CoroutineScope, gC: GlobalConfig) {
                 SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 10.dp, 10.dp)
             }
             // Éléments du menu
-            DrawerMenuItem("Général", Icons.Filled.Settings, gC, gC.isExpandedMenuItem.value == "Général") {onMenuItemTap(gC, "Général")}
-            DrawerMenuItem("Customisation", Icons.Filled.Palette, gC, gC.isExpandedMenuItem.value == "Customisation") {onMenuItemTap(gC, "Customisation")}
-            DrawerMenuItem("Aide", Icons.Filled.Help, gC, gC.isExpandedMenuItem.value == "Aide") {onMenuItemTap(gC, "Aide")}
-            DrawerMenuItem("Contact", Icons.Filled.Email, gC, gC.isExpandedMenuItem.value == "Contact") {onMenuItemTap(gC, "Contact")}
+            DrawerMenuItem("Général", Icons.Filled.Settings, gC.isExpandedMenuItem.value == "Général") {onMenuItemTap("Général")}
+            DrawerMenuItem("Customisation", Icons.Filled.Palette, gC.isExpandedMenuItem.value == "Customisation") {onMenuItemTap("Customisation")}
+            DrawerMenuItem("Aide", Icons.Filled.Help, gC.isExpandedMenuItem.value == "Aide") {onMenuItemTap("Aide")}
+            DrawerMenuItem("Contact", Icons.Filled.Email, gC.isExpandedMenuItem.value == "Contact") {onMenuItemTap("Contact")}
         }
     }
 
@@ -76,7 +76,7 @@ fun DrawerMenuContent(applicationScope: CoroutineScope, gC: GlobalConfig) {
     Box(Modifier.fillMaxHeight().fillMaxWidth(gC.drawerWidth.value).padding(start = 20.dp)) {
         when (gC.isExpandedMenuItem.value) {
             "Général" ->
-                GeneralTab(gC, pastedApiKey) {
+                GeneralTab(pastedApiKey) {
                     applicationScope.launch {
                         isApolloValidationLoading = true
                         gC.apiKey.value = pastedApiKey
@@ -90,21 +90,21 @@ fun DrawerMenuContent(applicationScope: CoroutineScope, gC: GlobalConfig) {
                         isApolloValidationLoading = false
                     }
                 }
-            "Customisation" -> CustomizationTab(gC)
-            "Aide" -> HelpTab(gC)
-            "Contact" -> ContactTab(gC)
+            "Customisation" -> CustomizationTab()
+            "Aide" -> HelpTab()
+            "Contact" -> ContactTab()
             else -> Column {}
         }
     }
 }
 
 @Composable
-fun GeneralTab(gC: GlobalConfig, pastedApiKey: String, onProcessApiKey: @Composable (() -> Unit)) {
-    DrawerSubMenuContent(gC, pastedApiKey.toString(), onProcessApiKey = {onProcessApiKey})
+fun GeneralTab(pastedApiKey: String, onProcessApiKey: @Composable (() -> Unit)) {
+    DrawerSubMenuContent(pastedApiKey.toString(), onProcessApiKey = {onProcessApiKey})
 }
 
 @Composable
-fun CustomizationTab(gC: GlobalConfig) {
+fun CustomizationTab() {
     Column(Modifier.fillMaxWidth().padding(20.dp)) {
         Text("Options de thème", color = gC.lightGray.value, fontSize = 18.sp)
         Spacer(Modifier.height(10.dp))
@@ -125,7 +125,7 @@ fun CustomizationTab(gC: GlobalConfig) {
 }
 
 @Composable
-fun HelpTab(gC: GlobalConfig) {
+fun HelpTab() {
     Column(Modifier.fillMaxWidth().padding(20.dp)) {
         Text("Documentation", color = gC.lightGray.value, fontSize = 18.sp)
         Spacer(Modifier.height(10.dp))
@@ -134,7 +134,7 @@ fun HelpTab(gC: GlobalConfig) {
 }
 
 @Composable
-fun ContactTab(gC: GlobalConfig) {
+fun ContactTab() {
     Column(Modifier.fillMaxWidth().padding(20.dp)) {
         Text("Nous contacter", color = gC.lightGray.value, fontSize = 18.sp)
         Spacer(Modifier.height(10.dp))

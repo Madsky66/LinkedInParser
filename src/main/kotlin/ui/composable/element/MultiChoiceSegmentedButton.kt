@@ -11,12 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import utils.getButtonColors
 
 
 @Composable
-fun MultiChoiceSegmentedButton(gC: GlobalConfig, width: Float = 1f) {
+fun MultiChoiceSegmentedButton(width: Float = 1f) {
     val switchXLSXBackgroundColor = if (gC.selectedOptions[0]) {gC.darkGray.value.copy(0.5f)} else {gC.middleGray.value}
     val switchCSVBackgroundColor = if (gC.selectedOptions[1]) {gC.darkGray.value.copy(0.5f)} else {gC.middleGray.value}
 

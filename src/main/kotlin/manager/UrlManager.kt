@@ -1,6 +1,6 @@
 package manager
 
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -15,7 +15,7 @@ import java.awt.event.KeyEvent
 import java.net.URI
 
 class UrlManager {
-    fun openPastedUrl(applicationScope: CoroutineScope, gC: GlobalConfig) {
+    fun openPastedUrl(applicationScope: CoroutineScope) {
         applicationScope.launch {
             if (gC.pastedUrl.value.isNotBlank()) {
                 try {
@@ -34,19 +34,19 @@ class UrlManager {
                     var clipboardContent = copyUrlContent(robot, clipboard)
 
                     // Boucles de détection de la page de profil
-                    if (!detect(gC, robot, clipboard) {clipboardContent = it.toString()}) {returnToApp(robot); return@launch} else {gC.consoleMessage.value = ConsoleMessage("✅ Page de profil détectée et correctement chargée", ConsoleMessageType.SUCCESS); returnToApp(robot)}
+                    if (!detect(robot, clipboard) {clipboardContent = it.toString()}) {returnToApp(robot); return@launch} else {gC.consoleMessage.value = ConsoleMessage("✅ Page de profil détectée et correctement chargée", ConsoleMessageType.SUCCESS); returnToApp(robot)}
 
                     // Démarrage de l'analyse du texte
                     gC.consoleMessage.value = ConsoleMessage("⏳ Analyse des données en cours...", ConsoleMessageType.INFO)
                     gC.pastedInput.value = clipboardContent
-                    gC.linkedinManager.processInput(applicationScope, gC, clipboardContent)
+                    gC.linkedinManager.processInput(applicationScope, clipboardContent)
                 }
                 catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'ouverture de l'URL : ${e.message}", ConsoleMessageType.ERROR)}
             }
         }
     }
 
-    suspend fun detect(gC: GlobalConfig, robot: Robot, clipboard: Clipboard, onNewClipboardContent: (String) -> Unit): Boolean {
+    suspend fun detect(robot: Robot, clipboard: Clipboard, onNewClipboardContent: (String) -> Unit): Boolean {
         val maxAttempts = 100
         var attempts = 1
 

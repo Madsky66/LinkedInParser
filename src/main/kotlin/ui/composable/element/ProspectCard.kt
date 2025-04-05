@@ -12,10 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 
 @Composable
-fun ProspectCard(gC: GlobalConfig) {
+fun ProspectCard() {
     val prospect = gC.currentProfile.value
     Card(Modifier.fillMaxWidth(), RoundedCornerShape(10), elevation = 3.dp, backgroundColor = gC.darkGray.value) {
         Box(Modifier.fillMaxWidth().padding(15.dp)) {

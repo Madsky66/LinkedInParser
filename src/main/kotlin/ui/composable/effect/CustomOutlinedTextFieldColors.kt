@@ -3,10 +3,10 @@ package ui.composable.effect
 import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 
 @Composable
-fun CustomOutlinedTextFieldColors(gC: GlobalConfig): TextFieldColors {
+fun CustomOutlinedTextFieldColors(): TextFieldColors {
     val textFieldColors = TextFieldDefaults.outlinedTextFieldColors(
         textColor = gC.lightGray.value,
         focusedBorderColor = gC.lightGray.value.copy(0.25f),

@@ -16,10 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 
 @Composable
-fun DrawerMenuItem(title: String, icon: ImageVector, gC: GlobalConfig, isExpanded: Boolean, onClick: () -> Unit) {
+fun DrawerMenuItem(title: String, icon: ImageVector, isExpanded: Boolean, onClick: () -> Unit) {
     val rotation by animateFloatAsState(if (isExpanded) 180f else 0f)
 
     Row(Modifier.fillMaxWidth().background(if (isExpanded) {gC.darkGray.value} else {gC.middleGray.value}).clickable(onClick = onClick).padding(20.dp, 10.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {

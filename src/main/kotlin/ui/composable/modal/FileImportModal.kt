@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogState
 import androidx.compose.ui.window.DialogWindow
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import ui.composable.element.SpacedDivider
 import ui.composable.effect.EllipsisVisualTransformation
@@ -32,20 +32,20 @@ import utils.ConsoleMessageType
 import utils.getButtonColors
 import java.io.File
 
-fun onImportModalClose(gC: GlobalConfig) {
+fun onImportModalClose() {
     gC.consoleMessage.value = ConsoleMessage("⚠️ Importation annulée", ConsoleMessageType.WARNING)
     gC.showImportModal.value = false
     gC.isWaitingForSelection.value = false
 }
-fun onImportConfirm(applicationScope: CoroutineScope, gC: GlobalConfig) {
-    gC.fileImportManager.importFromFile(applicationScope,gC)
+fun onImportConfirm(applicationScope: CoroutineScope) {
+    gC.fileImportManager.importFromFile(applicationScope)
     gC.showImportModal.value = false
     gC.isWaitingForSelection.value = false
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FileImportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
+fun FileImportModal(applicationScope: CoroutineScope) {
     gC.dialogState.value = DialogState(size = DpSize(640.dp, 360.dp))
     gC.isWaitingForSelection.value = true
 
@@ -66,7 +66,7 @@ fun FileImportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
         else -> Color.Red.copy(0.5f)
     }
 
-    DialogWindow({onImportModalClose(gC)}, gC.dialogState.value, transparent = true, undecorated = true) {
+    DialogWindow({onImportModalClose()}, gC.dialogState.value, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
             Card(Modifier, RectangleShape, backgroundColor = gC.middleGray.value, contentColor = gC.lightGray.value, BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
@@ -80,7 +80,7 @@ fun FileImportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                                 Text("Importation", fontSize = 25.sp)
                             }
                             // Bouton de fermeture
-                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton({onImportModalClose(gC)}) {Icon(Icons.Filled.Close, "Quitter")}}
+                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton({onImportModalClose()}) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
                         SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }
@@ -136,7 +136,7 @@ fun FileImportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         // Bouton d'annulation
                         Button(
-                            onClick = {onImportModalClose(gC)},
+                            onClick = {onImportModalClose()},
                             modifier = Modifier.weight(1f),
                             enabled = true,
                             elevation = ButtonDefaults.elevation(10.dp),
@@ -155,7 +155,7 @@ fun FileImportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
 
                         // Bouton d'importation
                         Button(
-                            onClick = {onImportConfirm(applicationScope, gC)},
+                            onClick = {onImportConfirm(applicationScope)},
                             modifier = Modifier.weight(1f),
                             enabled = isPathCorrect,
                             elevation = ButtonDefaults.elevation(10.dp),

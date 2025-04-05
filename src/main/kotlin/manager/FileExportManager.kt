@@ -1,6 +1,6 @@
 package manager
 
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -12,7 +12,7 @@ import java.io.FileOutputStream
 import java.net.URI
 
 class FileExportManager {
-    fun exportToFile(applicationScope: CoroutineScope, gC: GlobalConfig) {
+    fun exportToFile(applicationScope: CoroutineScope) {
         applicationScope.launch {
             gC.isExportationLoading.value = true
 
@@ -24,10 +24,10 @@ class FileExportManager {
                 gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + gC.fileFormat.value
 
                 when (gC.fileFormat.value) {
-                    "xlsx" -> {exportToXLSX(gC)}
-                    "csv" -> {exportToCSV(gC)}
-                    "both" -> {exportToXLSX(gC); exportToCSV(gC)}
-                    "json" -> {exportToGoogleSheets(gC)}
+                    "xlsx" -> {exportToXLSX()}
+                    "csv" -> {exportToCSV()}
+                    "both" -> {exportToXLSX(); exportToCSV()}
+                    "json" -> {exportToGoogleSheets()}
                 }
 
                 gC.consoleMessage.value = ConsoleMessage("✅ Exportation du fichier au(x) format(s) [$displayFileFormat] réussie", ConsoleMessageType.SUCCESS)
@@ -48,7 +48,7 @@ class FileExportManager {
         }
     }
 
-    fun exportToXLSX(gC: GlobalConfig) {
+    fun exportToXLSX() {
         gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + ".xlsx"
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("Prospects")
@@ -69,7 +69,7 @@ class FileExportManager {
         gC.fileInstance.value = File(gC.fileFullPath.value)
     }
 
-    fun exportToCSV(gC: GlobalConfig) {
+    fun exportToCSV() {
         gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + ".csv"
         File(gC.fileFullPath.value).printWriter().use {out ->
             out.println("LinkedIn URL,First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
@@ -78,7 +78,7 @@ class FileExportManager {
         gC.fileInstance.value = File(gC.fileFullPath.value)
     }
 
-    fun exportToGoogleSheets(gC: GlobalConfig) {
+    fun exportToGoogleSheets() {
         val apiUrl = "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=RAW"
         val jsonData = """
         {

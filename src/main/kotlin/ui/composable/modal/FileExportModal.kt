@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogState
 import androidx.compose.ui.window.DialogWindow
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import ui.composable.effect.CustomOutlinedTextFieldColors
 import ui.composable.element.MultiChoiceSegmentedButton
@@ -56,20 +56,20 @@ import utils.getButtonColors
 import java.awt.FileDialog
 import java.awt.Frame
 
-fun onExportModalClose(gC: GlobalConfig) {
+fun onExportModalClose() {
     gC.consoleMessage.value = ConsoleMessage("⚠️ Exportation annulée", ConsoleMessageType.WARNING)
     gC.showExportModal.value = false
     gC.isWaitingForSelection.value = false
 }
-fun onExportConfirm(applicationScope: CoroutineScope, gC: GlobalConfig) {
-    gC.fileExportManager.exportToFile(applicationScope,gC)
+fun onExportConfirm(applicationScope: CoroutineScope) {
+    gC.fileExportManager.exportToFile(applicationScope)
     gC.showExportModal.value = false
     gC.isWaitingForSelection.value = false
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
+fun FileExportModal(applicationScope: CoroutineScope) {
     gC.dialogState.value = DialogState(size = DpSize(640.dp, 500.dp))
     gC.isWaitingForSelection.value = true
 
@@ -82,7 +82,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
         }
     }
 
-    DialogWindow({onExportModalClose(gC)}, gC.dialogState.value, transparent = true, undecorated = true) {
+    DialogWindow({onExportModalClose()}, gC.dialogState.value, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
             Card(Modifier, RectangleShape, backgroundColor = gC.middleGray.value, contentColor = gC.lightGray.value, BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
@@ -96,7 +96,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                                 Text("Exportation", fontSize = 25.sp)
                             }
                             // Bouton de fermeture
-                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton({onExportModalClose(gC)}) {Icon(Icons.Filled.Close, "Quitter")}}
+                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton({onExportModalClose()}) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
                         SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }
@@ -122,7 +122,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                                 onValueChange = {gC.filePath.value = it},
                                 label = {Text("Sélectionner un dossier...")},
                                 singleLine = true,
-                                colors = CustomOutlinedTextFieldColors(gC),
+                                colors = CustomOutlinedTextFieldColors(),
                                 trailingIcon = {
                                     // Icone de loupe
                                     IconButton(
@@ -163,7 +163,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                                 onValueChange = {gC.fileName.value = it},
                                 label = {Text("Nom du fichier d'exportation")},
                                 singleLine = true,
-                                colors = CustomOutlinedTextFieldColors(gC)
+                                colors = CustomOutlinedTextFieldColors()
                             )
                         }
 
@@ -183,7 +183,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                             // Spacer
                             Spacer(Modifier.height(5.dp))
                             // Bouton segmenté
-                            MultiChoiceSegmentedButton(gC, 0.5f)
+                            MultiChoiceSegmentedButton(0.5f)
                         }
 
                         // Spacer
@@ -218,7 +218,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                         // Bouton d'annulation
                         Button(
-                            onClick = {onExportModalClose(gC)},
+                            onClick = {onExportModalClose()},
                             modifier = Modifier.weight(1f),
                             enabled = true,
                             elevation = ButtonDefaults.elevation(10.dp),
@@ -238,7 +238,7 @@ fun FileExportModal(applicationScope: CoroutineScope, gC: GlobalConfig) {
                         val isValidFolderPath = gC.filePath.value.matches(Regex("[A-Za-z]:\\\\.*"))
                         val hasSelectedFormat = gC.selectedOptions[0] || gC.selectedOptions[1]
                         Button(
-                            onClick = {onExportConfirm(applicationScope, gC)},
+                            onClick = {onExportConfirm(applicationScope)},
                             modifier = Modifier.weight(1f),
                             enabled = isValidFolderPath && gC.fileName.value.isNotBlank() && hasSelectedFormat /*&& !java.io.File(gC.filePath.value).exists()*/,
                             elevation = ButtonDefaults.elevation(10.dp),

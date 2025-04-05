@@ -29,8 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.sp
-import config.GlobalConfig
-import config.GlobalInstance
+import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import ui.composable.App
@@ -39,11 +38,10 @@ import kotlin.system.exitProcess
 
 fun main() = application {
     val applicationScope: CoroutineScope = rememberCoroutineScope()
-    val gC = GlobalInstance.config
 
     Window({exitApplication()}, gC.windowState.value, visible = true, "LinkedIn Parser", undecorated = true) {
         ModalDrawer(
-            drawerContent = {DrawerMenuContent(applicationScope, gC)},
+            drawerContent = {DrawerMenuContent(applicationScope)},
             modifier = Modifier.fillMaxHeight(),
             gesturesEnabled = true,
             drawerShape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
@@ -54,12 +52,12 @@ fun main() = application {
                 // Barre de titre
                 WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(gC.darkGray.value)) {
                     Row(Modifier.fillMaxSize().padding(15.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        AppTitleBar(applicationScope, gC)
+                        AppTitleBar(applicationScope)
                     }
                 }
                 // Contenu principal
                 Box(Modifier.fillMaxSize()) {
-                    App(applicationScope, gC)
+                    App(applicationScope)
                 }
             }
         }
@@ -67,7 +65,7 @@ fun main() = application {
 }
 
 @Composable
-fun AppTitleBar(applicationScope: CoroutineScope, gC: GlobalConfig) {
+fun AppTitleBar(applicationScope: CoroutineScope) {
     // Titre
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Icone de menu

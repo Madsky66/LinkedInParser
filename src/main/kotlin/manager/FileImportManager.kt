@@ -1,6 +1,6 @@
 package manager
 
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -10,7 +10,7 @@ import utils.ConsoleMessageType
 import java.io.*
 
 class FileImportManager {
-    fun importFromFile(applicationScope: CoroutineScope, gC: GlobalConfig) {
+    fun importFromFile(applicationScope: CoroutineScope) {
         if (gC.fileInstance.value != null) {
             applicationScope.launch {
                 gC.consoleMessage.value = ConsoleMessage("⏳ Importation du fichier ${gC.fileName.value}.${gC.fileFormat.value}...", ConsoleMessageType.INFO)
@@ -19,9 +19,9 @@ class FileImportManager {
                     if (gC.fileInstance.value == null) {throw IllegalArgumentException("Le fichier spécifié n'existe pas : ${gC.filePath.value}")}
                     var numberOfColumns = 0
                     when (gC.fileFormat.value) {
-                        "xlsx" -> importFromXLSX(gC) {numberOfColumns = it}
-                        "csv" -> importFromCSV(gC) {numberOfColumns = it}
-                        "json" -> importFromGoogleSheets(gC) {numberOfColumns = it}
+                        "xlsx" -> importFromXLSX() {numberOfColumns = it}
+                        "csv" -> importFromCSV() {numberOfColumns = it}
+                        "json" -> importFromGoogleSheets() {numberOfColumns = it}
                         else -> throw IllegalArgumentException("Format non supporté: ${gC.fileFormat.value}")
                     }
                     gC.consoleMessage.value =
@@ -38,7 +38,7 @@ class FileImportManager {
         else {gC.consoleMessage.value = ConsoleMessage("⚠️ Aucun fichier sélectionné", ConsoleMessageType.WARNING)}
     }
 
-    private fun importFromXLSX(gC: GlobalConfig, onImportedFile: (Int) -> Unit) {
+    private fun importFromXLSX(onImportedFile: (Int) -> Unit) {
         FileInputStream(gC.fileInstance.value!!).use {fis ->
             val workbook = XSSFWorkbook(fis)
             val sheet = workbook.getSheetAt(0)
@@ -61,7 +61,7 @@ class FileImportManager {
         }
     }
 
-    private fun importFromCSV(gC: GlobalConfig, onImportedFile: (Int) -> Unit) {
+    private fun importFromCSV(onImportedFile: (Int) -> Unit) {
         gC.fileInstance.value!!.readLines().drop(1).forEach {line ->
             val columns = line.split(",").map {it.trim().removeSurrounding("\"")}
             val linkedinURL = columns.getOrNull(0)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
@@ -79,6 +79,6 @@ class FileImportManager {
         }
     }
 
-    private fun importFromGoogleSheets(gC: GlobalConfig, onImportedFile: (Int) -> Unit) {
+    private fun importFromGoogleSheets(onImportedFile: (Int) -> Unit) {
     }
 }

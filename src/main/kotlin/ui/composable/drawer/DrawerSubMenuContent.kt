@@ -32,20 +32,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import ui.composable.effect.CustomOutlinedTextFieldColors
 import ui.composable.modal.ConfirmModal
 import utils.getButtonColors
 
 @Composable
-fun DrawerSubMenuContent(gC: GlobalConfig, pastedAPI: String, onProcessApiKey: (String) -> Unit) {
+fun DrawerSubMenuContent(pastedAPI: String, onProcessApiKey: (String) -> Unit) {
     var showConfirmModal by remember {mutableStateOf(false)}
     val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $pastedAPI -----"
 
     // Modale de confirmation
     if (showConfirmModal) {
         ConfirmModal(
-            gC, pastedAPI, confirmMessage,
+            pastedAPI, confirmMessage,
             firstButtonText = "Annuler",
             secondButtonText = "Confirmer",
             onSecondButtonClick = {
@@ -66,7 +66,7 @@ fun DrawerSubMenuContent(gC: GlobalConfig, pastedAPI: String, onProcessApiKey: (
                 textStyle = TextStyle.Default,
                 label = {Text("Clé API Apollo...")},
                 maxLines = 1,
-                colors = CustomOutlinedTextFieldColors(gC)
+                colors = CustomOutlinedTextFieldColors()
             )
 
             // Spacer

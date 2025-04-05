@@ -1,7 +1,6 @@
 package manager
 
-import config.GlobalConfig
-import config.GlobalInstance
+import config.GlobalInstance.config as gC
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -18,9 +17,8 @@ import java.util.logging.Logger
 class LinkedInManager {
     private val client = OkHttpClient()
     private val logger = Logger.getLogger(LinkedInManager::class.java.name)
-    val gC = GlobalInstance.config
 
-    fun processInput(applicationScope: CoroutineScope, gC: GlobalConfig, input: String) {
+    fun processInput(applicationScope: CoroutineScope, input: String) {
         val linkedinManager = LinkedInManager()
         applicationScope.launch {
             gC.isExtractionLoading.value = true

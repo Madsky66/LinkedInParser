@@ -36,13 +36,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import ui.composable.element.SpacedDivider
 import utils.getButtonColors
 
 
 @Composable
-fun ConfirmModal(gC: GlobalConfig, string: String = "", modalMessage: String, firstButtonText: String, secondButtonText: String, thirdButtonText: String = "", onSecondButtonClick: (String) -> Unit, onDismissRequest: () -> Unit) {
+fun ConfirmModal(string: String = "", modalMessage: String, firstButtonText: String, secondButtonText: String, thirdButtonText: String = "", onSecondButtonClick: (String) -> Unit, onDismissRequest: () -> Unit) {
     val dialogState = rememberDialogState(position = WindowPosition.PlatformDefault, size = DpSize(640.dp, 360.dp))
 
     DialogWindow(onDismissRequest, state = dialogState, transparent = true, undecorated = true) {

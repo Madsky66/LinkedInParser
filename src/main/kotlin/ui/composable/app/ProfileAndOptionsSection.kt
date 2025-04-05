@@ -29,7 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import config.GlobalConfig
+import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import ui.composable.effect.CustomOutlinedTextFieldColors
 import ui.composable.element.ProspectCard
@@ -39,7 +39,7 @@ import utils.ConsoleMessageType
 import utils.getButtonColors
 
 @Composable
-fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: GlobalConfig) {
+fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope) {
     val label = "Fichier chargé : "
     val isFileImported = (gC.fileInstance.value != null && gC.consoleMessage.value.message.contains("✅ Importation"))
     var fileDisplayText = "Aucun fichier chargé"
@@ -50,7 +50,7 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: Glob
     // Colonne de droite
     Column(Modifier.weight(1f).fillMaxHeight().padding(5.dp, 5.dp, 0.dp, 0.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
         // Fiche contact
-        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {ProspectCard(gC)}
+        Column(Modifier.fillMaxWidth(), Arrangement.Top, Alignment.CenterHorizontally) {ProspectCard()}
         // Diviseur espacé
         SpacedDivider(Modifier.fillMaxWidth().padding(50.dp, 0.dp).background(gC.darkGray.value.copy(0.05f)), "horizontal", 1.dp, 15.dp, 15.dp)
         // Options
@@ -105,12 +105,12 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope, gC: Glob
                 onValueChange = {gC.pastedUrl.value = it},
                 label = {Text("Coller l'URL de la page LinkedIn ici...")},
                 modifier = Modifier.fillMaxWidth().clip(RectangleShape),
-                colors = CustomOutlinedTextFieldColors(gC)
+                colors = CustomOutlinedTextFieldColors()
             )
 
             // Bouton de validation
             Button(
-                onClick = {gC.urlManager.openPastedUrl(applicationScope, gC)},
+                onClick = {gC.urlManager.openPastedUrl(applicationScope)},
                 modifier = Modifier.fillMaxWidth(),
                 enabled = gC.pastedUrl.value.matches(Regex("https?://(www\\.)?linkedin\\.com/in/.*")),
                 elevation = ButtonDefaults.elevation(10.dp),
