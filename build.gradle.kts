@@ -30,9 +30,9 @@ dependencies {
     implementation(compose.ui)
 
     // Kotlin X
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
     implementation("org.java-websocket:Java-WebSocket:1.6.0")
 
@@ -50,8 +50,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended-desktop:1.7.3")
 
     // Apache POI
-    implementation("org.apache.poi:poi:5.4.0") // <--- Version vulnérable
-    implementation("org.apache.poi:poi-ooxml:5.4.0") // <--- Version vulnérable
+    implementation("org.apache.poi:poi:5.4.0")
+    implementation("org.apache.poi:poi-ooxml:5.4.0")
 }
 
 compose.desktop {
