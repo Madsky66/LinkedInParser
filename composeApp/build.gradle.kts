@@ -1,69 +1,50 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.compose)
-}
-
-repositories {
-    gradlePluginPortal()
-    google()
-    mavenCentral()
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    alias(libs.plugins.compose.compiler)
 }
 
 kotlin {
     jvmToolchain(17)
 
+    sourceSets["commonMain"].dependencies {
+        // Compose
+        implementation(libs.compose.material)
+        implementation(libs.compose.runtime)
+        implementation(libs.compose.foundation)
+        implementation(libs.compose.ui)
+
+        // Kotlin X
+        implementation(libs.kotlin.serialization)
+        implementation(libs.kotlin.coroutines.core)
+        implementation(libs.kotlin.coroutines.swing)
+        implementation(libs.kotlin.stdlib)
+
+        // Material Icons Extended
+        implementation(libs.material.icons.extended)
+
+        // Slf4j
+        implementation(libs.slf4j.api)
+        implementation(libs.slf4j.simple)
+
+        // OkHttp3
+        implementation(libs.okhttp)
+
+        // Java WebSocket
+        implementation(libs.java.websocket)
+
+        // JSONObject
+        implementation(libs.json)
+
+        // Apache POI
+        implementation(libs.apache.poi)
+        implementation(libs.apache.poi.ooxml)
+    }
+
     compilerOptions {
         freeCompilerArgs.add("-Xwhen-guards")
         freeCompilerArgs.add("-Xnon-local-break-continue")
         freeCompilerArgs.add("-Xmulti-dollar-interpolation")
-    }
-    jvm {
-        withJava()
-        compilations.all {
-            kotlinOptions.jvmTarget = "17"
-        }
-    }
-    sourceSets {
-        val jvmMain by getting{
-            dependencies {
-                // Compose
-                implementation(compose.desktop.currentOs)
-                implementation(libs.compose.material)
-                implementation(libs.compose.runtime)
-                implementation(libs.compose.foundation)
-                implementation(libs.compose.ui)
-
-                // Kotlin X
-                implementation(libs.kotlin.serialization)
-                implementation(libs.kotlin.coroutines.core)
-                implementation(libs.kotlin.coroutines.swing)
-                implementation(libs.kotlin.stdlib)
-
-                // Material Icons Extended
-                implementation(libs.material.icons.extended)
-
-                // Slf4j
-                implementation(libs.slf4j.api)
-                implementation(libs.slf4j.simple)
-
-                // OkHttp3
-                implementation(libs.okhttp)
-
-                // Java WebSocket
-                implementation(libs.java.websocket)
-
-                // JSONObject
-                implementation(libs.json)
-
-                // Apache POI
-                implementation(libs.apache.poi)
-                implementation(libs.apache.poi.ooxml)
-            }
-        }
     }
 }
 
@@ -72,7 +53,7 @@ compose.desktop {
         mainClass = "MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Msi)
+            targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi)
             packageName = "LinkedInParser"
             packageVersion = "1.0.0"
 
