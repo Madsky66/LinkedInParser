@@ -66,6 +66,8 @@ fun main() = application {
 
 @Composable
 fun AppTitleBar(applicationScope: CoroutineScope) {
+    var isMinimized = mutableStateOf(gC.windowState.value.isMinimized)
+    val isMaximized = gC.isWindowMaximized
     // Titre
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Icone de menu
@@ -78,11 +80,11 @@ fun AppTitleBar(applicationScope: CoroutineScope) {
     // Boutons
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Minimiser
-        IconButton({gC.windowState.value.isMinimized = true}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = gC.lightGray.value)}
+        IconButton({isMinimized.value = true}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.KeyboardArrowDown, "Minimiser", tint = gC.lightGray.value)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Maximiser / Restaurer
-        IconButton({gC.windowState.value.placement = if (gC.isWindowMaximized.value) WindowPlacement.Maximized else WindowPlacement.Floating; gC.isWindowMaximized.value = !gC.isWindowMaximized.value}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = gC.lightGray.value)}
+        IconButton({gC.windowState.value.placement = if (isMinimized.value) WindowPlacement.Maximized else WindowPlacement.Floating; isMaximized.value = !isMaximized.value}, Modifier.size(25.dp).clip(RoundedCornerShape(100))) {Icon(Icons.Filled.Window, "Maximiser / Restaurer", tint = gC.lightGray.value)}
         // Spacer
         Spacer(Modifier.width(15.dp))
         // Quitter
