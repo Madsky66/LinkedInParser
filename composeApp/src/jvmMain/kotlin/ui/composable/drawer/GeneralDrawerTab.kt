@@ -18,9 +18,9 @@ import ui.composable.modal.ConfirmModal
 import utils.getButtonColors
 
 @Composable
-fun DrawerSubMenuContent(pastedAPI: String, onProcessApiKey: (String) -> Unit) {
+fun GeneralDrawerTab(pastedApiKey: String, onProcessApiKey: (String?) -> Unit) {
     var showConfirmModal by remember {mutableStateOf(false)}
-    val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $pastedAPI -----"
+    val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $pastedApiKey -----"
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
     val lightGray = gC.lightGray.value
@@ -28,10 +28,10 @@ fun DrawerSubMenuContent(pastedAPI: String, onProcessApiKey: (String) -> Unit) {
     // Modale de confirmation
     if (showConfirmModal) {
         ConfirmModal(
-            pastedAPI, confirmMessage,
+            pastedApiKey, confirmMessage,
             firstButtonText = "Annuler",
             secondButtonText = "Confirmer",
-            onSecondButtonClick = {onProcessApiKey(pastedAPI); showConfirmModal = false},
+            onSecondButtonClick = {onProcessApiKey(pastedApiKey); showConfirmModal = false},
             onDismissRequest = {showConfirmModal = false}
         )
     }
@@ -39,8 +39,8 @@ fun DrawerSubMenuContent(pastedAPI: String, onProcessApiKey: (String) -> Unit) {
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Zone de texte
         OutlinedTextField(
-            value = pastedAPI,
-            onValueChange = {gC.apiKey.value = pastedAPI},
+            value = pastedApiKey,
+            onValueChange = {gC.apiKey.value = pastedApiKey},
             modifier = Modifier.clip(RectangleShape).weight(2f),
             textStyle = TextStyle.Default,
             label = {Text("Clé API Apollo...")},
@@ -55,7 +55,7 @@ fun DrawerSubMenuContent(pastedAPI: String, onProcessApiKey: (String) -> Unit) {
         Button(
             onClick = {showConfirmModal = true},
             modifier = Modifier.padding(top = 8.dp).weight(0.75f).height(54.dp),
-            enabled = pastedAPI.isNotBlank(),
+            enabled = pastedApiKey.isNotBlank(),
             elevation = ButtonDefaults.elevation(10.dp),
             shape = RoundedCornerShape(0, 100, 100, 0),
             colors = getButtonColors(middleGray, darkGray, lightGray)

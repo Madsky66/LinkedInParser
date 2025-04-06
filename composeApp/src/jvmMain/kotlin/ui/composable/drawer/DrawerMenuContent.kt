@@ -15,45 +15,52 @@ import kotlinx.coroutines.*
 import ui.composable.element.SpacedDivider
 import utils.*
 
-fun onMenuItemTap(selectedTab: String) {
-    gC.isExpandedMenuItem.value =
-        when (gC.isExpandedMenuItem.value) {
-            "Général" -> if (selectedTab == "Général") {""} else selectedTab.toString()
-            "Customisation" -> if (selectedTab == "Customisation") {""} else selectedTab.toString()
-            "Aide" -> if (selectedTab == "Aide") {""} else selectedTab.toString()
-            "Contact" -> if (selectedTab == "Contact") {""} else selectedTab.toString()
-            else -> selectedTab.toString()
-        }
-}
-
 @Composable
 fun DrawerMenuContent(applicationScope: CoroutineScope) {
     var isApolloValidationLoading by remember {mutableStateOf(false)}
     var statusMessage by remember {mutableStateOf(ConsoleMessage("", ConsoleMessageType.INFO))}
     var pastedApiKey by remember {mutableStateOf("")}
+    val darkGray = gC.darkGray.value
+    val middleGray = gC.middleGray.value
+    val lightGray = gC.lightGray.value
+    val generalTab = "Général"
+    val customizationTab = "Customisation"
+    val helpTab = "Aide"
+    val contactTab = "Contact"
+
+    fun onMenuItemTap(selectedTab: String) {
+        gC.isExpandedMenuItem.value =
+            when (gC.isExpandedMenuItem.value) {
+                generalTab -> if (selectedTab == generalTab) {""} else selectedTab.toString()
+                customizationTab -> if (selectedTab == customizationTab) {""} else selectedTab.toString()
+                helpTab -> if (selectedTab == helpTab) {""} else selectedTab.toString()
+                contactTab -> if (selectedTab == contactTab) {""} else selectedTab.toString()
+                else -> selectedTab.toString()
+            }
+    }
 
     Row(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.5f} else {0.2f})) {
         // Volet avant
-        Card(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.4f} else {1f}), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = gC.darkGray.value, border = BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
+        Card(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.4f} else {1f}), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = darkGray, border = BorderStroke(1.dp, darkGray), elevation = 5.dp) {
             Column(Modifier.fillMaxSize()) {
                 // Titre du menu
                 Column(Modifier.fillMaxWidth().padding(20.dp, 10.dp)) {
-                    Text("Menu", fontSize = 24.sp, color = gC.lightGray.value)
-                    SpacedDivider(Modifier.fillMaxWidth().background(gC.middleGray.value.copy(0.5f)), "vertical", 1.dp, 10.dp, 10.dp)
+                    Text("Menu", fontSize = 24.sp, color = lightGray)
+                    SpacedDivider(Modifier.fillMaxWidth().background(middleGray.copy(0.5f)), "vertical", 1.dp, 10.dp, 10.dp)
                 }
                 // Éléments du menu
-                DrawerMenuItem("Général", Icons.Filled.Settings, gC.isExpandedMenuItem.value == "Général") {onMenuItemTap("Général")}
-                DrawerMenuItem("Customisation", Icons.Filled.Palette, gC.isExpandedMenuItem.value == "Customisation") {onMenuItemTap("Customisation")}
-                DrawerMenuItem("Aide", Icons.AutoMirrored.Filled.Help, gC.isExpandedMenuItem.value == "Aide") {onMenuItemTap("Aide")}
-                DrawerMenuItem("Contact", Icons.Filled.Email, gC.isExpandedMenuItem.value == "Contact") {onMenuItemTap("Contact")}
+                DrawerMenuItem(generalTab, Icons.Filled.Settings, gC.isExpandedMenuItem.value == generalTab) {onMenuItemTap(generalTab)}
+                DrawerMenuItem(customizationTab, Icons.Filled.Palette, gC.isExpandedMenuItem.value == customizationTab) {onMenuItemTap(customizationTab)}
+                DrawerMenuItem(helpTab, Icons.AutoMirrored.Filled.Help, gC.isExpandedMenuItem.value == helpTab) {onMenuItemTap(helpTab)}
+                DrawerMenuItem(contactTab, Icons.Filled.Email, gC.isExpandedMenuItem.value == contactTab) {onMenuItemTap(contactTab)}
             }
         }
         // Volet arrière
         if (gC.isExpandedMenuItem.value != "") {
             Column(Modifier.padding(25.dp)) {
                 when (gC.isExpandedMenuItem.value) {
-                    "Général" ->
-                        GeneralTab(pastedApiKey) {
+                    generalTab ->
+                        GeneralDrawerTab(pastedApiKey) {
                             applicationScope.launch {
                                 isApolloValidationLoading = true
                                 gC.apiKey.value = pastedApiKey
@@ -67,50 +74,12 @@ fun DrawerMenuContent(applicationScope: CoroutineScope) {
                                 isApolloValidationLoading = false
                             }
                         }
-                    "Customisation" -> CustomizationTab()
-                    "Aide" -> HelpTab()
-                    "Contact" -> ContactTab()
+                    customizationTab -> CustomizationDrawerTab()
+                    helpTab -> HelpDrawerTab()
+                    contactTab -> ContactDrawerTab()
                     else -> Column(Modifier.fillMaxWidth()) {}
                 }
             }
         }
     }
-}
-
-@Composable
-fun GeneralTab(pastedApiKey: String, onProcessApiKey: @Composable (() -> Unit)) {
-    DrawerSubMenuContent(pastedApiKey.toString(), onProcessApiKey = {onProcessApiKey})
-}
-
-@Composable
-fun CustomizationTab() {
-    Text("Options de thème", color = gC.lightGray.value, fontSize = 18.sp)
-    Spacer(Modifier.height(10.dp))
-    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text("Thème sombre [Expérimental...]", color = gC.lightGray.value)
-        Switch(
-            checked = gC.isDarkTheme.value,
-            onCheckedChange = {gC.isDarkTheme.value = it},
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = gC.lightGray.value,
-                uncheckedThumbColor = gC.darkGray.value,
-                checkedTrackColor = gC.lightGray.value.copy(0.5f),
-                uncheckedTrackColor = gC.darkGray.value.copy(0.5f)
-            )
-        )
-    }
-}
-
-@Composable
-fun HelpTab() {
-    Text("Documentation", color = gC.lightGray.value, fontSize = 18.sp)
-    Spacer(Modifier.height(10.dp))
-    Text("Pour utiliser cette application, copiez le contenu d'une page LinkedIn et collez-le dans la zone de texte à gauche.", color = gC.lightGray.value)
-}
-
-@Composable
-fun ContactTab() {
-    Text("Nous contacter", color = gC.lightGray.value, fontSize = 18.sp)
-    Spacer(Modifier.height(10.dp))
-    Text("Email : pmbussy66@gmail.com", color = gC.lightGray.value)
 }

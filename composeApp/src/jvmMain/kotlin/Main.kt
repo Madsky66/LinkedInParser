@@ -16,19 +16,6 @@ import ui.composable.AppTitleBar
 import ui.composable.drawer.DrawerMenuContent
 import kotlin.system.exitProcess
 
-fun onToggleDrawer(applicationScope: CoroutineScope, drawerState: BottomDrawerState) {
-    applicationScope.launch {
-        if (drawerState.isClosed) {drawerState.expand()}
-        else {drawerState.close()}
-    }
-}
-fun onMinimizeWindow(windowState: WindowState) {windowState.isMinimized = true}
-fun onToggleMaximizeOrRestore(windowState: WindowState) {
-    if (windowState.placement == WindowPlacement.Maximized) {windowState.placement = WindowPlacement.Floating}
-    else {windowState.placement = WindowPlacement.Maximized}
-}
-fun onCloseApp() {exitProcess(0)}
-
 fun main() = application {
     val applicationScope: CoroutineScope = rememberCoroutineScope()
     var windowState by remember {mutableStateOf(WindowState(WindowPlacement.Floating, false, WindowPosition.PlatformDefault, DpSize(1280.dp, 720.dp)))}
@@ -36,29 +23,19 @@ fun main() = application {
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
 
+    fun onToggleDrawer(applicationScope: CoroutineScope, drawerState: BottomDrawerState) {applicationScope.launch {if (drawerState.isClosed) {drawerState.expand()} else {drawerState.close()}}}
+    fun onMinimizeWindow(windowState: WindowState) {windowState.isMinimized = true}
+    fun onToggleMaximizeOrRestore(windowState: WindowState) {if (windowState.placement == WindowPlacement.Maximized) {windowState.placement = WindowPlacement.Floating} else {windowState.placement = WindowPlacement.Maximized}}
+    fun onCloseApp() {exitProcess(0)}
+
     Window({exitApplication()}, windowState, visible = true, "LinkedIn Parser", undecorated = true) {
         Column(Modifier.fillMaxSize()) {
             // Barre de titre
             WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(darkGray)) {
-                Row(Modifier.fillMaxSize()) {
-                    AppTitleBar(
-                        gC = gC,
-                        onToggleDrawer = {onToggleDrawer(applicationScope, drawerState)},
-                        onMinimizeWindow = {onMinimizeWindow(windowState)},
-                        onToggleMaximizeOrRestore = {onToggleMaximizeOrRestore(windowState)},
-                        onCloseApp = {onCloseApp()}
-                    )
-                }
+                Row(Modifier.fillMaxSize()) {AppTitleBar(gC, {onToggleDrawer(applicationScope, drawerState)}, {onMinimizeWindow(windowState)}, {onToggleMaximizeOrRestore(windowState)}, {onCloseApp()})}
             }
             // Menu
-            BottomDrawer(
-                drawerContent = {DrawerMenuContent(applicationScope)},
-                modifier = Modifier.fillMaxSize(),
-                drawerState = drawerState,
-                gesturesEnabled = true,
-                drawerShape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
-                drawerBackgroundColor = middleGray,
-            ) {
+            BottomDrawer({DrawerMenuContent(applicationScope)}, Modifier.fillMaxSize(), drawerState, true, RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), drawerBackgroundColor = middleGray) {
                 Column(Modifier.fillMaxSize()) {App(applicationScope)}
             }
 //            // Ancien menu
