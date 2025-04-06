@@ -12,9 +12,7 @@ repositories {
 }
 
 kotlin {
-
     jvm {}
-
     jvmToolchain(17)
 
     sourceSets["jvmMain"].dependencies {
