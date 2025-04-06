@@ -50,7 +50,7 @@ fun main() = application {
 @Composable
 fun AppTitleBar(applicationScope: CoroutineScope) {
     val lightGray = gC.lightGray.value
-    var isMinimized by remember {mutableStateOf(gC.windowState.value.isMinimized)}
+    var isMinimized by gC.windowState.value::isMinimized
 
     // Titre
     Row(Modifier.fillMaxHeight(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
