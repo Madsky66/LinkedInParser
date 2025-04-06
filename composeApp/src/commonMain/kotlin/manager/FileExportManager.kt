@@ -1,15 +1,13 @@
 package manager
 
 import config.GlobalInstance.config as gC
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import utils.ConsoleMessage
-import utils.ConsoleMessageType
+import utils.*
 import java.awt.Desktop
-import java.io.File
-import java.io.FileOutputStream
+import java.io.*
 import java.net.URI
+import java.util.Locale
 
 class FileExportManager {
     fun exportToFile(applicationScope: CoroutineScope) {
@@ -17,7 +15,7 @@ class FileExportManager {
             gC.isExportationLoading.value = true
 
             gC.fileFormat.value = if (gC.selectedOptions[0] && gC.selectedOptions[1]) {"both"} else if (gC.selectedOptions[0]) {"xlsx"} else {"csv"}
-            val displayFileFormat = if (gC.fileFormat.value == "both") {"XLSX, CSV"} else {gC.fileFormat.value.capitalize()}
+            val displayFileFormat = if (gC.fileFormat.value == "both") {"XLSX, CSV"} else {gC.fileFormat.value.replaceFirstChar {if (it. isLowerCase()) it. titlecase(Locale. getDefault()) else it. toString()}}
             gC.consoleMessage.value = ConsoleMessage("⏳ Exportation du fichier au format [$displayFileFormat] en cours...", ConsoleMessageType.INFO)
 
             try {

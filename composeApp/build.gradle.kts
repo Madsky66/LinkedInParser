@@ -1,24 +1,34 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.compose.compiler)
+    kotlin("multiplatform")
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
 kotlin {
+
+    jvm {}
+
     jvmToolchain(17)
 
-    sourceSets["commonMain"].dependencies {
+    sourceSets["jvmMain"].dependencies {
         // Compose
-        implementation(libs.compose.material)
-        implementation(libs.compose.runtime)
-        implementation(libs.compose.foundation)
-        implementation(libs.compose.ui)
+        implementation(compose.desktop.currentOs)
+        implementation(compose.components.resources)
+    }
 
+    sourceSets["commonMain"].dependencies {
         // Kotlin X
+        implementation(libs.kotlin.stdlib)
         implementation(libs.kotlin.serialization)
         implementation(libs.kotlin.coroutines.core)
         implementation(libs.kotlin.coroutines.swing)
-        implementation(libs.kotlin.stdlib)
 
         // Material Icons Extended
         implementation(libs.material.icons.extended)
@@ -39,12 +49,12 @@ kotlin {
         // Apache POI
         implementation(libs.apache.poi)
         implementation(libs.apache.poi.ooxml)
-    }
 
-    compilerOptions {
-        freeCompilerArgs.add("-Xwhen-guards")
-        freeCompilerArgs.add("-Xnon-local-break-continue")
-        freeCompilerArgs.add("-Xmulti-dollar-interpolation")
+        compilerOptions {
+            freeCompilerArgs.add("-Xwhen-guards")
+            freeCompilerArgs.add("-Xnon-local-break-continue")
+            freeCompilerArgs.add("-Xmulti-dollar-interpolation")
+        }
     }
 }
 
@@ -60,22 +70,22 @@ compose.desktop {
             windows {
                 menuGroup = "LinkedInParser"
                 shortcut = true
-                iconFile.set(project.file("src/main/resources/extra/icon.ico"))
+                iconFile.set(project.file("src/jvmMain/composeResources/drawable/icon.ico"))
                 upgradeUuid = "938f329d-3585-430d-bbca-304ff14f3dda"
                 dirChooser = true
                 perUserInstall = true
             }
 
             fromFiles(
-                "src/main/resources/LICENSE.txt",
-                "src/main/resources/icon.ico"
+//                "src/jvmMain/composeResources/LICENSE.txt",
+                "src/jvmMain/composeResources/drawable/icon.ico"
             )
 
-            appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
+            appResourcesRootDir.set(project.layout.projectDirectory.dir("src/jvmMain/composeResources"))
             description = "LinkedIn Profile Parser"
             vendor = "Madsky"
             copyright = "© 2025 Madsky. All rights reserved."
-            licenseFile.set(project.file("src/main/resources/extra/LICENSE.txt"))
+//            licenseFile.set(project.file("src/jvmMain/composeResources/LICENSE.txt"))
         }
     }
 }

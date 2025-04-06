@@ -2,16 +2,12 @@ package manager
 
 import config.GlobalInstance.config as gC
 import data.ProspectData
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.*
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import utils.ConsoleMessage
-import utils.ConsoleMessageType
+import utils.*
 import java.util.logging.Logger
 
 class LinkedInManager {
@@ -163,7 +159,7 @@ class LinkedInManager {
             put("reveal_personal_emails", true)
         }
         return try {
-            val requestBody = RequestBody.create("application/json".toMediaType(), jsonBody.toString())
+            val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
             val request = Request.Builder()
                 .url("https://api.apollo.io/api/v1/people/match")
                 .post(requestBody)

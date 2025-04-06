@@ -1,7 +1,8 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform) apply false
-    alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.compose.compiler) apply false
+    kotlin("multiplatform") apply false
+    id("org.jetbrains.compose") apply false
+    id("org.jetbrains.kotlin.plugin.compose") apply true
+    id("org.jetbrains.kotlin.plugin.serialization") apply false
 }
 
 group = "com.madsky"
