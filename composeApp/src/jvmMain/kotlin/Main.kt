@@ -20,7 +20,7 @@ import kotlin.system.exitProcess
 
 fun onToggleDrawer(applicationScope: CoroutineScope, drawerState: BottomDrawerState) {
     applicationScope.launch {
-        if (drawerState.isClosed) {drawerState.open()}
+        if (drawerState.isClosed) {drawerState.expand()}
         else {drawerState.close()}
     }
 }
@@ -35,11 +35,10 @@ fun main() = application {
     val applicationScope: CoroutineScope = rememberCoroutineScope()
     var windowState by remember {mutableStateOf(WindowState(WindowPlacement.Floating, false, WindowPosition.PlatformDefault, DpSize(1280.dp, 720.dp)))}
     val drawerState = rememberBottomDrawerState(BottomDrawerValue.Closed)
-    val (gesturesEnabled, toggleGesturesEnabled) = remember {mutableStateOf(true)}
     val darkGray = gC.darkGray.value
 
     Window({exitApplication()}, windowState, visible = true, "LinkedIn Parser", undecorated = true) {
-        Column(Modifier.fillMaxSize().toggleable(gesturesEnabled, onValueChange = toggleGesturesEnabled).background(Color.Red)) {
+        Column(Modifier.fillMaxSize().background(Color.Red)) {
             // Barre de titre
             WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(darkGray)) {
                 Row(Modifier.fillMaxSize()) {
@@ -57,7 +56,7 @@ fun main() = application {
                 drawerContent = {DrawerMenuContent(applicationScope)},
                 modifier = Modifier.fillMaxSize(),
                 drawerState = drawerState,
-                gesturesEnabled = gesturesEnabled,
+                gesturesEnabled = true,
                 drawerShape = RoundedCornerShape(0.dp)
             ) {
                 Column(Modifier.fillMaxSize()) {App(applicationScope)}
