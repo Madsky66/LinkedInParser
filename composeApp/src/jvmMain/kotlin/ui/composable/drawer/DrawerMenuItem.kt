@@ -22,7 +22,7 @@ import config.GlobalInstance.config as gC
 fun DrawerMenuItem(title: String, icon: ImageVector, isExpanded: Boolean, onClick: () -> Unit) {
     val rotation by animateFloatAsState(if (isExpanded) 180f else 0f)
 
-    Row(Modifier.fillMaxWidth().background(if (isExpanded) {gC.darkGray.value} else {gC.middleGray.value}).clickable(onClick = onClick).padding(20.dp, 10.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().background(if (isExpanded) {gC.middleGray.value} else {gC.darkGray.value}).clickable(onClick = onClick).padding(20.dp, 10.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Icône et titre
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, title, tint = gC.lightGray.value)
