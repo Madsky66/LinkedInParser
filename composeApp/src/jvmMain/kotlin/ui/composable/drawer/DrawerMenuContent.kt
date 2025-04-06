@@ -23,25 +23,13 @@ fun DrawerMenuContent(applicationScope: CoroutineScope) {
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
     val lightGray = gC.lightGray.value
-    val generalTab = "Général"
-    val customizationTab = "Customisation"
-    val helpTab = "Aide"
-    val contactTab = "Contact"
+    val menuItems = mapOf("Général" to Icons.Filled.Settings, "Customisation" to Icons.Filled.Palette, "Aide" to Icons.AutoMirrored.Filled.Help, "Contact" to Icons.Filled.Email)
 
-    fun onMenuItemTap(selectedTab: String) {
-        gC.isExpandedMenuItem.value =
-            when (gC.isExpandedMenuItem.value) {
-                generalTab -> if (selectedTab == generalTab) {""} else selectedTab.toString()
-                customizationTab -> if (selectedTab == customizationTab) {""} else selectedTab.toString()
-                helpTab -> if (selectedTab == helpTab) {""} else selectedTab.toString()
-                contactTab -> if (selectedTab == contactTab) {""} else selectedTab.toString()
-                else -> selectedTab.toString()
-            }
-    }
+    fun onMenuItemTap(selectedTab: String) {gC.isExpandedMenuItem.value = if (gC.isExpandedMenuItem.value == selectedTab) "" else selectedTab}
 
-    Row(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.5f} else {0.2f})) {
+    Row(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value.isNotEmpty()) 0.5f else 0.2f)) {
         // Volet avant
-        Card(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.4f} else {1f}), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = darkGray, border = BorderStroke(1.dp, darkGray), elevation = 5.dp) {
+        Card(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value.isNotEmpty()) 0.4f else 1f), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = darkGray, border = BorderStroke(1.dp, darkGray), elevation = 5.dp) {
             Column(Modifier.fillMaxSize()) {
                 // Titre du menu
                 Column(Modifier.fillMaxWidth().padding(20.dp, 10.dp)) {
@@ -49,35 +37,30 @@ fun DrawerMenuContent(applicationScope: CoroutineScope) {
                     SpacedDivider(Modifier.fillMaxWidth().background(middleGray.copy(0.5f)), "vertical", 1.dp, 10.dp, 10.dp)
                 }
                 // Éléments du menu
-                DrawerMenuItem(generalTab, Icons.Filled.Settings, gC.isExpandedMenuItem.value == generalTab) {onMenuItemTap(generalTab)}
-                DrawerMenuItem(customizationTab, Icons.Filled.Palette, gC.isExpandedMenuItem.value == customizationTab) {onMenuItemTap(customizationTab)}
-                DrawerMenuItem(helpTab, Icons.AutoMirrored.Filled.Help, gC.isExpandedMenuItem.value == helpTab) {onMenuItemTap(helpTab)}
-                DrawerMenuItem(contactTab, Icons.Filled.Email, gC.isExpandedMenuItem.value == contactTab) {onMenuItemTap(contactTab)}
+                menuItems.forEach {(name, icon) -> DrawerMenuItem(name, icon, gC.isExpandedMenuItem.value == name) {onMenuItemTap(name)}}
             }
         }
         // Volet arrière
-        if (gC.isExpandedMenuItem.value != "") {
+        if (gC.isExpandedMenuItem.value.isNotEmpty()) {
             Column(Modifier.padding(25.dp)) {
                 when (gC.isExpandedMenuItem.value) {
-                    generalTab ->
-                        GeneralDrawerTab(pastedApiKey) {
-                            applicationScope.launch {
-                                isApolloValidationLoading = true
-                                gC.apiKey.value = pastedApiKey
-                                statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
-                                try {
-                                    // <--- Vérifier la validité de la clé ici
-                                    delay(500) // Simulation de la validation
-                                    statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
-                                }
-                                catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
-                                isApolloValidationLoading = false
+                    "Général" -> GeneralDrawerTab(pastedApiKey) {
+                        applicationScope.launch {
+                            isApolloValidationLoading = true
+                            gC.apiKey.value = pastedApiKey
+                            statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
+                            try {
+                                // <--- Vérifier la validité de la clé ici
+                                delay(500) // Simulation de la validation
+                                statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
                             }
+                            catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
+                            isApolloValidationLoading = false
                         }
-                    customizationTab -> CustomizationDrawerTab()
-                    helpTab -> HelpDrawerTab()
-                    contactTab -> ContactDrawerTab()
-                    else -> Column(Modifier.fillMaxWidth()) {}
+                    }
+                    "Customisation" -> CustomizationDrawerTab()
+                    "Aide" -> HelpDrawerTab()
+                    "Contact" -> ContactDrawerTab()
                 }
             }
         }
