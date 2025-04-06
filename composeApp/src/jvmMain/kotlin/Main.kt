@@ -1,6 +1,5 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.*
@@ -8,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
@@ -36,9 +34,10 @@ fun main() = application {
     var windowState by remember {mutableStateOf(WindowState(WindowPlacement.Floating, false, WindowPosition.PlatformDefault, DpSize(1280.dp, 720.dp)))}
     val drawerState = rememberBottomDrawerState(BottomDrawerValue.Closed)
     val darkGray = gC.darkGray.value
+    val middleGray = gC.middleGray.value
 
     Window({exitApplication()}, windowState, visible = true, "LinkedIn Parser", undecorated = true) {
-        Column(Modifier.fillMaxSize().background(Color.Red)) {
+        Column(Modifier.fillMaxSize()) {
             // Barre de titre
             WindowDraggableArea(Modifier.fillMaxWidth().height(50.dp).background(darkGray)) {
                 Row(Modifier.fillMaxSize()) {
@@ -57,7 +56,8 @@ fun main() = application {
                 modifier = Modifier.fillMaxSize(),
                 drawerState = drawerState,
                 gesturesEnabled = true,
-                drawerShape = RoundedCornerShape(0.dp)
+                drawerShape = RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp),
+                drawerBackgroundColor = middleGray,
             ) {
                 Column(Modifier.fillMaxSize()) {App(applicationScope)}
             }

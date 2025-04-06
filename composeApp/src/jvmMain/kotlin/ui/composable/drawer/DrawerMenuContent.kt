@@ -32,10 +32,9 @@ fun DrawerMenuContent(applicationScope: CoroutineScope) {
     var statusMessage by remember {mutableStateOf(ConsoleMessage("", ConsoleMessageType.INFO))}
     var pastedApiKey by remember {mutableStateOf("")}
 
-    // Volet arrière
-    Row(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {1f} else {0.2f}).background(gC.middleGray.value)) {
+    Row(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.5f} else {0.2f})) {
         // Volet avant
-        Card(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.2f} else {1f}), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = gC.darkGray.value, border = BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
+        Card(Modifier.fillMaxHeight().fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {0.4f} else {1f}), RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), backgroundColor = gC.darkGray.value, border = BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
             Column(Modifier.fillMaxSize()) {
                 // Titre du menu
                 Column(Modifier.fillMaxWidth().padding(20.dp, 10.dp)) {
@@ -49,28 +48,30 @@ fun DrawerMenuContent(applicationScope: CoroutineScope) {
                 DrawerMenuItem("Contact", Icons.Filled.Email, gC.isExpandedMenuItem.value == "Contact") {onMenuItemTap("Contact")}
             }
         }
-
-        Column(Modifier.fillMaxWidth(if (gC.isExpandedMenuItem.value != "") {1f} else {0f}).padding(20.dp)) {
-            when (gC.isExpandedMenuItem.value) {
-                "Général" ->
-                    GeneralTab(pastedApiKey) {
-                        applicationScope.launch {
-                            isApolloValidationLoading = true
-                            gC.apiKey.value = pastedApiKey
-                            statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
-                            try {
-                                // <--- Vérifier la validité de la clé ici
-                                delay(500) // Simulation de la validation
-                                statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
+        // Volet arrière
+        if (gC.isExpandedMenuItem.value != "") {
+            Column(Modifier.padding(25.dp)) {
+                when (gC.isExpandedMenuItem.value) {
+                    "Général" ->
+                        GeneralTab(pastedApiKey) {
+                            applicationScope.launch {
+                                isApolloValidationLoading = true
+                                gC.apiKey.value = pastedApiKey
+                                statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
+                                try {
+                                    // <--- Vérifier la validité de la clé ici
+                                    delay(500) // Simulation de la validation
+                                    statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
+                                }
+                                catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
+                                isApolloValidationLoading = false
                             }
-                            catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
-                            isApolloValidationLoading = false
                         }
-                    }
-                "Customisation" -> CustomizationTab()
-                "Aide" -> HelpTab()
-                "Contact" -> ContactTab()
-                else -> Column(Modifier.fillMaxWidth()) {}
+                    "Customisation" -> CustomizationTab()
+                    "Aide" -> HelpTab()
+                    "Contact" -> ContactTab()
+                    else -> Column(Modifier.fillMaxWidth()) {}
+                }
             }
         }
     }
