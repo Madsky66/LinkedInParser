@@ -13,13 +13,9 @@ import androidx.compose.ui.unit.*
 import config.GlobalInstance.config as gC
 import kotlinx.coroutines.*
 import ui.composable.element.SpacedDivider
-import utils.*
 
 @Composable
 fun DrawerMenuContent(applicationScope: CoroutineScope) {
-    var isApolloValidationLoading by remember {mutableStateOf(false)}
-    var statusMessage by remember {mutableStateOf(ConsoleMessage("", ConsoleMessageType.INFO))}
-    var pastedApiKey by remember {mutableStateOf("")}
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
     val lightGray = gC.lightGray.value
@@ -44,20 +40,7 @@ fun DrawerMenuContent(applicationScope: CoroutineScope) {
         if (gC.isExpandedMenuItem.value.isNotEmpty()) {
             Column(Modifier.padding(25.dp)) {
                 when (gC.isExpandedMenuItem.value) {
-                    "Général" -> GeneralDrawerTab(pastedApiKey) {
-                        applicationScope.launch {
-                            isApolloValidationLoading = true
-                            gC.apiKey.value = pastedApiKey
-                            statusMessage = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
-                            try {
-                                // <--- Vérifier la validité de la clé ici
-                                delay(500) // Simulation de la validation
-                                statusMessage = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
-                            }
-                            catch (e: Exception) {statusMessage = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
-                            isApolloValidationLoading = false
-                        }
-                    }
+                    "Général" -> GeneralDrawerTab(applicationScope)
                     "Customisation" -> CustomizationDrawerTab()
                     "Aide" -> HelpDrawerTab()
                     "Contact" -> ContactDrawerTab()

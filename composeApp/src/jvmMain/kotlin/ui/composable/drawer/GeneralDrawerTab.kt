@@ -12,35 +12,44 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.*
 import config.GlobalInstance.config as gC
 import ui.composable.effect.CustomOutlinedTextFieldColors
 import ui.composable.modal.ConfirmModal
-import utils.getButtonColors
+import utils.*
 
 @Composable
-fun GeneralDrawerTab(pastedApiKey: String, onProcessApiKey: (String?) -> Unit) {
-    var showConfirmModal by remember {mutableStateOf(false)}
-    val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- $pastedApiKey -----"
+fun GeneralDrawerTab(applicationScope: CoroutineScope) {
+    var isApolloValidationLoading by remember {mutableStateOf(false)}
+    val confirmMessage = "Êtes-vous certain(e) de vouloir utiliser la clé API [Apollo] suivante ?\n\n----- ${gC.pastedApiKey.value} -----"
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
     val lightGray = gC.lightGray.value
 
     // Modale de confirmation
-    if (showConfirmModal) {
-        ConfirmModal(
-            pastedApiKey, confirmMessage,
-            firstButtonText = "Annuler",
-            secondButtonText = "Confirmer",
-            onSecondButtonClick = {onProcessApiKey(pastedApiKey); showConfirmModal = false},
-            onDismissRequest = {showConfirmModal = false}
-        )
+    if (gC.showConfirmModal.value) {
+        ConfirmModal(gC.pastedApiKey.value, confirmMessage, firstButtonText = "Annuler", mainButtonText = "Confirmer") {
+            applicationScope.launch {
+                isApolloValidationLoading = true
+                gC.apiKey.value = gC.pastedApiKey.value
+                gC.consoleMessage.value = ConsoleMessage("⏳ Validation de la clé API par Apollo en cours...", ConsoleMessageType.INFO)
+                try {
+                    // <--- Vérifier la validité de la clé ici
+                    delay(500) // Simulation de la validation
+                    gC.consoleMessage.value = ConsoleMessage("✅ La clé API a bien été validée par Apollo", ConsoleMessageType.SUCCESS)
+                }
+                catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de la validation de la clé API par Apollo : ${e.message}", ConsoleMessageType.ERROR)}
+                isApolloValidationLoading = false
+            }
+            gC.showConfirmModal.value = false
+        }
     }
 
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         // Zone de texte
         OutlinedTextField(
-            value = pastedApiKey,
-            onValueChange = {gC.apiKey.value = pastedApiKey},
+            value = gC.pastedApiKey.value,
+            onValueChange = {gC.pastedApiKey.value = it},
             modifier = Modifier.clip(RectangleShape).weight(2f),
             textStyle = TextStyle.Default,
             label = {Text("Clé API Apollo...")},
@@ -53,14 +62,14 @@ fun GeneralDrawerTab(pastedApiKey: String, onProcessApiKey: (String?) -> Unit) {
 
         // Bouton de validation
         Button(
-            onClick = {showConfirmModal = true},
+            onClick = {gC.showConfirmModal.value = true},
             modifier = Modifier.padding(top = 8.dp).weight(0.75f).height(54.dp),
-            enabled = pastedApiKey.isNotBlank(),
+            enabled = gC.pastedApiKey.value.isNotBlank(),
             elevation = ButtonDefaults.elevation(10.dp),
             shape = RoundedCornerShape(0, 100, 100, 0),
             colors = getButtonColors(middleGray, darkGray, lightGray)
         ) {
-            if (!gC.isApolloValidationLoading.value) {Icon(Icons.AutoMirrored.Filled.Send, "")}
+            if (!isApolloValidationLoading) {Icon(Icons.AutoMirrored.Filled.Send, "")}
             else {CircularProgressIndicator(Modifier.align(Alignment.CenterVertically), lightGray, 5.dp)}
         }
     }

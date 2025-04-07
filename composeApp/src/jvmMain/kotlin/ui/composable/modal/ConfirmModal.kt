@@ -21,12 +21,15 @@ import utils.getButtonColors
 
 
 @Composable
-fun ConfirmModal(string: String = "", modalMessage: String, firstButtonText: String, secondButtonText: String, thirdButtonText: String = "", onSecondButtonClick: (String) -> Unit, onDismissRequest: () -> Unit) {
-    val dialogState = rememberDialogState(position = WindowPosition.PlatformDefault, size = DpSize(640.dp, 360.dp))
+fun ConfirmModal(string: String = "", modalMessage: String, firstButtonText: String, mainButtonText: String, secondButtonText: String = "", onMainButtonTap: (String) -> Unit) {
+    val dialogState = rememberDialogState(size = DpSize(640.dp, 360.dp))
+    val darkGray = gC.darkGray.value
+    val middleGray = gC.middleGray.value
+    val lightGray = gC.lightGray.value
 
-    DialogWindow(onDismissRequest, state = dialogState, transparent = true, undecorated = true) {
+    DialogWindow({gC.showConfirmModal.value = true}, state = dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
-            Card(Modifier, shape = RectangleShape, backgroundColor = gC.middleGray.value, contentColor = gC.lightGray.value, border = BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
+            Card(Modifier, RectangleShape, backgroundColor = middleGray, contentColor = lightGray, BorderStroke(1.dp, darkGray), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {
                     // Barre de titre
                     Column(Modifier.fillMaxWidth()) {
@@ -38,45 +41,32 @@ fun ConfirmModal(string: String = "", modalMessage: String, firstButtonText: Str
                                 Text(text = "Confirmation", fontSize = 25.sp)
                             }
                             // Bouton de fermeture
-                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton(onDismissRequest) {Icon(Icons.Filled.Close, "Quitter")}}
+                            Row(Modifier, Arrangement.End, Alignment.CenterVertically) {IconButton({gC.showConfirmModal.value = true}) {Icon(Icons.Filled.Close, "Quitter")}}
                         }
-                        SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                        SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     }
                     // Message
-                    Row(Modifier.weight(1f, true).fillMaxWidth().background(gC.darkGray.value.copy(0.5f)).border(1.dp, gC.darkGray.value), Arrangement.Center, Alignment.CenterVertically) {
-                        Text(modalMessage, fontSize = 15.sp, textAlign = TextAlign.Start)
-                    }
+                    Row(Modifier.weight(1f, true).fillMaxWidth().background(darkGray.copy(0.5f)).border(1.dp, darkGray), Arrangement.Center, Alignment.CenterVertically) {Text(modalMessage, fontSize = 15.sp, textAlign = TextAlign.Center)}
                     // Diviseur espacé
-                    SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
+                    SpacedDivider(Modifier.fillMaxWidth().background(darkGray.copy(0.5f)), "vertical", 1.dp, 20.dp, 20.dp)
                     // Boutons
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        Button(
-                            onClick = onDismissRequest,
-                            modifier = Modifier.weight(1f),
-                            enabled = true,
-                            elevation = ButtonDefaults.elevation(10.dp),
-                            shape = RoundedCornerShape(100),
-                            colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
-                        ) {
+                        // Bouton d'annulation
+                        Button({gC.showConfirmModal.value = true}, Modifier.weight(1f), true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(middleGray, darkGray, lightGray)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Close, "")
                                 Spacer(Modifier.width(10.dp))
                                 Text(firstButtonText)
                             }
                         }
+                        // Spacer
                         Spacer(Modifier.weight(0.1f))
-                        Button(
-                            onClick = {onSecondButtonClick(string)},
-                            modifier = Modifier.weight(1f),
-                            enabled = true,
-                            elevation = ButtonDefaults.elevation(10.dp),
-                            shape = RoundedCornerShape(100),
-                            colors = getButtonColors(gC.middleGray.value, gC.darkGray.value, gC.lightGray.value)
-                        ) {
+                        // Bouton principal
+                        Button({onMainButtonTap(string)}, Modifier.weight(1f), true, elevation = ButtonDefaults.elevation(10.dp), shape = RoundedCornerShape(100), colors = getButtonColors(middleGray, darkGray, lightGray)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Check, "")
                                 Spacer(Modifier.width(10.dp))
-                                Text(secondButtonText)
+                                Text(mainButtonText)
                             }
                         }
                     }

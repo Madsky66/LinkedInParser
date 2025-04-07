@@ -1,3 +1,5 @@
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,8 +20,8 @@ import kotlin.system.exitProcess
 
 fun main() = application {
     val applicationScope: CoroutineScope = rememberCoroutineScope()
-    var windowState by remember {mutableStateOf(WindowState(WindowPlacement.Floating, false, WindowPosition.PlatformDefault, DpSize(1280.dp, 720.dp)))}
-    val drawerState = rememberBottomDrawerState(BottomDrawerValue.Closed)
+    var windowState by remember {mutableStateOf(WindowState(size = DpSize(1280.dp, 720.dp)))}
+    val drawerState = rememberBottomDrawerState(BottomDrawerValue.Closed, animationSpec = tween(1000, 0, LinearOutSlowInEasing))
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
 

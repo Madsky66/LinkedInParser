@@ -30,6 +30,7 @@ data class GlobalConfig(
     val fileExportManager: FileExportManager = FileExportManager(),
 
     var dialogState: MutableState<DialogState> = mutableStateOf(DialogState()),
+    var showConfirmModal: MutableState<Boolean> = mutableStateOf(false),
     var showExportModal: MutableState<Boolean> = mutableStateOf(false),
     var showImportModal: MutableState<Boolean> = mutableStateOf(false),
     var isWaitingForSelection: MutableState<Boolean> = mutableStateOf(false),
@@ -40,7 +41,6 @@ data class GlobalConfig(
     var fileName: MutableState<String> = mutableStateOf(""),
     var fileFormat: MutableState<String> = mutableStateOf(""),
 
-    var isApolloValidationLoading: MutableState<Boolean> = mutableStateOf(false),
     var isExtractionLoading: MutableState<Boolean> = mutableStateOf(false),
     var isImportationLoading: MutableState<Boolean> = mutableStateOf(false),
     var isExportationLoading: MutableState<Boolean> = mutableStateOf(false),
@@ -49,6 +49,7 @@ data class GlobalConfig(
     var consoleMessage: MutableState<ConsoleMessage> = mutableStateOf(ConsoleMessage("En attente de données...", ConsoleMessageType.INFO)),
 
     var apiKey: MutableState<String> = mutableStateOf(""),
+    var pastedApiKey: MutableState<String> = mutableStateOf(""),
     var pastedUrl: MutableState<String> = mutableStateOf(""),
     var pastedInput: MutableState<String> = mutableStateOf(""),
     var selectedOptions: MutableList<Boolean> = mutableStateListOf(false, false),

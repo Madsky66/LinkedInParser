@@ -1,9 +1,6 @@
 package ui.composable.modal
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.TooltipArea
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
@@ -12,24 +9,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogState
-import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.unit.*
+import androidx.compose.ui.window.*
 import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import ui.composable.element.SpacedDivider
 import ui.composable.effect.EllipsisVisualTransformation
 import ui.composable.openDialog
-import utils.ConsoleMessage
-import utils.ConsoleMessageType
-import utils.getButtonColors
+import utils.*
 import java.io.File
 
 fun onImportModalClose() {
