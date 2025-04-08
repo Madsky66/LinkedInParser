@@ -16,7 +16,7 @@ import java.io.InputStreamReader
 import java.util.Collections
 
 object GoogleSheetsHelper {
-    private const val APPLICATION_NAME = "LinkedInParser"
+    private const val APPLICATION_NAME = "LinkedInScraper"
     private val JSON_FACTORY: JsonFactory = GsonFactory.getDefaultInstance()
     private val SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS)
 
