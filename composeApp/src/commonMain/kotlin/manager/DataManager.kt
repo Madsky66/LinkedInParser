@@ -6,7 +6,7 @@ class DataManager {
     private val excludePatterns = listOf("otification", "contenu", "Profil", "echerche", "accourcis", "menu", "Accueil", "Réseau", "Emplois", "Messagerie", "Vous", "Pour les entreprises", "Premium", "Image", "relation", "Le statut est accessible", "clavier", "nouvelles", "actualité", "test", "Coordonnées", "Voir le profil complet", "Connexions", "Abonné", "Abonnés", "Voir tous les articles")
     private val linkedInUrlPattern = Regex("(https?://)?(www\\.)?linkedin\\.com/in/[\\w-]+(/)?")
     private val emailPattern = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
-    private val phoneNumberPattern = Regex("0+[0-9]+.?+[0-9]+[0-9]+.?+[0-9]+[0-9]+.?+[0-9]+[0-9]+.?+[0-9]+[0-9]]")
+    private val phoneNumberPattern = Regex("(0|\\+33|0033)[1-9]([-. ]?[0-9]{2}){4}")
 
     fun preprocessText(text: String): List<String> {return text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}.filterNot {line -> excludePatterns.any {pattern -> line.contains(pattern, ignoreCase = true)}}}
 
@@ -19,7 +19,7 @@ class DataManager {
         val lastName = if (fullNameParts.size > 1) fullNameParts.last() else "Nom de famille inconnu"
         val jobTitle = extractJobTitle(lines) ?: "Poste inconnu"
         val email = extractEmail(lines) ?: "Email inconnu"
-        val phoneNumber = ""
+        val phoneNumber = extractPhoneNumber(lines) ?: ""
         val linkedinUrl = extractLinkedInUrl(lines) ?: "Url inconnu"
         return ProspectData(company, "$firstName $lastName", firstName, middleName, lastName, jobTitle, email, phoneNumber, linkedinUrl)
     }
@@ -39,22 +39,12 @@ class DataManager {
     }
     private fun extractEmail(lines: List<String>): String? {
         lines.forEach {line -> val match = emailPattern.find(line); if (match != null) {return match.value}}
-        val emailIndex = lines.indexOf("E-mail")
-        if (emailIndex != -1 && emailIndex + 1 < lines.size) {
-            val nextLine = lines[emailIndex + 1]
-            val match = emailPattern.find(nextLine)
-            if (match != null) {return match.value}
-            return nextLine
-        }
         return null
     }
-    private fun extractPhoneNumber(lines: List<String>): String? { // <--- Améliorer cette fonction
+    private fun extractPhoneNumber(lines: List<String>): String? {
         lines.forEach {line -> val match = phoneNumberPattern.find(line); if (match != null) {return match.value}}
-        val nextLine = lines[0]
-        val match = emailPattern.find(nextLine)
-        if (match != null) {return match.value}
-        return nextLine
+        return null
     }
 
-    companion object {fun emptyProspectData(): ProspectData = ProspectData("Entreprise inconnue", "Nom inconnu", "Prénom inconnu", "", "Nom de famille inconnu", "Poste inconnu", "", "", "",)}
+    companion object {fun emptyProspectData(): ProspectData = ProspectData("Entreprise inconnue", "Nom inconnu", "Prénom inconnu", "", "Nom de famille inconnu", "Poste inconnu", "", "", "")}
 }
