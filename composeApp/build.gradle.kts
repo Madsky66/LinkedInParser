@@ -61,6 +61,10 @@ kotlin {
         // Gson
         implementation("com.google.code.gson:gson:2.10.1")
 
+        // Client OAuth Google Cloud
+        implementation("com.google.oauth-client:google-oauth-client-jetty:1.39.0")
+        implementation("com.google.oauth-client:google-oauth-client-java6:1.39.0")
+
         compilerOptions {
             freeCompilerArgs.add("-Xwhen-guards")
             freeCompilerArgs.add("-Xnon-local-break-continue")
@@ -89,7 +93,8 @@ compose.desktop {
 
             fromFiles(
 //                "src/jvmMain/composeResources/LICENSE.txt",
-                "src/jvmMain/composeResources/drawable/icon.ico"
+                "src/jvmMain/composeResources/drawable/icon.ico",
+                "src/jvmMain/composeResources/file/client_secret.json"
             )
 
             appResourcesRootDir.set(project.layout.projectDirectory.dir("src/jvmMain/composeResources"))
