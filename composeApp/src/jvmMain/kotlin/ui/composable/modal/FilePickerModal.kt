@@ -51,7 +51,8 @@ fun GoogleSheetsPickerModal(spreadsheets: List<Pair<String, String>>, onFileSele
                 if (spreadsheets.isNotEmpty() && !showCreateNewSection.value) {
                     Text("Feuilles disponibles :", style = MaterialTheme.typography.subtitle1, color = lightGray)
                     LazyColumn(Modifier.weight(1f).fillMaxWidth().border(1.dp, darkGray.copy(0.5f)).padding(8.dp)) {
-                        items(spreadsheets.size) {(id, name) ->
+                        items(spreadsheets.size) {index ->
+                            val (id, name) = spreadsheets[index]
                             Row(Modifier.fillMaxWidth().clickable { onFileSelected(id) }.padding(8.dp), Arrangement.spacedBy(8.dp), Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Description, null, tint = lightGray)
                                 Text(name, color = lightGray)

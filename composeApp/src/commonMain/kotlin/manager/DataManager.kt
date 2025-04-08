@@ -9,18 +9,19 @@ class DataManager {
     private val phoneNumberPattern = Regex("0+[0-9]+.?+[0-9]+[0-9]+.?+[0-9]+[0-9]+.?+[0-9]+[0-9]+.?+[0-9]+[0-9]]")
 
     fun preprocessText(text: String): List<String> {return text.split("\n").map {it.trim()}.filter {it.isNotEmpty()}.filterNot {line -> excludePatterns.any {pattern -> line.contains(pattern, ignoreCase = true)}}}
+
     fun extractBasicData(lines: List<String>): ProspectData {
-        val linkedinUrl = extractLinkedInUrl(lines) ?: "Url inconnu"
+        val company = extractCompany(lines) ?: "Entreprise inconnue"
         val fullNameLine = lines.firstOrNull() ?: ""
         val fullNameParts = fullNameLine.split(" ").filter {it.isNotEmpty()}
         val firstName = fullNameParts.firstOrNull() ?: "Prénom inconnu"
         val middleName = if (fullNameParts.size > 2) fullNameParts.subList(1, fullNameParts.size - 1).joinToString(" ") else ""
         val lastName = if (fullNameParts.size > 1) fullNameParts.last() else "Nom de famille inconnu"
-        val phoneNumeber = ""
-        val email = extractEmail(lines) ?: "Email inconnu"
         val jobTitle = extractJobTitle(lines) ?: "Poste inconnu"
-        val company = extractCompany(lines) ?: "Entreprise inconnue"
-        return ProspectData(linkedinUrl, "$firstName $lastName", firstName, middleName, lastName, "", email, emptyList(), company, jobTitle)
+        val email = extractEmail(lines) ?: "Email inconnu"
+        val phoneNumber = ""
+        val linkedinUrl = extractLinkedInUrl(lines) ?: "Url inconnu"
+        return ProspectData(company, "$firstName $lastName", firstName, middleName, lastName, jobTitle, email, phoneNumber, linkedinUrl)
     }
     private fun extractLinkedInUrl(lines: List<String>): String? {return lines.find {it.matches(linkedInUrlPattern)}}
     private fun extractJobTitle(lines: List<String>): String? {
@@ -55,5 +56,5 @@ class DataManager {
         return nextLine
     }
 
-    companion object {fun emptyProspectData(): ProspectData = ProspectData("", "", "Nom inconnu", "Prénom inconnu", "", "Nom de famille inconnu", "", emptyList(), "Entreprise inconnue", "Poste inconnu")}
+    companion object {fun emptyProspectData(): ProspectData = ProspectData("Entreprise inconnue", "Nom inconnu", "Prénom inconnu", "", "Nom de famille inconnu", "Poste inconnu", "", "", "",)}
 }

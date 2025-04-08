@@ -108,7 +108,7 @@ class FileExportManager {
                 sheetsService.spreadsheets().values().update(spreadsheetId, "Prospects!A1", headerBody).setValueInputOption("RAW").execute()
             }
             val prospect = gC.currentProfile.value ?: return
-            val values = listOf(listOf(prospect.company, prospect.firstName, prospect.lastName, prospect.jobTitle, prospect.email, prospect.linkedinUrl))
+            val values = listOf(listOf(prospect.company, prospect.firstName, prospect.lastName, prospect.jobTitle, prospect.email, prospect.phoneNumber, prospect.linkedinUrl))
             val body = ValueRange().setValues(values)
             sheetsService.spreadsheets().values().append(spreadsheetId, "Prospects!A2", body).setValueInputOption("RAW").setInsertDataOption("INSERT_ROWS").execute()
             gC.consoleMessage.value = ConsoleMessage("✅ Données synchronisées avec Google Sheets.", ConsoleMessageType.SUCCESS)
