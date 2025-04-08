@@ -46,7 +46,6 @@ fun FileImportModal(applicationScope: CoroutineScope) {
             gC.fileName.value = gC.fileFullPath.value.substringAfterLast("\\").split(".").first()
             gC.fileFormat.value = gC.fileFullPath.value.substringAfterLast('.', "").lowercase()
         }
-        print("\n---\n${gC.fileFullPath.value} | ${gC.filePath.value} | ${gC.fileName.value} | ${gC.fileFormat.value}")
     }
 
     val isPathCorrect = (gC.filePath.value.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (gC.fileName.value != "") && (gC.fileFormat.value.lowercase() == "xlsx")

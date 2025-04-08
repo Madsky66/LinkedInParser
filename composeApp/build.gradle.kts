@@ -31,10 +31,6 @@ kotlin {
         // Material Icons Extended
         implementation(libs.material.icons.extended)
 
-        // Slf4j
-        implementation(libs.slf4j.api)
-        implementation(libs.slf4j.simple)
-
         // OkHttp3
         implementation(libs.okhttp)
 
@@ -51,11 +47,9 @@ kotlin {
         // Poink DSL
 //        implementation("com.github.nwillc:poink:0.1.0")
 
-        // Google Sheets API
-        implementation("com.google.api-client:google-api-client:2.7.2")
+        // Google
+        implementation("com.google.api-client:google-api-client:1.15")
         implementation("com.google.apis:google-api-services-sheets:v4-rev612-1.25.0")
-
-        // Google Drive API
         implementation("com.google.apis:google-api-services-drive:v3-rev197-1.25.0")
 
         // Gson

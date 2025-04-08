@@ -50,8 +50,7 @@ class FileImportManager {
                 val email = columns.getOrNull(4)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
                 val phoneNumber = columns.getOrNull(5)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
                 val linkedinURL = columns.getOrNull(6)?.trim()?.takeIf {it.isNotBlank() && it != "null"} ?: ""
-
-                val prospect = ProspectData(company, "", firstName, "", lastName, jobTitle, email, "", "", emptyList())
+                val prospect = ProspectData(company, "", firstName, "", lastName, jobTitle, email, phoneNumber, linkedinURL, emptyList())
                 gC.currentProfile.value = prospect
                 onImportedFile(columns.size)
             }
