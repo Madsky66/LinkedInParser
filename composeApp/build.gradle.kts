@@ -55,6 +55,9 @@ kotlin {
         implementation("com.google.api-client:google-api-client:2.7.2")
         implementation("com.google.apis:google-api-services-sheets:v4-rev612-1.25.0")
 
+        // Google Drive API
+        implementation("com.google.apis:google-api-services-drive:v3-rev197-1.25.0")
+
         // Gson
         implementation("com.google.code.gson:gson:2.10.1")
 

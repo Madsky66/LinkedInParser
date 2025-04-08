@@ -13,9 +13,9 @@ class ApolloManager {
     private val userAgentProvider = UserAgentManager()
 
     fun enrichProfileData(firstName: String, lastName: String, company: String, jobTitle: String, email: String): ProspectData {
-        if (firstName.isBlank() || firstName == "Prénom inconnu" || lastName.isBlank() || lastName == "Nom de famille inconnu") {return ProspectData("", "$firstName $lastName", firstName, "", lastName, email, emptyList(), company, jobTitle)}
+        if (firstName.isBlank() || firstName == "Prénom inconnu" || lastName.isBlank() || lastName == "Nom de famille inconnu") {return ProspectData("", "$firstName $lastName", firstName, "", lastName, "", email, emptyList(), company, jobTitle)}
         val apolloData = fetchApolloData(firstName, lastName, company)
-        if (apolloData == null) {return ProspectData("", "$firstName $lastName", firstName, "", lastName, email, emptyList(), company, jobTitle)}
+        if (apolloData == null) {return ProspectData("", "$firstName $lastName", firstName, "", lastName, "", email, emptyList(), company, jobTitle)}
         val personData = apolloData.optJSONObject("person")
         var updatedCompany = company
         var updatedJobTitle = jobTitle
@@ -37,7 +37,7 @@ class ApolloManager {
                 if (apolloEmail.isNotBlank()) {updatedEmail = apolloEmail}
             }
         }
-        return ProspectData("", "$firstName $lastName", firstName, "", lastName, updatedEmail, emptyList(), updatedCompany, updatedJobTitle)
+        return ProspectData("", "$firstName $lastName", firstName, "", lastName, "", updatedEmail, emptyList(), updatedCompany, updatedJobTitle)
     }
 
     private fun fetchApolloData(firstName: String, lastName: String, company: String): JSONObject? {

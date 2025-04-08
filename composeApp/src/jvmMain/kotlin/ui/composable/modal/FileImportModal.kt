@@ -36,7 +36,7 @@ fun onImportConfirm(applicationScope: CoroutineScope) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileImportModal(applicationScope: CoroutineScope) {
-    gC.dialogState.value = DialogState(size = DpSize(640.dp, 360.dp))
+    val dialogState = rememberDialogState(size = DpSize(640.dp, 360.dp))
     gC.isWaitingForSelection.value = true
 
     LaunchedEffect(gC.fileInstance.value) {
@@ -49,14 +49,14 @@ fun FileImportModal(applicationScope: CoroutineScope) {
         print("\n---\n${gC.fileFullPath.value} | ${gC.filePath.value} | ${gC.fileName.value} | ${gC.fileFormat.value}")
     }
 
-    val isPathCorrect = (gC.filePath.value.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (gC.fileName.value != "") && (gC.fileFormat.value.lowercase() == "xlsx" || gC.fileFormat.value.lowercase() == "csv")
+    val isPathCorrect = (gC.filePath.value.matches(Regex("[A-Za-z]:\\\\.*")) == true) && (gC.fileName.value != "") && (gC.fileFormat.value.lowercase() == "xlsx")
     val formatColor = when (gC.fileFormat.value) {
         "" -> gC.lightGray.value
-        "csv", "xlsx" -> Color.Green.copy(0.5f)
+        "xlsx" -> Color.Green.copy(0.5f)
         else -> Color.Red.copy(0.5f)
     }
 
-    DialogWindow({onImportModalClose()}, gC.dialogState.value, transparent = true, undecorated = true) {
+    DialogWindow({onImportModalClose()}, dialogState, transparent = true, undecorated = true) {
         WindowDraggableArea(Modifier.fillMaxSize().shadow(5.dp)) {
             Card(Modifier, RectangleShape, backgroundColor = gC.middleGray.value, contentColor = gC.lightGray.value, BorderStroke(1.dp, gC.darkGray.value), elevation = 5.dp) {
                 Column(Modifier.padding(20.dp), Arrangement.SpaceBetween, Alignment.CenterHorizontally) {

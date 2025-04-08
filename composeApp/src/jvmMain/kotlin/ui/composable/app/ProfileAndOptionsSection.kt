@@ -74,7 +74,7 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope) {
                 Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                     Icon(Icons.Filled.SaveAlt, "")
                     Spacer(Modifier.width(10.dp))
-                    Text("Importer [CSV / XLSX]")
+                    Text("Importer [Google Sheets / XLSX]")
                 }
             }
             // Bouton d'exportation
@@ -89,7 +89,7 @@ fun RowScope.ProfileAndOptionsSection(applicationScope: CoroutineScope) {
                 Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
                     Icon(Icons.Filled.IosShare, "")
                     Spacer(Modifier.width(10.dp))
-                    Text("Exporter [CSV / XLSX]")
+                    Text("Exporter / Synchroniser")
                 }
             }
         }

@@ -4,7 +4,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.window.DialogState
 import data.ProspectData
 import manager.FileExportManager
 import manager.FileImportManager
@@ -29,7 +28,6 @@ data class GlobalConfig(
     val fileImportManager: FileImportManager = FileImportManager(),
     val fileExportManager: FileExportManager = FileExportManager(),
 
-    var dialogState: MutableState<DialogState> = mutableStateOf(DialogState()),
     var showConfirmModal: MutableState<Boolean> = mutableStateOf(false),
     var showExportModal: MutableState<Boolean> = mutableStateOf(false),
     var showImportModal: MutableState<Boolean> = mutableStateOf(false),
@@ -45,10 +43,11 @@ data class GlobalConfig(
     var isImportationLoading: MutableState<Boolean> = mutableStateOf(false),
     var isExportationLoading: MutableState<Boolean> = mutableStateOf(false),
 
-    var currentProfile: MutableState<ProspectData?> = mutableStateOf(null),
     var consoleMessage: MutableState<ConsoleMessage> = mutableStateOf(ConsoleMessage("En attente de données...", ConsoleMessageType.INFO)),
-
+    var currentProfile: MutableState<ProspectData?> = mutableStateOf(null),
+    var googleSheetsId: MutableState<String> = mutableStateOf(""),
     var apiKey: MutableState<String> = mutableStateOf(""),
+
     var pastedApiKey: MutableState<String> = mutableStateOf(""),
     var pastedUrl: MutableState<String> = mutableStateOf(""),
     var pastedInput: MutableState<String> = mutableStateOf(""),

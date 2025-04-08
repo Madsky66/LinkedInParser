@@ -9,6 +9,7 @@ data class ProspectData(
     val firstName: String = "",
     val middleName: String = "",
     val lastName: String = "",
+    val phoneNumber:  String = "",
     val email: String = "",
     val generatedEmails: List<String> = emptyList(),
     val company: String = "",
