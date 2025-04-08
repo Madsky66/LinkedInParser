@@ -1,95 +1,97 @@
 package manager
 
+import data.ProspectData
 import config.GlobalInstance.config as gC
 import kotlinx.coroutines.*
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import utils.*
-import java.awt.Desktop
-import java.io.*
-import java.net.URI
-import java.util.Locale
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import com.google.api.services.sheets.v4.model.*
 
 class FileExportManager {
     fun exportToFile(applicationScope: CoroutineScope) {
         applicationScope.launch {
             gC.isExportationLoading.value = true
-
-            gC.fileFormat.value = if (gC.selectedOptions[0] && gC.selectedOptions[1]) {"both"} else if (gC.selectedOptions[0]) {"xlsx"} else {"csv"}
-            val displayFileFormat = if (gC.fileFormat.value == "both") {"XLSX, CSV"} else {gC.fileFormat.value.replaceFirstChar {if (it. isLowerCase()) it. titlecase(Locale. getDefault()) else it. toString()}}
-            gC.consoleMessage.value = ConsoleMessage("⏳ Exportation du fichier au format [$displayFileFormat] en cours...", ConsoleMessageType.INFO)
-
             try {
-                gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + gC.fileFormat.value
-
+                gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}.xlsx"
+                val file = File(gC.fileFullPath.value)
+                if (file.exists()) {if (!validateExcelFile(file)) {gC.consoleMessage.value = ConsoleMessage("❌ Le fichier existant est incompatible avec le modèle attendu.", ConsoleMessageType.ERROR); return@launch}}
+                else {createExcelFile(file)}
                 when (gC.fileFormat.value) {
-                    "xlsx" -> {exportToXLSX()}
-                    "csv" -> {exportToCSV()}
-                    "both" -> {exportToXLSX(); exportToCSV()}
-                    "json" -> {exportToGoogleSheets()}
+                    "xlsx", "both" -> {updateExcelFile(file, listOf(gC.currentProfile.value!!)); if (gC.fileFormat.value == "both") {exportToGoogleSheets()}}
+                    "sync" -> exportToGoogleSheets()
                 }
-
-                gC.consoleMessage.value = ConsoleMessage("✅ Exportation du fichier au(x) format(s) [$displayFileFormat] réussie", ConsoleMessageType.SUCCESS)
-                gC.consoleMessage.value = ConsoleMessage("⏳ Ouverture de Google Sheets en cours...", ConsoleMessageType.SUCCESS)
-
-                try {
-                    val sheetsUrl = "https://docs.google.com/spreadsheets/u/0/create"
-                    val uri = URI(sheetsUrl)
-                    if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().browse(uri)
-                        gC.consoleMessage.value = ConsoleMessage("✅ Google Sheets ouvert. Vous pouvez maintenant importer votre fichier.", ConsoleMessageType.SUCCESS)
-                    }
-                }
-                catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("⚠️ Exportation réussie mais impossible d'ouvrir Google Sheets : ${e.message}", ConsoleMessageType.WARNING)}
+                gC.consoleMessage.value = ConsoleMessage("✅ Exportation du fichier au format [${gC.fileFormat.value}] réussie", ConsoleMessageType.SUCCESS)
+                if (gC.fileFormat.value == "both" || gC.fileFormat.value == "sync") {exportToGoogleSheets()}
             }
-            catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'exportation du fichier ${gC.fileFormat.value} : ${e.message}", ConsoleMessageType.ERROR)}
-            gC.isExportationLoading.value = false
+            catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de l'exportation : ${e.message}", ConsoleMessageType.ERROR)}
+            finally {gC.isExportationLoading.value = false}
         }
     }
 
-    fun exportToXLSX() {
-        gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + ".xlsx"
+    private fun validateExcelFile(file: File): Boolean {
+        FileInputStream(file).use {fis ->
+            val workbook = XSSFWorkbook(fis)
+            val sheet = workbook.getSheet("Prospects") ?: return false
+            val headerRow = sheet.getRow(0) ?: return false
+            val expectedHeaders = listOf("SOCIETE", "PRENOM", "NOM", "POSTE", "EMAIL", "TEL", "LINKEDIN")
+            for (i in expectedHeaders.indices) {if (headerRow.getCell(i)?.stringCellValue != expectedHeaders[i]) {return false}}
+        }
+        return true
+    }
+
+    private fun createExcelFile(file: File) {
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("Prospects")
-        val headers = arrayOf("LinkedIn URL", "First Name", "Middle Name", "Last Name", "Email", "Generated Emails", "Company", "Job Title")
         val headerRow = sheet.createRow(0)
-        headers.forEachIndexed {index, value -> headerRow.createCell(index).setCellValue(value)}
-        val row = sheet.createRow(1)
-        row.createCell(0).setCellValue(gC.currentProfile.value?.linkedinUrl)
-        row.createCell(1).setCellValue(gC.currentProfile.value?.firstName)
-        row.createCell(2).setCellValue(gC.currentProfile.value?.middleName)
-        row.createCell(3).setCellValue(gC.currentProfile.value?.lastName)
-        row.createCell(4).setCellValue(gC.currentProfile.value?.email)
-        row.createCell(5).setCellValue(gC.currentProfile.value?.generatedEmails?.joinToString(";"))
-        row.createCell(6).setCellValue(gC.currentProfile.value?.company)
-        row.createCell(7).setCellValue(gC.currentProfile.value?.jobTitle)
-        FileOutputStream(gC.fileFullPath.value).use {fos -> workbook.write(fos)}
+        val headers = listOf("SOCIETE", "PRENOM", "NOM", "POSTE", "EMAIL", "TEL", "LINKEDIN")
+        headers.forEachIndexed {index, header ->
+            val cell = headerRow.createCell(index)
+            cell.setCellValue(header)
+            val style = workbook.createCellStyle()
+            val font = workbook.createFont()
+            font.bold = true
+            style.setFont(font)
+            cell.cellStyle = style
+        }
+        FileOutputStream(file).use {fos -> workbook.write(fos)}
         workbook.close()
-        gC.fileInstance.value = File(gC.fileFullPath.value)
     }
 
-    fun exportToCSV() {
-        gC.fileFullPath.value = "${gC.filePath.value}\\${gC.fileName.value}" + ".csv"
-        File(gC.fileFullPath.value).printWriter().use {out ->
-            out.println("LinkedIn URL,First Name,Middle Name,Last Name,Email,Generated Emails,Company,Job Title")
-            out.println("\"${gC.currentProfile.value?.linkedinUrl}\",\"${gC.currentProfile.value?.firstName}\",\"${gC.currentProfile.value?.middleName}\",\"${gC.currentProfile.value?.lastName}\",\"${gC.currentProfile.value?.email}\",\"${gC.currentProfile.value?.generatedEmails?.joinToString(";")}\",\"${gC.currentProfile.value?.company}\",\"${gC.currentProfile.value?.jobTitle}\"")
+    private fun updateExcelFile(file: File, prospects: List<ProspectData>) {
+        FileInputStream(file).use {fis ->
+            val workbook = XSSFWorkbook(fis)
+            val sheet = workbook.getSheet("Prospects") ?: return
+            val lastRowNum = sheet.lastRowNum
+            for ((index, prospect) in prospects.withIndex()) {
+                val row = sheet.createRow(lastRowNum + 1 + index)
+                row.createCell(0).setCellValue(prospect.company ?: "N/A")
+                row.createCell(1).setCellValue(prospect.firstName ?: "")
+                row.createCell(2).setCellValue(prospect.middleName ?: "")
+                row.createCell(3).setCellValue(prospect.lastName ?: "")
+                row.createCell(4).setCellValue(prospect.email ?: "")
+                row.createCell(6).setCellValue(prospect.linkedinUrl ?: "N/A")
+            }
+            FileOutputStream(file).use {fos -> workbook.write(fos)}
+            workbook.close()
         }
-        gC.fileInstance.value = File(gC.fileFullPath.value)
     }
 
     fun exportToGoogleSheets() {
-        val apiUrl = "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=RAW"
-        val jsonData = """
-        {
-            "linkedinUrl": "${gC.currentProfile.value?.linkedinUrl}",
-            "firstName": "${gC.currentProfile.value?.firstName}",
-            "middleName": "${gC.currentProfile.value?.middleName}",
-            "lastName": "${gC.currentProfile.value?.lastName}",
-            "email": "${gC.currentProfile.value?.email}",
-            "generatedEmails": "${gC.currentProfile.value?.generatedEmails?.joinToString(";")}",
-            "company": "${gC.currentProfile.value?.company}",
-            "jobTitle": "${gC.currentProfile.value?.jobTitle}"
+        try {
+            val sheetsService = GoogleSheetsHelper.getSheetsService("composeApp/src/jvmMain/composeResources/file/client_secret.json")
+            val spreadsheetId = "votre_spreadsheet_id" // Remplacez par l'ID de votre feuille Google Sheets
+            val range = "Prospects!A1"
+            val values = listOf(
+                listOf("SOCIETE", "PRENOM", "NOM", "POSTE", "EMAIL", "TEL", "LINKEDIN"),
+                listOf("Exemple Société", "Jean", "Dupont", "Développeur", "jean.dupont@example.com", "123456789", "https://linkedin.com/in/jeandupont")
+            )
+            val body = ValueRange().setValues(values)
+            sheetsService.spreadsheets().values().append(spreadsheetId, range, body).setValueInputOption("RAW").execute()
+            gC.consoleMessage.value = ConsoleMessage("✅ Données synchronisées avec Google Sheets.", ConsoleMessageType.SUCCESS)
         }
-        """.trimIndent()
-        println("Données envoyées à Google Sheets :\n----------------------------------\napiUrl : $apiUrl\n\njsonData : $jsonData")
+        catch (e: Exception) {gC.consoleMessage.value = ConsoleMessage("❌ Erreur lors de la synchronisation avec Google Sheets : ${e.message}", ConsoleMessageType.ERROR)}
     }
 }

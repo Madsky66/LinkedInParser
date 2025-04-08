@@ -13,5 +13,4 @@ data class ProspectData(
     val generatedEmails: List<String> = emptyList(),
     val company: String = "",
     val jobTitle: String = "",
-    val error: String? = null
 )

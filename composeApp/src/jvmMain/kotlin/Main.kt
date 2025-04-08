@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.DpSize
 import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import manager.AppData
+import manager.AppDataManager
 import ui.composable.App
 import ui.composable.AppTitleBar
 import ui.composable.drawer.DrawerMenuContent
@@ -24,10 +26,22 @@ fun main() = application {
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
 
+    fun saveAppData() {
+        val appData = AppData(
+            mapOf("theme" to "dark", "locale" to "fr"),
+            mapOf("isLoggedIn" to "true", "lastSync" to "2025-04-07")
+        )
+        AppDataManager.saveAppData(appData)
+    }
+
     fun onToggleDrawer(applicationScope: CoroutineScope, drawerState: BottomDrawerState) {applicationScope.launch {if (drawerState.isClosed) {drawerState.expand()} else {drawerState.close()}}}
     fun onMinimizeWindow(windowState: WindowState) {windowState.isMinimized = true}
     fun onToggleMaximizeOrRestore(windowState: WindowState) {if (windowState.placement == WindowPlacement.Maximized) {windowState.placement = WindowPlacement.Floating} else {windowState.placement = WindowPlacement.Maximized}}
-    fun onCloseApp() {exitProcess(0)}
+    fun onCloseApp() {saveAppData(); exitProcess(0)}
+
+    val appData = AppDataManager.loadAppData()
+    println("Paramètres : ${appData.parameters}")
+    println("État : ${appData.state}")
 
     Window({exitApplication()}, windowState, visible = true, "LinkedIn Parser", undecorated = true) {
         Column(Modifier.fillMaxSize()) {
