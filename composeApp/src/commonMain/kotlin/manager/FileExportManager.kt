@@ -91,7 +91,7 @@ class FileExportManager {
         }
     }
 
-    fun exportToGoogleSheets() {
+    suspend fun exportToGoogleSheets() {
         try {
             val spreadsheetId = gC.googleSheetsId.value
             if (spreadsheetId.isBlank()) {gC.consoleMessage.value = ConsoleMessage("❌ ID de feuille Google Sheets non configuré", ConsoleMessageType.ERROR); return}

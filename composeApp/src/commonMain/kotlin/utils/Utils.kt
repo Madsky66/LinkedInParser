@@ -15,9 +15,9 @@ class Colors {
         Color.LightGray     // ---------------> lightGray
     )
     private val lightThemeColors = listOf(
-        Color.DarkGray,     // ---------------> darkGray
-        Color.LightGray,    // ---------------> middleGray
-        Color(0xFF0288D1)   // ---------------> lightGray
+        Color(0xFF0A66C2),  // ---------------> darkBlue
+        Color(0xFF03A9F4),  // ---------------> lightBlue
+        Color.White         // ---------------> white
     )
     fun get(isDarkTheme: MutableState<Boolean>): List<Color> {return if (isDarkTheme.value) darkThemeColors else lightThemeColors}
 }
