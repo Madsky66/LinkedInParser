@@ -1,6 +1,8 @@
 package ui.composable
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateOf
@@ -8,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
-import ui.composable.app.InputSection
 import ui.composable.app.ProfileAndOptionsSection
 import ui.composable.app.StatusBar
 import ui.composable.modal.FileExportModal
@@ -34,13 +35,13 @@ fun App(applicationScope: CoroutineScope) {
     if (gC.showExportModal.value) {FileExportModal(applicationScope)}
 
     Column(Modifier.fillMaxSize().background(gC.middleGray.value).padding(20.dp, 15.dp, 20.dp, 20.dp)) {
-        Row(Modifier.weight(0.9f).fillMaxWidth()) {
+        Row(Modifier.weight(0.95f).fillMaxWidth()) {
             // Section du profil et options
             ProfileAndOptionsSection(applicationScope)
             // Spacer
             Spacer(Modifier.width(25.dp))
             // Zone de texte
-            InputSection(applicationScope)
+            Box(Modifier.background(gC.darkGray.value).border(BorderStroke(1.dp, gC.lightGray.value)))
         }
         // Spacer
         Spacer(Modifier.height(10.dp))
