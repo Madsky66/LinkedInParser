@@ -1,17 +1,10 @@
 package config
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import data.ProspectData
-import manager.FileExportManager
-import manager.FileImportManager
-import manager.LinkedInManager
-import manager.UrlManager
-import utils.Colors
-import utils.ConsoleMessage
-import utils.ConsoleMessageType
+import manager.*
+import utils.*
 import java.io.File
 
 data class GlobalConfig(
@@ -19,9 +12,9 @@ data class GlobalConfig(
 
     var isDarkTheme: MutableState<Boolean> = mutableStateOf(true),
     val themeColors: Colors = Colors(),
-    var darkGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[0]),
-    var middleGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[1]),
-    var lightGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[2]),
+    var darkGray: MutableState<Color> = mutableStateOf<Color>(Color(0xFF2A2A2A)),
+    var middleGray: MutableState<Color> = mutableStateOf<Color>(Color.DarkGray),
+    var lightGray: MutableState<Color> = mutableStateOf<Color>(Color.LightGray),
 
     val urlManager: UrlManager = UrlManager(),
     val linkedinManager: LinkedInManager = LinkedInManager(),
@@ -52,6 +45,16 @@ data class GlobalConfig(
     var pastedUrl: MutableState<String> = mutableStateOf(""),
     var pastedInput: MutableState<String> = mutableStateOf(""),
     var selectedOptions: MutableList<Boolean> = mutableStateListOf(false, false),
-)
+) {
+    fun updateThemeColors() {
+        val colors = themeColors.get(isDarkTheme)
+        darkGray.value = colors[0]
+        middleGray.value = colors[1]
+        lightGray.value = colors[2]
+    }
+}
 
-object GlobalInstance {val config = GlobalConfig()}
+object GlobalInstance {
+    val config = GlobalConfig()
+    init {config.updateThemeColors()}
+}

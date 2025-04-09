@@ -23,11 +23,9 @@ fun main() = application {
     var windowState by remember {mutableStateOf(WindowState(size = DpSize(1280.dp, 720.dp)))}
     val drawerState = rememberBottomDrawerState(BottomDrawerValue.Closed, animationSpec = tween(250))
 
-    val appData = AppDataManager.loadAppData()
-    println("Paramètres : ${appData.parameters}")
-    println("État : ${appData.state}")
+    LaunchedEffect(Unit) {AppDataManager.applyAppData()}
+    LaunchedEffect(gC.isDarkTheme.value) {gC.updateThemeColors()}
 
-    gC.isDarkTheme.value = appData.parameters.isDarkTheme
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
 
@@ -46,10 +44,6 @@ fun main() = application {
             BottomDrawer({DrawerMenuContent(applicationScope, drawerState)}, Modifier.fillMaxSize(), drawerState, false, RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), drawerBackgroundColor = middleGray) {
                 Column(Modifier.fillMaxSize()) {App(applicationScope)}
             }
-//            // Ancien menu
-//            ModalDrawer({DrawerMenuContent(applicationScope)}, Modifier.background(Color.Green).fillMaxSize(0.99f)) {
-//                Column(Modifier.fillMaxSize(0.99f)) {App(applicationScope)}
-//            }
         }
     }
 }
