@@ -18,7 +18,7 @@ class Colors {
             else {listOf(
                 Color.DarkGray,     //---------------> darkGray
                 Color.LightGray,    //---------------> middleGray
-                Color.LightGray     //---------------> darkGray
+                Color(0xFF0288D1)     //---------------> lightGray
             )}
         return themeColors
     }

@@ -21,7 +21,7 @@ data class GlobalConfig(
     val themeColors: Colors = Colors(),
     var darkGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[0]),
     var middleGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[1]),
-    var lightGray: MutableState<Color> =mutableStateOf<Color>(themeColors.get(isDarkTheme)[2]),
+    var lightGray: MutableState<Color> = mutableStateOf<Color>(themeColors.get(isDarkTheme)[2]),
 
     val urlManager: UrlManager = UrlManager(),
     val linkedinManager: LinkedInManager = LinkedInManager(),

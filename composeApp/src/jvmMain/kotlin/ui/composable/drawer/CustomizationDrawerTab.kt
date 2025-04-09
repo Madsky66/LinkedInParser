@@ -1,5 +1,6 @@
 package ui.composable.drawer
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,10 +21,10 @@ fun CustomizationDrawerTab() {
     Text("Options de thème", color = gC.lightGray.value, fontSize = 18.sp)
     Spacer(Modifier.height(10.dp))
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text("Thème sombre [Expérimental...]", color = gC.lightGray.value)
+        Text("Activer / désactiver le thème sombre", color = gC.lightGray.value)
         Switch(
             checked = gC.isDarkTheme.value,
-            onCheckedChange = {gC.isDarkTheme.value = it},
+            onCheckedChange = {gC.isDarkTheme.value = !gC.isDarkTheme.value; print("isDarkTheme = ${gC.isDarkTheme.value}\n")},
             colors = SwitchDefaults.colors(
                 checkedThumbColor = gC.lightGray.value,
                 uncheckedThumbColor = gC.darkGray.value,
