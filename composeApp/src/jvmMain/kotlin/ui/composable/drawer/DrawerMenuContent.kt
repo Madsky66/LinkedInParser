@@ -15,7 +15,7 @@ import kotlinx.coroutines.*
 import ui.composable.element.SpacedDivider
 
 @Composable
-fun DrawerMenuContent(applicationScope: CoroutineScope) {
+fun DrawerMenuContent(applicationScope: CoroutineScope, drawerState: BottomDrawerState) {
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
     val lightGray = gC.lightGray.value
@@ -29,7 +29,12 @@ fun DrawerMenuContent(applicationScope: CoroutineScope) {
             Column(Modifier.fillMaxSize()) {
                 // Titre du menu
                 Column(Modifier.fillMaxWidth().padding(20.dp, 10.dp)) {
-                    Text("Menu", fontSize = 24.sp, color = lightGray)
+                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                        Text("Menu", fontSize = 24.sp, color = lightGray)
+                        IconButton({applicationScope.launch {drawerState.close()}}) {
+                           Icon(Icons.Filled.Close, "Fermer le menu", tint = lightGray)
+                        }
+                    }
                     SpacedDivider(Modifier.fillMaxWidth().background(middleGray.copy(0.5f)), "vertical", 1.dp, 10.dp, 10.dp)
                 }
                 // Éléments du menu

@@ -50,7 +50,7 @@ fun main() = application {
                 Row(Modifier.fillMaxSize()) {AppTitleBar(gC, {onToggleDrawer(applicationScope, drawerState)}, {onMinimizeWindow(windowState)}, {onToggleMaximizeOrRestore(windowState)}, {onCloseApp()})}
             }
             // Menu
-            BottomDrawer({DrawerMenuContent(applicationScope)}, Modifier.fillMaxSize(), drawerState, false, RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), drawerBackgroundColor = middleGray) {
+            BottomDrawer({DrawerMenuContent(applicationScope, drawerState)}, Modifier.fillMaxSize(), drawerState, false, RoundedCornerShape(0.dp, 25.dp, 25.dp, 0.dp), drawerBackgroundColor = middleGray) {
                 Column(Modifier.fillMaxSize()) {App(applicationScope)}
             }
 //            // Ancien menu
