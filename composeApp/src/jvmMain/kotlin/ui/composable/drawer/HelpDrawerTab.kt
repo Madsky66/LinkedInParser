@@ -14,5 +14,5 @@ import config.GlobalInstance.config as gC
 fun HelpDrawerTab() {
     Text("Documentation", color = gC.lightGray.value, fontSize = 18.sp)
     Spacer(Modifier.height(10.dp))
-    Text("Pour utiliser cette application, copiez le contenu d'une page LinkedIn et collez-le dans la zone de texte à gauche.", color = gC.lightGray.value)
+    Text("Pour utiliser cette application, entrez le lien URL d'un profil LinkedIn (attention à bien être sur le profil et non dans une page de recherche ou autre) et collez-le dans la zone de texte à gauche, ensuite, appuyez sur le bouton pour lancer l'extraction.", color = gC.lightGray.value)
 }

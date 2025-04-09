@@ -1,6 +1,7 @@
 package ui.composable.modal
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
@@ -13,14 +14,17 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.*
-import androidx.compose.ui.window.*
+import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.rememberDialogState
 import config.GlobalInstance.config as gC
 import data.ProspectData
 import kotlinx.coroutines.*
 import ui.composable.effect.CustomOutlinedTextFieldColors
-import ui.composable.element.*
+import ui.composable.element.SpacedDivider
 import utils.*
-import java.awt.*
+import java.awt.FileDialog
+import java.awt.Frame
+import java.io.File
 
 @Composable
 fun FileImportModal(applicationScope: CoroutineScope, onProspectsImported: (List<ProspectData>) -> Unit) {
@@ -30,7 +34,6 @@ fun FileImportModal(applicationScope: CoroutineScope, onProspectsImported: (List
     val lightGray = gC.lightGray.value
 
     var importType by remember {mutableStateOf("")}
-    var filePath by remember {mutableStateOf("")}
     var sheetId by remember {mutableStateOf("")}
     var availableSheets by remember {mutableStateOf<List<Pair<String, String>>>(emptyList())}
     var isLoadingSheets by remember {mutableStateOf(false)}
@@ -64,14 +67,14 @@ fun FileImportModal(applicationScope: CoroutineScope, onProspectsImported: (List
                         when (importType) {
                             "excel" -> {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    OutlinedTextField(filePath, {filePath = it}, Modifier.weight(1f), readOnly = true, label = {Text("Chemin du fichier Excel")}, singleLine = true, colors = CustomOutlinedTextFieldColors(),)
+                                    OutlinedTextField(gC.fileFullPath.value, {gC.fileFullPath.value = it}, Modifier.weight(1f), readOnly = true, label = {Text("Chemin du fichier Excel")}, singleLine = true, colors = CustomOutlinedTextFieldColors(),)
                                     Spacer(Modifier.width(8.dp))
                                     IconButton(
                                         onClick = {
                                             val fileDialog = FileDialog(Frame(), "Sélectionner un fichier Excel", FileDialog.LOAD)
                                             fileDialog.setFilenameFilter {_, name -> name.endsWith(".xlsx")}
                                             fileDialog.isVisible = true
-                                            if (fileDialog.file != null) {filePath = "${fileDialog.directory}${fileDialog.file}"}
+                                            if (fileDialog.file != null) {gC.fileFullPath.value = "${fileDialog.directory}${fileDialog.file}"}
                                         }
                                     ) {
                                         Icon(Icons.Filled.FolderOpen, "Parcourir")
@@ -134,8 +137,17 @@ fun FileImportModal(applicationScope: CoroutineScope, onProspectsImported: (List
                                 applicationScope.launch {
                                     gC.isImportationLoading.value = true
                                     try {
+                                        val filePath = gC.fileFullPath.value
                                         val prospects: List<ProspectData> = when (importType) {
-                                            "excel" -> {if (filePath.isNotEmpty()) {gC.fileImportManager.importFromFile(applicationScope)} else {emptyList()}}
+                                            "excel" -> {
+                                                if (filePath.isNotEmpty()) {
+                                                    gC.fileInstance.value = File(filePath)
+                                                    gC.fileName.value = File(filePath).nameWithoutExtension
+                                                    gC.fileFormat.value = "xlsx"
+                                                    gC.fileImportManager.importFromFile()
+                                                }
+                                                else {emptyList()}
+                                            }
                                             "sheets" -> {if (sheetId.isNotEmpty()) {gC.fileImportManager.importFromGoogleSheets(sheetId)} else {emptyList()}}
                                             else -> emptyList()
                                         }
@@ -148,7 +160,7 @@ fun FileImportModal(applicationScope: CoroutineScope, onProspectsImported: (List
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            enabled = (importType == "excel" && filePath.isNotEmpty()) || (importType == "sheets" && sheetId.isNotEmpty()),
+                            enabled = (importType == "excel" && gC.fileFullPath.value.isNotEmpty()) || (importType == "sheets" && sheetId.isNotEmpty()),
                             shape = RoundedCornerShape(100),
                             colors = getButtonColors(middleGray, darkGray, lightGray)
                         ) {

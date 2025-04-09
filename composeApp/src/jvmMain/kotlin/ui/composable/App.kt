@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import data.ProspectData
 import kotlinx.coroutines.CoroutineScope
-import ui.composable.app.ProfileAndOptionsSection
+import ui.composable.app.LeftSection
 import ui.composable.app.ProspectsTable
 import ui.composable.app.StatusBar
 import ui.composable.modal.FileExportModal
@@ -22,7 +22,7 @@ fun App(applicationScope: CoroutineScope) {
 
     Column(Modifier.fillMaxSize().background(gC.middleGray.value).padding(20.dp, 20.dp, 20.dp, 20.dp)) {
         Row(Modifier.weight(0.95f).fillMaxWidth()) {
-            ProfileAndOptionsSection(applicationScope)
+            LeftSection(applicationScope)
             Spacer(Modifier.width(25.dp))
             ProspectsTable(prospectList, {prospect -> gC.currentProfile.value = prospect})
         }

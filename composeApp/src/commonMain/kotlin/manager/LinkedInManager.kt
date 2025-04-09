@@ -8,7 +8,7 @@ import utils.*
 class LinkedInManager {
     private val apolloManager = ApolloManager()
     private val generationManager = GenerationManager()
-    private val excludePatterns = listOf("otification", "contenu", "Profil", "echerche", "accourcis", "menu", "Accueil", "Réseau", "Emplois", "Messagerie", "Vous", "Pour les entreprises", "Premium", "Image", "relation", "Le statut est accessible", "clavier", "nouvelles", "actualité", "test", "Coordonnées", "Voir le profil complet", "Connexions", "Abonné", "Abonnés", "Voir tous les articles")
+    private val excludePatterns = listOf("otification", "contenu", "rofil", "echerche", "accourcis", "menu", "Accueil", "Réseau", "Emplois", "Messagerie", "Vous", "Pour les entreprises", "Premium", "Image", "relation", "Le statut est accessible", "clavier", "nouvelles", "actualité", "test", "Coordonnées", "Voir le profil complet", "Connexions", "Abonné", "Abonnés", "Voir tous les articles", "objectifs", "Plus", "détails")
     private val linkedInUrlPattern = Regex("(https?://)?(www\\.)?linkedin\\.com/in/[\\w-]+(/)?")
     private val emailPattern = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
     private val phoneNumberPattern = Regex("(0|\\+33|0033)[1-9]([-. ]?[0-9]{2}){4}")
