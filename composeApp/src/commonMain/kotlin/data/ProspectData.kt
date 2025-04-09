@@ -11,7 +11,7 @@ data class ProspectData(
     val lastName: String = "",
     val jobTitle: String = "",
     val email: String = "",
-    val phoneNumber:  String = "",
+    val phoneNumber: String = "",
     val linkedinUrl: String = "",
     val generatedEmails: List<String> = emptyList(),
 )
