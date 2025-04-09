@@ -1,30 +1,34 @@
 package ui.composable.drawer
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.Switch
-import androidx.compose.material.SwitchDefaults
-import androidx.compose.material.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.*
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.*
+import manager.AppDataManager
+import ui.composable.element.SpacedDivider
 import config.GlobalInstance.config as gC
 
 @Composable
 fun CustomizationDrawerTab() {
-    Text("Options de thème", color = gC.lightGray.value, fontSize = 18.sp)
-    Spacer(Modifier.height(10.dp))
-    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text("Activer / désactiver le thème sombre", color = gC.lightGray.value)
+    Column(Modifier.fillMaxWidth().padding(20.dp), Arrangement.spacedBy(20.dp)) {
+        Text("Options de thème", Modifier,gC.lightGray.value, fontSize = 20.sp, fontWeight = FontWeight.Medium)
+        SpacedDivider(Modifier.fillMaxWidth().background(gC.darkGray.value), "vertical", 1.dp, 10.dp, 10.dp)
+        DarkThemeSwitch()
+    }
+}
+
+@Composable
+private fun DarkThemeSwitch() {
+    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+        Text("Activer / désactiver le thème sombre", color = gC.lightGray.value, style = MaterialTheme.typography.body2)
         Switch(
             checked = gC.isDarkTheme.value,
-            onCheckedChange = {gC.isDarkTheme.value = !gC.isDarkTheme.value; print("isDarkTheme = ${gC.isDarkTheme.value}\n")},
+            onCheckedChange = {newValue -> gC.isDarkTheme.value = newValue; AppDataManager.updateTheme(newValue)},
+            modifier = Modifier.semantics {contentDescription = "Basculer entre le thème clair et sombre"},
             colors = SwitchDefaults.colors(
                 checkedThumbColor = gC.lightGray.value,
                 uncheckedThumbColor = gC.darkGray.value,

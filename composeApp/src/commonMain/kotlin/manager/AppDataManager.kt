@@ -1,16 +1,28 @@
 package manager
 
-import config.GlobalInstance.config as gC
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import config.GlobalInstance.config as gC
+
+@Serializable
+data class AppParameters(
+    val isDarkTheme: Boolean = false,
+    val locale: String = "fr"
+)
+
+@Serializable
+data class AppState(
+    val isLoggedIn: Boolean = false,
+    val lastSync: String = ""
+)
 
 @Serializable
 data class AppData(
-    val parameters: Map<String, Any> = emptyMap(),
-    val state: Map<String, String> = emptyMap()
+    val parameters: AppParameters = AppParameters(),
+    val state: AppState = AppState()
 )
 
 object AppDataManager {
@@ -24,13 +36,13 @@ object AppDataManager {
     fun saveAppData() {
         try {
             val appData = AppData(
-                parameters = mapOf(
-                    "theme" to gC.isDarkTheme.value,
-                    "locale" to "fr"
+                parameters = AppParameters(
+                    isDarkTheme = gC.isDarkTheme.value,
+                    locale = "fr"
                 ),
-                state = mapOf(
-                    "isLoggedIn" to "false",
-                    "lastSync" to LocalDate.now().format(DateTimeFormatter.ISO_DATE)
+                state = AppState(
+                    isLoggedIn = false,
+                    lastSync = LocalDate.now().format(DateTimeFormatter.ISO_DATE)
                 )
             )
             val jsonData = json.encodeToString(appData)
@@ -54,27 +66,25 @@ object AppDataManager {
         }
     }
 
-    fun updateParameter(key: String, value: Any) {
+    fun updateTheme(isDarkTheme: Boolean) {
         try {
             val currentData = loadAppData()
-            val updatedParameters = currentData.parameters.toMutableMap()
-            updatedParameters[key] = value
+            val updatedParameters = currentData.parameters.copy(isDarkTheme = isDarkTheme)
             val updatedData = currentData.copy(parameters = updatedParameters)
             val jsonData = json.encodeToString(updatedData)
             File(APP_DATA_FILENAME).writeText(jsonData)
         }
-        catch (e: Exception) {println("Error updating parameter: ${e.message}")}
+        catch (e: Exception) {println("Error updating isDarkTheme: ${e.message}")}
     }
 
-    fun updateState(key: String, value: String) {
+    fun updateLoginState(isLoggedIn: Boolean) {
         try {
             val currentData = loadAppData()
-            val updatedState = currentData.state.toMutableMap()
-            updatedState[key] = value
+            val updatedState = currentData.state.copy(isLoggedIn = isLoggedIn)
             val updatedData = currentData.copy(state = updatedState)
             val jsonData = json.encodeToString(updatedData)
             File(APP_DATA_FILENAME).writeText(jsonData)
         }
-        catch (e: Exception) {println("Error updating state: ${e.message}")}
+        catch (e: Exception) {println("Error updating login state: ${e.message}")}
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.DpSize
 import config.GlobalInstance.config as gC
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import manager.AppData
 import manager.AppDataManager
 import ui.composable.App
 import ui.composable.AppTitleBar
@@ -28,11 +27,9 @@ fun main() = application {
     println("Paramètres : ${appData.parameters}")
     println("État : ${appData.state}")
 
-    gC.isDarkTheme.value = appData.parameters.get("theme")
+    gC.isDarkTheme.value = appData.parameters.isDarkTheme
     val darkGray = gC.darkGray.value
     val middleGray = gC.middleGray.value
-
-
 
     fun onToggleDrawer(applicationScope: CoroutineScope, drawerState: BottomDrawerState) {applicationScope.launch {if (drawerState.isClosed) {drawerState.expand()} else {drawerState.close()}}}
     fun onMinimizeWindow(windowState: WindowState) {windowState.isMinimized = true}
